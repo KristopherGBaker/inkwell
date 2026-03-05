@@ -15,7 +15,8 @@ let package = Package(
         .library(name: "BlogPreview", targets: ["BlogPreview"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0")
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.110.0")
     ],
     targets: [
         .executableTarget(
@@ -33,7 +34,12 @@ let package = Package(
         .target(name: "BlogRenderer"),
         .target(name: "BlogThemes"),
         .target(name: "BlogPlugins"),
-        .target(name: "BlogPreview"),
+        .target(
+            name: "BlogPreview",
+            dependencies: [
+                .product(name: "Vapor", package: "vapor")
+            ]
+        ),
         .testTarget(name: "BlogCoreTests", dependencies: ["BlogCore"]),
         .testTarget(name: "BlogRendererTests", dependencies: ["BlogRenderer"]),
         .testTarget(name: "BlogThemesTests", dependencies: ["BlogThemes"]),
