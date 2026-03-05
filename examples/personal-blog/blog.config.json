@@ -1,0 +1,6 @@
+{
+  "title": "Kris Blog",
+  "baseURL": "/",
+  "theme": "default",
+  "outputDir": "docs"
+}
