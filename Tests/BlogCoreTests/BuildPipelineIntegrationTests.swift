@@ -23,5 +23,8 @@ final class BuildPipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(report.errors.count, 0)
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/index.html").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/posts/hello-world/index.html").path))
+
+        let indexHTML = try String(contentsOf: temp.appendingPathComponent("docs/index.html"))
+        XCTAssertTrue(indexHTML.contains("/posts/hello-world/index.html"))
     }
 }

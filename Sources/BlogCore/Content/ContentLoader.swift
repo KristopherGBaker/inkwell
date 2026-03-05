@@ -44,12 +44,32 @@ public struct ContentLoader {
             date: map["date"],
             slug: map["slug"],
             summary: map["summary"],
-            tags: nil,
-            categories: nil,
+            tags: parseArray(map["tags"]),
+            categories: parseArray(map["categories"]),
             draft: map["draft"] == "true",
             series: map["series"],
             canonicalUrl: map["canonicalUrl"],
             coverImage: map["coverImage"]
         )
+    }
+
+    private func parseArray(_ raw: String?) -> [String]? {
+        guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("[") && trimmed.hasSuffix("]") {
+            let inner = String(trimmed.dropFirst().dropLast())
+            let values = inner.split(separator: ",").map {
+                $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
+            }.filter { !$0.isEmpty }
+            return values.isEmpty ? nil : values
+        }
+
+        let values = trimmed.split(separator: ",").map {
+            $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
+        }.filter { !$0.isEmpty }
+        return values.isEmpty ? nil : values
     }
 }
