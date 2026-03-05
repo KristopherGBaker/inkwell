@@ -40,6 +40,7 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor")
             ]
         ),
+        .testTarget(name: "BlogPreviewTests", dependencies: ["BlogPreview"]),
         .testTarget(name: "BlogCoreTests", dependencies: ["BlogCore"]),
         .testTarget(name: "BlogRendererTests", dependencies: ["BlogRenderer"]),
         .testTarget(name: "BlogThemesTests", dependencies: ["BlogThemes"]),

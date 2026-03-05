@@ -25,7 +25,48 @@ public struct PreviewServer {
             return req.fileio.streamFile(at: indexPath)
         }
 
+        app.get(.catchall) { req async throws in
+            let path = req.parameters.getCatchall().joined(separator: "/")
+            guard let filePath = resolvedFilePath(for: path) else {
+                throw Abort(.notFound)
+            }
+            return req.fileio.streamFile(at: filePath)
+        }
+
         print("Preview available at http://localhost:\(port) (serving \(root.path))")
         try app.run()
+    }
+
+    func resolvedFilePath(for requestPath: String) -> String? {
+        let cleanedPath = requestPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if cleanedPath.isEmpty {
+            let rootIndex = root.appendingPathComponent("index.html")
+            return FileManager.default.fileExists(atPath: rootIndex.path) ? rootIndex.path : nil
+        }
+
+        let components = cleanedPath.split(separator: "/").map(String.init)
+        if components.contains(where: { $0 == ".." }) {
+            return nil
+        }
+
+        let candidate = components.reduce(root) { partial, next in
+            partial.appendingPathComponent(next)
+        }
+
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: candidate.path, isDirectory: &isDirectory) {
+            if isDirectory.boolValue {
+                let directoryIndex = candidate.appendingPathComponent("index.html")
+                return FileManager.default.fileExists(atPath: directoryIndex.path) ? directoryIndex.path : nil
+            }
+            return candidate.path
+        }
+
+        if !candidate.pathExtension.isEmpty {
+            return nil
+        }
+
+        let htmlCandidate = candidate.appendingPathExtension("html")
+        return FileManager.default.fileExists(atPath: htmlCandidate.path) ? htmlCandidate.path : nil
     }
 }
