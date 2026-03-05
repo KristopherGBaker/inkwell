@@ -30,7 +30,40 @@ public struct ThemeManager {
     }
 
     public func injectHeadAssets(into html: String) -> String {
-        let tags = "<link rel=\"stylesheet\" href=\"/assets/css/prism.css\"><script defer src=\"/assets/js/prism.js\"></script>"
+        let tags = """
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+          tailwind.config = {
+            theme: {
+              extend: {
+                fontFamily: {
+                  display: ["Fraunces", "serif"],
+                  sans: ["Manrope", "sans-serif"],
+                  mono: ["JetBrains Mono", "monospace"]
+                }
+              }
+            }
+          }
+        </script>
+        <style>
+          body { font-family: "Manrope", sans-serif; }
+          .post-content p { margin-top: 1rem; font-size: 1.08rem; line-height: 1.9; }
+          .post-content a { color: rgb(146 64 14); text-decoration: underline; text-decoration-color: rgb(146 64 14 / 0.4); text-underline-offset: 3px; }
+          .post-content ul { margin-top: 1rem; list-style: disc; padding-left: 1.3rem; }
+          .post-content li { margin-top: 0.4rem; }
+          .post-content table { width: 100%; margin-top: 1.25rem; border-collapse: collapse; }
+          .post-content th, .post-content td { border: 1px solid rgb(214 211 209); padding: 0.6rem 0.7rem; }
+          .post-content th { background: rgb(245 245 244); text-align: left; }
+          .post-content code:not(pre code) { background: rgb(231 229 228); border-radius: 0.35rem; padding: 0.12rem 0.34rem; font-family: "JetBrains Mono", monospace; font-size: 0.9em; }
+          .post-content pre { margin-top: 1.2rem; border: 1px solid rgb(68 64 60 / 0.28); }
+          .post-content blockquote { margin-top: 1.2rem; border-left: 3px solid rgb(146 64 14 / 0.7); padding-left: 1rem; color: rgb(68 64 60); }
+        </style>
+        <link rel="stylesheet" href="/assets/css/prism.css">
+        <script defer src="/assets/js/prism.js"></script>
+        """
         if html.contains("</head>") {
             return html.replacingOccurrences(of: "</head>", with: tags + "</head>")
         }
@@ -41,24 +74,20 @@ public struct ThemeManager {
         let fm = FileManager.default
         let sourceRoot = projectRoot.appendingPathComponent("themes/default/assets")
         let destinationRoot = outputRoot.appendingPathComponent("assets")
+        if fm.fileExists(atPath: destinationRoot.path) {
+            try fm.removeItem(at: destinationRoot)
+        }
         try fm.createDirectory(at: destinationRoot, withIntermediateDirectories: true)
 
-        let cssSource = sourceRoot.appendingPathComponent("css/prism.css")
-        let jsSource = sourceRoot.appendingPathComponent("js/prism.js")
-        let cssDestination = destinationRoot.appendingPathComponent("css/prism.css")
-        let jsDestination = destinationRoot.appendingPathComponent("js/prism.js")
-
-        try fm.createDirectory(at: cssDestination.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try fm.createDirectory(at: jsDestination.deletingLastPathComponent(), withIntermediateDirectories: true)
-
-        if fm.fileExists(atPath: cssSource.path) {
-            if fm.fileExists(atPath: cssDestination.path) { try fm.removeItem(at: cssDestination) }
-            try fm.copyItem(at: cssSource, to: cssDestination)
-        }
-
-        if fm.fileExists(atPath: jsSource.path) {
-            if fm.fileExists(atPath: jsDestination.path) { try fm.removeItem(at: jsDestination) }
-            try fm.copyItem(at: jsSource, to: jsDestination)
+        guard fm.fileExists(atPath: sourceRoot.path) else { return }
+        let files = try fm.subpathsOfDirectory(atPath: sourceRoot.path)
+        for relative in files {
+            let source = sourceRoot.appendingPathComponent(relative)
+            var isDirectory: ObjCBool = false
+            guard fm.fileExists(atPath: source.path, isDirectory: &isDirectory), !isDirectory.boolValue else { continue }
+            let destination = destinationRoot.appendingPathComponent(relative)
+            try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try fm.copyItem(at: source, to: destination)
         }
     }
 }
