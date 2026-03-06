@@ -30,9 +30,14 @@ final class BuildPipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/sitemap.xml").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/robots.txt").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/rss.xml").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/search-index.json").path))
 
         let indexHTML = try String(contentsOf: temp.appendingPathComponent("docs/index.html"))
         XCTAssertTrue(indexHTML.contains("/posts/hello-world/"))
+        XCTAssertTrue(indexHTML.contains("id=\"search-input\""))
+
+        let searchIndexJSON = try String(contentsOf: temp.appendingPathComponent("docs/search-index.json"))
+        XCTAssertTrue(searchIndexJSON.contains("\"slug\" : \"hello-world\""))
     }
 
     func testBuildCreatesSecondPageWhenPostCountExceedsPageSize() throws {

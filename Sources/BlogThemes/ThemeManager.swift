@@ -48,6 +48,7 @@ public struct ThemeManager {
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link rel="stylesheet" href="/assets/css/prism.css">
+        <script defer src="/assets/js/search.js"></script>
         <script defer src="/assets/js/prism.js"></script>
         """
         if html.contains("</head>") {

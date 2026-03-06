@@ -24,6 +24,7 @@ final class BlogCLISmokeTests: XCTestCase {
 
         XCTAssertTrue(fm.fileExists(atPath: temp.appendingPathComponent("blog.config.json").path))
         XCTAssertTrue(fm.fileExists(atPath: temp.appendingPathComponent("content/posts").path))
+        XCTAssertTrue(fm.fileExists(atPath: temp.appendingPathComponent("themes/default/assets/js/search.js").path))
     }
 
     func testPostPublishFlipsDraftToFalseBySlug() throws {

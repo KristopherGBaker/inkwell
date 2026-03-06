@@ -67,6 +67,7 @@ public struct BuildPipeline {
         }
         try themes.copyDefaultAssets(projectRoot: projectRoot, outputRoot: outputRoot)
         try writeSEOArtifacts(posts: posts, routes: pages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig)
+        try writeSearchIndex(posts: posts, outputRoot: outputRoot)
 
         let report = BuildReport(outputDirectory: outputRoot, routes: pages.map(\.route), errors: [])
         try plugins.runOnBuildComplete(report: PluginBuildReport(routes: report.routes, errors: report.errors))
@@ -141,6 +142,47 @@ public struct BuildPipeline {
         try writer.writeFile(relativePath: "rss.xml", content: rss, to: outputRoot)
     }
 
+    private func writeSearchIndex(posts: [PostDocument], outputRoot: URL) throws {
+        let entries = posts
+            .filter { $0.frontMatter.draft != true }
+            .compactMap { post -> SearchIndexEntry? in
+                guard let slug = post.frontMatter.slug, let title = post.frontMatter.title else { return nil }
+
+                let summary = post.frontMatter.summary ?? ""
+                let body = normalizedSearchText(post.body)
+                let tags = post.frontMatter.tags ?? []
+                let categories = post.frontMatter.categories ?? []
+
+                return SearchIndexEntry(
+                    title: title,
+                    slug: slug,
+                    summary: summary,
+                    date: post.frontMatter.date ?? "",
+                    tags: tags,
+                    categories: categories,
+                    body: String(body.prefix(1200))
+                )
+            }
+
+        let payload = SearchIndexPayload(posts: entries)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(payload)
+        guard let json = String(data: data, encoding: .utf8) else {
+            throw NSError(domain: "BuildPipeline", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to encode search index"])
+        }
+        try writer.writeFile(relativePath: "search-index.json", content: json, to: outputRoot)
+    }
+
+    private func normalizedSearchText(_ markdown: String) -> String {
+        let noFenceMarkers = markdown.replacingOccurrences(of: "```", with: " ")
+        let noInlineCode = noFenceMarkers.replacingOccurrences(of: "`", with: " ")
+        let noLinks = noInlineCode.replacingOccurrences(of: "\\[(.*?)\\]\\((.*?)\\)", with: "$1", options: .regularExpression)
+        let noTokens = noLinks.replacingOccurrences(of: "[#>*_~\\-]", with: " ", options: .regularExpression)
+        let compactWhitespace = noTokens.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        return compactWhitespace.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func normalizedBaseURL(_ value: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed == "/" {
@@ -162,4 +204,18 @@ public struct BuildPipeline {
             .replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "'", with: "&apos;")
     }
+}
+
+private struct SearchIndexPayload: Codable {
+    let posts: [SearchIndexEntry]
+}
+
+private struct SearchIndexEntry: Codable {
+    let title: String
+    let slug: String
+    let summary: String
+    let date: String
+    let tags: [String]
+    let categories: [String]
+    let body: String
 }
