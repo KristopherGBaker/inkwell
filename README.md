@@ -18,7 +18,7 @@ swift run inkwell check
 
 ## Developer Tooling
 ```bash
-brew install xcodegen swiftlint
-xcodegen generate
-swiftlint lint --strict
+make brew-strap
+make bootstrap-mint
+make verify
 ```
