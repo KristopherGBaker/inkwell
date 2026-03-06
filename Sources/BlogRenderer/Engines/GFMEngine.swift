@@ -35,7 +35,9 @@ public struct GFMEngine: MarkdownEngine {
                 }
                 guard foundClosing else { throw MarkdownRenderError.encodingFailed }
                 let source = code.joined(separator: "\n")
-                if let highlighted = highlightWithShiki(code: source, language: language) {
+                if isMermaidLanguage(language) {
+                    output.append("<pre class=\"mermaid\">\(escapeHTML(source))</pre>")
+                } else if let highlighted = highlightWithShiki(code: source, language: language) {
                     output.append(highlighted)
                 } else {
                     let languageClass = language.isEmpty ? "" : " class=\"language-\(language)\""
@@ -167,6 +169,10 @@ public struct GFMEngine: MarkdownEngine {
         let allowed = ["note", "tip", "important", "warning", "caution"]
         guard allowed.contains(rawType) else { return nil }
         return (type: rawType, label: rawType.uppercased())
+    }
+
+    private func isMermaidLanguage(_ language: String) -> Bool {
+        language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "mermaid"
     }
 
     private func highlightWithShiki(code: String, language: String) -> String? {

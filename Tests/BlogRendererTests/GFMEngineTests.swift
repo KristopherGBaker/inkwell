@@ -26,6 +26,20 @@ final class GFMEngineTests: XCTestCase {
         XCTAssertTrue(actual.contains("This is important."))
     }
 
+    func testMermaidFenceRendersMermaidBlock() throws {
+        let markdown = """
+        ```mermaid
+        graph TD
+          A[Start] --> B[Done]
+        ```
+        """
+
+        let actual = try GFMEngine().render(markdown)
+        XCTAssertTrue(actual.contains("<pre class=\"mermaid\">"))
+        XCTAssertTrue(actual.contains("graph TD"))
+        XCTAssertFalse(actual.contains("language-mermaid"))
+    }
+
     private func fixture(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

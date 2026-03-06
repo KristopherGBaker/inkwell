@@ -15,4 +15,12 @@ final class ThemeManagerTests: XCTestCase {
         let payload = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         XCTAssertEqual(payload?["theme"] as? String, "default")
     }
+
+    func testInjectHeadAssetsIncludesMermaidRuntime() {
+        let input = "<html><head></head><body></body></html>"
+        let output = ThemeManager().injectHeadAssets(into: input)
+
+        XCTAssertTrue(output.contains("mermaid.esm.min.mjs"))
+        XCTAssertTrue(output.contains("querySelector: \".mermaid\""))
+    }
 }

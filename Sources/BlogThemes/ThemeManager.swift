@@ -48,6 +48,13 @@ public struct ThemeManager {
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="/assets/css/tailwind.css">
         <link rel="stylesheet" href="/assets/css/prism.css">
+        <script type="module">
+          import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+          mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+          window.addEventListener("DOMContentLoaded", function() {
+            mermaid.run({ querySelector: ".mermaid" }).catch(function() {});
+          });
+        </script>
         <script defer src="/assets/js/search.js"></script>
         <script defer src="/assets/js/prism.js"></script>
         """
