@@ -15,6 +15,17 @@ final class GFMEngineTests: XCTestCase {
         XCTAssertTrue(actual.contains("<a href=\"https://example.com\""))
     }
 
+    func testGFMAlertBlockRendersAsAside() throws {
+        let markdown = """
+        > [!NOTE]
+        > This is important.
+        """
+
+        let actual = try GFMEngine().render(markdown)
+        XCTAssertTrue(actual.contains("<aside class=\"alert alert-note\""))
+        XCTAssertTrue(actual.contains("This is important."))
+    }
+
     private func fixture(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

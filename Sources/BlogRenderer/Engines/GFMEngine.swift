@@ -34,8 +34,13 @@ public struct GFMEngine: MarkdownEngine {
                     i += 1
                 }
                 guard foundClosing else { throw MarkdownRenderError.encodingFailed }
-                let languageClass = language.isEmpty ? "" : " class=\"language-\(language)\""
-                output.append("<pre><code\(languageClass)>\(escapeHTML(code.joined(separator: "\n")))</code></pre>")
+                let source = code.joined(separator: "\n")
+                if let highlighted = highlightWithShiki(code: source, language: language) {
+                    output.append(highlighted)
+                } else {
+                    let languageClass = language.isEmpty ? "" : " class=\"language-\(language)\""
+                    output.append("<pre><code\(languageClass)>\(escapeHTML(source))</code></pre>")
+                }
                 i += 1
                 continue
             }
@@ -61,6 +66,22 @@ public struct GFMEngine: MarkdownEngine {
                     i += 1
                 }
                 output.append("<ul class=\"task-list\">\(items.joined())</ul>")
+                continue
+            }
+
+            if let alert = parseAlertStart(lines[i]) {
+                i += 1
+                var bodyLines: [String] = []
+                while i < lines.count, lines[i].hasPrefix(">") {
+                    let raw = lines[i]
+                    let stripped = raw.hasPrefix("> ") ? String(raw.dropFirst(2)) : String(raw.dropFirst())
+                    bodyLines.append(stripped)
+                    i += 1
+                }
+
+                let bodyMarkdown = bodyLines.joined(separator: "\n")
+                let renderedBody = try renderWithCMark(bodyMarkdown).trimmingCharacters(in: .whitespacesAndNewlines)
+                output.append("<aside class=\"alert alert-\(alert.type)\"><p class=\"alert-title\">\(alert.label)</p>\(renderedBody)</aside>")
                 continue
             }
 
@@ -133,5 +154,48 @@ public struct GFMEngine: MarkdownEngine {
             .replacingOccurrences(of: "&", with: "&amp;")
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    private func parseAlertStart(_ line: String) -> (type: String, label: String)? {
+        let prefix = "> [!"
+        guard line.hasPrefix(prefix), let closing = line.firstIndex(of: "]") else {
+            return nil
+        }
+        let start = line.index(line.startIndex, offsetBy: prefix.count)
+        guard start < closing else { return nil }
+        let rawType = String(line[start..<closing]).lowercased()
+        let allowed = ["note", "tip", "important", "warning", "caution"]
+        guard allowed.contains(rawType) else { return nil }
+        return (type: rawType, label: rawType.uppercased())
+    }
+
+    private func highlightWithShiki(code: String, language: String) -> String? {
+        let repoRoot = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let scriptPath = repoRoot.appendingPathComponent("scripts/highlight-code.mjs").path
+        guard FileManager.default.fileExists(atPath: scriptPath) else {
+            return nil
+        }
+
+        let encoded = Data(code.utf8).base64EncodedString()
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["node", scriptPath, language.isEmpty ? "text" : language, encoded]
+
+        let output = Pipe()
+        process.standardOutput = output
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else { return nil }
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            guard let html = String(data: data, encoding: .utf8), !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return nil
+            }
+            return html
+        } catch {
+            return nil
+        }
     }
 }

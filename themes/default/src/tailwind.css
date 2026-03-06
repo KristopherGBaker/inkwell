@@ -95,4 +95,59 @@
     border-left-color: rgb(251 191 36 / 0.6);
     color: rgb(214 211 209);
   }
+
+  .alert {
+    margin-top: 1.2rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(214 211 209);
+    background: rgb(245 245 244 / 0.75);
+    padding: 0.85rem 0.95rem;
+  }
+
+  .dark .alert {
+    border-color: rgb(87 83 78);
+    background: rgb(41 37 36 / 0.7);
+  }
+
+  .alert-title {
+    margin: 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: rgb(120 53 15);
+  }
+
+  .alert > p:last-child {
+    margin-top: 0.5rem;
+  }
+
+  .alert-note {
+    border-color: rgb(180 83 9 / 0.45);
+  }
+
+  .alert-tip {
+    border-color: rgb(22 163 74 / 0.45);
+  }
+
+  .alert-important {
+    border-color: rgb(37 99 235 / 0.45);
+  }
+
+  .alert-warning,
+  .alert-caution {
+    border-color: rgb(220 38 38 / 0.45);
+  }
+
+  .shiki {
+    margin-top: 1.2rem;
+    border-radius: 0.75rem;
+    overflow-x: auto;
+    border: 1px solid rgb(68 64 60 / 0.28);
+    padding: 0.95rem 1rem;
+  }
+
+  .dark .shiki {
+    border-color: rgb(120 113 108 / 0.45);
+  }
 }
