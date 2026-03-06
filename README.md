@@ -15,3 +15,10 @@ swift run inkwell post new "Hello World"
 swift run inkwell build
 swift run inkwell check
 ```
+
+## Developer Tooling
+```bash
+brew install xcodegen swiftlint
+xcodegen generate
+swiftlint lint --strict
+```

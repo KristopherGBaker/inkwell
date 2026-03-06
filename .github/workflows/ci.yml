@@ -10,4 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
+      - name: Install XcodeGen and SwiftLint
+        run: brew install xcodegen swiftlint
+      - name: Validate XcodeGen spec
+        run: xcodegen generate --spec project.yml
+      - name: Run SwiftLint
+        run: swiftlint lint --strict
       - run: swift test

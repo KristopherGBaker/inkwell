@@ -15,7 +15,10 @@ struct PostListCommand: ParsableCommand {
 
         if json {
             let data = try JSONEncoder().encode(files)
-            print(String(decoding: data, as: UTF8.self))
+            guard let output = String(data: data, encoding: .utf8) else {
+                throw ValidationError("Could not encode post list as UTF-8")
+            }
+            print(output)
         } else {
             for file in files { print(file) }
         }

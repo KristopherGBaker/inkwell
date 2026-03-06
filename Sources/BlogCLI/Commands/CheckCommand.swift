@@ -15,7 +15,10 @@ struct CheckCommand: ParsableCommand {
         if json {
             let payload: [String: Any] = ["brokenLinks": result.brokenLinks, "ok": result.isValid]
             let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
-            print(String(decoding: data, as: UTF8.self))
+            guard let output = String(data: data, encoding: .utf8) else {
+                throw ValidationError("Could not encode check output as UTF-8")
+            }
+            print(output)
         } else if result.isValid {
             print("Check passed")
         } else {

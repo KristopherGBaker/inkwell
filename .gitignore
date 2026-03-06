@@ -3,3 +3,4 @@
 examples/*/docs/
 Tests/examples/
 node_modules/
+Inkwell.xcodeproj/

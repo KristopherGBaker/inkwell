@@ -19,7 +19,10 @@ struct BuildCommand: ParsableCommand {
                 "errors": report.errors
             ]
             let data = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
-            print(String(decoding: data, as: UTF8.self))
+            guard let output = String(data: data, encoding: .utf8) else {
+                throw ValidationError("Could not encode build output as UTF-8")
+            }
+            print(output)
         } else {
             print("Built \(report.routes.count) route(s) -> \(report.outputDirectory.path)")
         }
