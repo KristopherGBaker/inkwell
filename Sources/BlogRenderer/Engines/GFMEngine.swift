@@ -1,7 +1,14 @@
 import Foundation
+import cmark
+
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 public enum MarkdownRenderError: Error {
-    case malformedFence
+    case encodingFailed
 }
 
 public struct GFMEngine: MarkdownEngine {
@@ -9,30 +16,26 @@ public struct GFMEngine: MarkdownEngine {
 
     public func render(_ markdown: String) throws -> String {
         let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        var i = 0
         var output: [String] = []
+        var i = 0
 
         while i < lines.count {
-            let line = lines[i]
-
-            if line.hasPrefix("```") {
-                let language = line.replacingOccurrences(of: "```", with: "").trimmingCharacters(in: .whitespaces)
+            if lines[i].hasPrefix("```") {
+                let language = lines[i].replacingOccurrences(of: "```", with: "").trimmingCharacters(in: .whitespaces)
                 i += 1
                 var code: [String] = []
                 var foundClosing = false
                 while i < lines.count {
-                    let codeLine = lines[i]
-                    if codeLine.hasPrefix("```") {
+                    if lines[i].hasPrefix("```") {
                         foundClosing = true
                         break
                     }
-                    code.append(codeLine)
+                    code.append(lines[i])
                     i += 1
                 }
-                guard foundClosing else { throw MarkdownRenderError.malformedFence }
-                let escaped = escapeHTML(code.joined(separator: "\n"))
+                guard foundClosing else { throw MarkdownRenderError.encodingFailed }
                 let languageClass = language.isEmpty ? "" : " class=\"language-\(language)\""
-                output.append("<pre><code\(languageClass)>\(escaped)</code></pre>")
+                output.append("<pre><code\(languageClass)>\(escapeHTML(code.joined(separator: "\n")))</code></pre>")
                 i += 1
                 continue
             }
@@ -45,7 +48,7 @@ public struct GFMEngine: MarkdownEngine {
                 continue
             }
 
-            if line.hasPrefix("- [") {
+            if lines[i].hasPrefix("- [") {
                 var items: [String] = []
                 while i < lines.count, lines[i].hasPrefix("- [") {
                     let item = lines[i]
@@ -61,21 +64,52 @@ public struct GFMEngine: MarkdownEngine {
                 continue
             }
 
-            if line.trimmingCharacters(in: .whitespaces).isEmpty {
+            if lines[i].trimmingCharacters(in: .whitespaces).isEmpty {
                 i += 1
                 continue
             }
 
-            output.append("<p>\(inline(line))</p>")
-            i += 1
+            var paragraphLines: [String] = []
+            while i < lines.count,
+                  !lines[i].trimmingCharacters(in: .whitespaces).isEmpty,
+                  !lines[i].hasPrefix("```") &&
+                  !lines[i].hasPrefix("- [") &&
+                  !isTableHeader(lines, at: i) {
+                paragraphLines.append(lines[i])
+                i += 1
+            }
+            let paragraphMarkdown = applyStrikethroughHTML(paragraphLines.joined(separator: "\n"))
+            output.append(try renderWithCMark(paragraphMarkdown).trimmingCharacters(in: .whitespacesAndNewlines))
         }
 
         return output.joined(separator: "\n")
     }
 
+    private func renderWithCMark(_ markdown: String) throws -> String {
+        guard let bytes = markdown.data(using: .utf8) else {
+            throw MarkdownRenderError.encodingFailed
+        }
+
+        let htmlPtr: UnsafeMutablePointer<CChar>? = bytes.withUnsafeBytes { rawBuffer in
+            guard let base = rawBuffer.baseAddress?.assumingMemoryBound(to: CChar.self) else {
+                return nil
+            }
+            return cmark_markdown_to_html(base, rawBuffer.count, CMARK_OPT_UNSAFE)
+        }
+
+        guard let htmlPtr else { return "" }
+        defer { free(htmlPtr) }
+        return String(cString: htmlPtr)
+    }
+
     private func inline(_ text: String) -> String {
-        var value = escapeHTML(text)
-        while let start = value.range(of: "~~"), let end = value.range(of: "~~", range: start.upperBound..<value.endIndex) {
+        applyStrikethroughHTML(escapeHTML(text))
+    }
+
+    private func applyStrikethroughHTML(_ text: String) -> String {
+        var value = text
+        while let start = value.range(of: "~~"),
+              let end = value.range(of: "~~", range: start.upperBound..<value.endIndex) {
             let inner = String(value[start.upperBound..<end.lowerBound])
             value.replaceSubrange(start.lowerBound..<end.upperBound, with: "<del>\(inner)</del>")
         }

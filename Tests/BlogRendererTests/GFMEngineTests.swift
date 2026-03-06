@@ -10,6 +10,11 @@ final class GFMEngineTests: XCTestCase {
         XCTAssertEqual(normalize(actual), normalize(expected))
     }
 
+    func testAutolinkRendersToAnchorTag() throws {
+        let actual = try GFMEngine().render("<https://example.com>")
+        XCTAssertTrue(actual.contains("<a href=\"https://example.com\""))
+    }
+
     private func fixture(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
