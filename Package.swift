@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "blog", targets: ["BlogCLI"]),
+        .executable(name: "inkwell", targets: ["BlogCLI"]),
         .library(name: "BlogCore", targets: ["BlogCore"]),
         .library(name: "BlogRenderer", targets: ["BlogRenderer"]),
         .library(name: "BlogThemes", targets: ["BlogThemes"]),

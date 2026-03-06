@@ -6,8 +6,8 @@
 4. Run checks before deploy.
 
 ```bash
-swift run blog init
-swift run blog post new "My First Post"
-swift run blog build
-swift run blog check
+swift run inkwell init
+swift run inkwell post new "My First Post"
+swift run inkwell build
+swift run inkwell check
 ```

@@ -92,7 +92,7 @@ public struct RouteBuilder {
                   <button type="button" onclick="toggleTheme()" class="rounded-full border border-stone-400/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:border-amber-700/60 hover:text-amber-800 dark:border-stone-600 dark:text-stone-200 dark:hover:border-amber-300 dark:hover:text-amber-200">Toggle Theme</button>
                 </div>
                 <h1 class="mt-4 max-w-3xl font-display text-4xl leading-[1.05] text-stone-900 dark:text-stone-100 md:text-6xl">Field Notes from Work, Life, and Curious Experiments.</h1>
-                <p class="mt-5 max-w-2xl text-base leading-relaxed text-stone-700 dark:text-stone-300 md:text-lg">A handcrafted static journal for essays, shipping logs, and personal observations. Each entry is written in markdown and published with the blog CLI.</p>
+                <p class="mt-5 max-w-2xl text-base leading-relaxed text-stone-700 dark:text-stone-300 md:text-lg">A handcrafted static journal for essays, shipping logs, and personal observations. Each entry is written in markdown and published with the inkwell CLI.</p>
               </header>
               <section class="grid gap-5 md:grid-cols-2">\(cards)</section>
               \(pagination)

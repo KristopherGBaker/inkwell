@@ -1,11 +1,11 @@
-# `blog check`
+# `inkwell check`
 
 Validates generated output for broken internal links.
 
 ## Usage
 ```bash
-blog check
-blog check --json
+inkwell check
+inkwell check --json
 ```
 
 ## Behavior

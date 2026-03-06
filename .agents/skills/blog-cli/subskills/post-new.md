@@ -1,10 +1,10 @@
-# `blog post new`
+# `inkwell post new`
 
 Create a markdown post with front matter defaults.
 
 ## Usage
 ```bash
-blog post new "Hello World"
+inkwell post new "Hello World"
 ```
 
 ## Behavior
@@ -13,4 +13,4 @@ blog post new "Hello World"
 - Seeds front matter with `title`, `date` (ISO8601), `slug`, `draft: true`.
 
 ## Next Step
-Run `blog build` after editing post content.
+Run `inkwell build` after editing post content.

@@ -1,6 +1,6 @@
-# `blog init`
+# `inkwell init`
 
-Initialize a new blog project in the current directory.
+Initialize a new inkwell project in the current directory.
 
 ## What It Creates
 - `blog.config.json`
@@ -13,7 +13,7 @@ Initialize a new blog project in the current directory.
 
 ## Usage
 ```bash
-blog init
+inkwell init
 ```
 
 ## Verify

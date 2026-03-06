@@ -1,11 +1,11 @@
-# `blog theme`
+# `inkwell theme`
 
 Manage available themes and active theme selection.
 
 ## Usage
 ```bash
-blog theme list
-blog theme use default
+inkwell theme list
+inkwell theme use default
 ```
 
 ## Behavior

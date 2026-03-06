@@ -1,12 +1,12 @@
-# `blog plugin`
+# `inkwell plugin`
 
 Manage plugin state in v1 local-only mode.
 
 ## Usage
 ```bash
-blog plugin list
-blog plugin enable my-plugin
-blog plugin disable my-plugin
+inkwell plugin list
+inkwell plugin enable my-plugin
+inkwell plugin disable my-plugin
 ```
 
 ## Notes

@@ -1,11 +1,11 @@
-# `blog post list`
+# `inkwell post list`
 
 List current markdown posts under `content/posts/`.
 
 ## Usage
 ```bash
-blog post list
-blog post list --json
+inkwell post list
+inkwell post list --json
 ```
 
 ## Notes

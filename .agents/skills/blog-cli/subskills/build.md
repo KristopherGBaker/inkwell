@@ -1,11 +1,11 @@
-# `blog build`
+# `inkwell build`
 
 Builds static output into `docs/`.
 
 ## Usage
 ```bash
-blog build
-blog build --json
+inkwell build
+inkwell build --json
 ```
 
 ## Build Output

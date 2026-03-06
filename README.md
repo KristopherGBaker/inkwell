@@ -5,13 +5,13 @@ Static personal blog generator written in Swift.
 ## Features
 - Markdown posts with front matter
 - GFM rendering (tables, task lists, strikethrough, fenced code)
-- Syntax highlighting contract via `language-*` classes + Prism assets
+- Build-time syntax highlighting with Shiki
 - CLI workflow: `init`, `post new`, `post list`, `build`, `serve`, `check`
 
 ## Quick Start
 ```bash
-swift run blog init
-swift run blog post new "Hello World"
-swift run blog build
-swift run blog check
+swift run inkwell init
+swift run inkwell post new "Hello World"
+swift run inkwell build
+swift run inkwell check
 ```
