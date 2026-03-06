@@ -2,3 +2,4 @@
 .build/
 examples/*/docs/
 Tests/examples/
+node_modules/

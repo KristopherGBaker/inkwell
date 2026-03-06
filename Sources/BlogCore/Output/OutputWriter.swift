@@ -19,4 +19,10 @@ public struct OutputWriter {
             try page.html.write(to: fullPath, atomically: true, encoding: .utf8)
         }
     }
+
+    public func writeFile(relativePath: String, content: String, to outputRoot: URL) throws {
+        let fullPath = outputRoot.appendingPathComponent(relativePath)
+        try FileManager.default.createDirectory(at: fullPath.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try content.write(to: fullPath, atomically: true, encoding: .utf8)
+    }
 }

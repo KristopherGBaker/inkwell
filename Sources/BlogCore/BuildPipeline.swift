@@ -41,6 +41,7 @@ public struct BuildPipeline {
 
     public func run(in projectRoot: URL) throws -> BuildReport {
         let outputRoot = projectRoot.appendingPathComponent("docs")
+        let siteConfig = loadSiteConfig(projectRoot: projectRoot)
         let posts = try loader.loadPosts(in: projectRoot)
         var rendered: [String: String] = [:]
 
@@ -65,9 +66,100 @@ public struct BuildPipeline {
             try plugins.runAfterRender(outputPath: route)
         }
         try themes.copyDefaultAssets(projectRoot: projectRoot, outputRoot: outputRoot)
+        try writeSEOArtifacts(posts: posts, routes: pages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig)
 
         let report = BuildReport(outputDirectory: outputRoot, routes: pages.map(\.route), errors: [])
         try plugins.runOnBuildComplete(report: PluginBuildReport(routes: report.routes, errors: report.errors))
         return report
+    }
+
+    private func loadSiteConfig(projectRoot: URL) -> SiteConfig {
+        let path = projectRoot.appendingPathComponent("blog.config.json")
+        guard
+            let data = try? Data(contentsOf: path),
+            let config = try? JSONDecoder().decode(SiteConfig.self, from: data)
+        else {
+            return SiteConfig(title: "Blog")
+        }
+        return config
+    }
+
+    private func writeSEOArtifacts(posts: [PostDocument], routes: [String], outputRoot: URL, siteConfig: SiteConfig) throws {
+        let baseURL = normalizedBaseURL(siteConfig.baseURL)
+        let sitemapEntries = routes.map { route in
+            "  <url><loc>\(xmlEscape(composeURL(baseURL: baseURL, route: route)))</loc></url>"
+        }.joined(separator: "\n")
+
+        let sitemap = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        \(sitemapEntries)
+        </urlset>
+        """
+
+        let robots = """
+        User-agent: *
+        Allow: /
+        Sitemap: \(composeURL(baseURL: baseURL, route: "/sitemap.xml"))
+        """
+
+        let feedPosts = posts
+            .filter { $0.frontMatter.draft != true }
+            .sorted { ($0.frontMatter.date ?? "") > ($1.frontMatter.date ?? "") }
+            .prefix(20)
+            .compactMap { post -> String? in
+                guard let slug = post.frontMatter.slug, let title = post.frontMatter.title else { return nil }
+                let link = composeURL(baseURL: baseURL, route: "/posts/\(slug)/")
+                let date = post.frontMatter.date ?? ""
+                let summary = xmlEscape(post.frontMatter.summary ?? "")
+                return """
+                  <item>
+                    <title>\(xmlEscape(title))</title>
+                    <link>\(xmlEscape(link))</link>
+                    <guid>\(xmlEscape(link))</guid>
+                    <pubDate>\(xmlEscape(date))</pubDate>
+                    <description>\(summary)</description>
+                  </item>
+                """
+            }
+            .joined(separator: "\n")
+
+        let rss = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0">
+          <channel>
+            <title>\(xmlEscape(siteConfig.title))</title>
+            <link>\(xmlEscape(baseURL))</link>
+            <description>Recent posts from \(xmlEscape(siteConfig.title))</description>
+        \(feedPosts)
+          </channel>
+        </rss>
+        """
+
+        try writer.writeFile(relativePath: "sitemap.xml", content: sitemap, to: outputRoot)
+        try writer.writeFile(relativePath: "robots.txt", content: robots, to: outputRoot)
+        try writer.writeFile(relativePath: "rss.xml", content: rss, to: outputRoot)
+    }
+
+    private func normalizedBaseURL(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "/" {
+            return "http://localhost"
+        }
+        return trimmed.hasSuffix("/") ? String(trimmed.dropLast()) : trimmed
+    }
+
+    private func composeURL(baseURL: String, route: String) -> String {
+        let normalizedRoute = route == "/" ? "/" : route
+        return baseURL + normalizedRoute
+    }
+
+    private func xmlEscape(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
     }
 }

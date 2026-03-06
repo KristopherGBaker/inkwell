@@ -1,7 +1,9 @@
 import Foundation
+import Yams
 
 public enum ContentLoaderError: Error {
     case malformedFrontMatter(URL)
+    case invalidFrontMatter(URL, String)
 }
 
 public struct ContentLoader {
@@ -19,57 +21,26 @@ public struct ContentLoader {
 
     private func loadPost(from url: URL) throws -> PostDocument {
         let raw = try String(contentsOf: url)
-        let parts = raw.components(separatedBy: "\n---\n")
-        guard parts.count >= 2, raw.hasPrefix("---\n") else {
+        guard raw.hasPrefix("---\n") else {
             throw ContentLoaderError.malformedFrontMatter(url)
         }
 
-        let frontMatterBlock = String(parts[0].dropFirst(4))
-        let body = parts.dropFirst().joined(separator: "\n---\n")
-        let frontMatter = parseFrontMatter(frontMatterBlock)
+        let rest = String(raw.dropFirst(4))
+        guard let closingRange = rest.range(of: "\n---\n") else {
+            throw ContentLoaderError.malformedFrontMatter(url)
+        }
+
+        let frontMatterBlock = String(rest[..<closingRange.lowerBound])
+        let body = String(rest[closingRange.upperBound...])
+        let frontMatter = try parseFrontMatter(frontMatterBlock, source: url)
         return PostDocument(frontMatter: frontMatter, body: body, sourcePath: url)
     }
 
-    private func parseFrontMatter(_ block: String) -> PostFrontMatter {
-        var map: [String: String] = [:]
-        for line in block.split(separator: "\n") {
-            let parts = line.split(separator: ":", maxSplits: 1).map(String.init)
-            if parts.count == 2 {
-                map[parts[0].trimmingCharacters(in: .whitespaces)] = parts[1].trimmingCharacters(in: .whitespaces)
-            }
+    private func parseFrontMatter(_ block: String, source: URL) throws -> PostFrontMatter {
+        do {
+            return try YAMLDecoder().decode(PostFrontMatter.self, from: block)
+        } catch {
+            throw ContentLoaderError.invalidFrontMatter(source, String(describing: error))
         }
-
-        return PostFrontMatter(
-            title: map["title"],
-            date: map["date"],
-            slug: map["slug"],
-            summary: map["summary"],
-            tags: parseArray(map["tags"]),
-            categories: parseArray(map["categories"]),
-            draft: map["draft"] == "true",
-            series: map["series"],
-            canonicalUrl: map["canonicalUrl"],
-            coverImage: map["coverImage"]
-        )
-    }
-
-    private func parseArray(_ raw: String?) -> [String]? {
-        guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return nil
-        }
-
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.hasPrefix("[") && trimmed.hasSuffix("]") {
-            let inner = String(trimmed.dropFirst().dropLast())
-            let values = inner.split(separator: ",").map {
-                $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
-            }.filter { !$0.isEmpty }
-            return values.isEmpty ? nil : values
-        }
-
-        let values = trimmed.split(separator: ",").map {
-            $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
-        }.filter { !$0.isEmpty }
-        return values.isEmpty ? nil : values
     }
 }

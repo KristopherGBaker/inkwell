@@ -1,0 +1,10 @@
+{
+  "name": "swift-blog-theme-tooling",
+  "private": true,
+  "scripts": {
+    "build:tailwind": "tailwindcss -c themes/default/tailwind.config.js -i themes/default/src/tailwind.css -o themes/default/assets/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}
