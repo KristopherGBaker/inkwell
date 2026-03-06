@@ -1,0 +1,11 @@
+pre[class*="language-"] {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+code[class*="language-"] {
+  font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+}

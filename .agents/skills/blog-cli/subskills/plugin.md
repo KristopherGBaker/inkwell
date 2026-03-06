@@ -1,0 +1,15 @@
+# `blog plugin`
+
+Manage plugin state in v1 local-only mode.
+
+## Usage
+```bash
+blog plugin list
+blog plugin enable my-plugin
+blog plugin disable my-plugin
+```
+
+## Notes
+- v1 behavior is lightweight command signaling.
+- `list` currently reports local-only model.
+- `enable/disable` currently acknowledge action textually.
