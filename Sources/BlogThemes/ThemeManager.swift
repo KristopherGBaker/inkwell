@@ -4,6 +4,28 @@ public enum ThemeManagerError: Error {
     case themeNotFound(String)
 }
 
+private struct BlogConfigPayload: Codable {
+    var title: String
+    var baseURL: String
+    var theme: String
+    var outputDir: String
+
+    init(title: String = "My Blog", baseURL: String = "/", theme: String = "default", outputDir: String = "docs") {
+        self.title = title
+        self.baseURL = baseURL
+        self.theme = theme
+        self.outputDir = outputDir
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? "My Blog"
+        baseURL = try container.decodeIfPresent(String.self, forKey: .baseURL) ?? "/"
+        theme = try container.decodeIfPresent(String.self, forKey: .theme) ?? "default"
+        outputDir = try container.decodeIfPresent(String.self, forKey: .outputDir) ?? "docs"
+    }
+}
+
 public struct ThemeManager {
     public init() {}
 
@@ -23,9 +45,11 @@ public struct ThemeManager {
 
         let configPath = projectRoot.appendingPathComponent("blog.config.json")
         let data = try Data(contentsOf: configPath)
-        var payload = (try JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-        payload["theme"] = name
-        let out = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys])
+        var payload = try JSONDecoder().decode(BlogConfigPayload.self, from: data)
+        payload.theme = name
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let out = try encoder.encode(payload)
         try out.write(to: configPath)
     }
 

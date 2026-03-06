@@ -1,6 +1,10 @@
 import Foundation
 import Vapor
 
+public enum PreviewServerError: Error {
+    case directoryNotFound(String)
+}
+
 public struct PreviewServer {
     public let root: URL
     public let port: Int
@@ -12,7 +16,7 @@ public struct PreviewServer {
 
     public func start() throws {
         guard FileManager.default.fileExists(atPath: root.path) else {
-            throw NSError(domain: "PreviewServer", code: 1, userInfo: [NSLocalizedDescriptionKey: "Directory not found: \(root.path)"])
+            throw PreviewServerError.directoryNotFound(root.path)
         }
 
         let app = Application(.development)

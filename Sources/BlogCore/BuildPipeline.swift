@@ -15,6 +15,10 @@ public struct BuildReport {
     }
 }
 
+public enum BuildPipelineError: Error {
+    case searchIndexEncodingFailed
+}
+
 public struct BuildPipeline {
     private let loader: ContentLoader
     private let renderer: MarkdownRenderer
@@ -169,7 +173,7 @@ public struct BuildPipeline {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(payload)
         guard let json = String(data: data, encoding: .utf8) else {
-            throw NSError(domain: "BuildPipeline", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to encode search index"])
+            throw BuildPipelineError.searchIndexEncodingFailed
         }
         try writer.writeFile(relativePath: "search-index.json", content: json, to: outputRoot)
     }
