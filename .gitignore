@@ -4,3 +4,18 @@ examples/*/docs/
 Tests/examples/
 node_modules/
 Inkwell.xcodeproj/
+
+# Project-installed skills (managed outside repo)
+.agents/skills/canvas-design/
+.agents/skills/frontend-design/
+.agents/skills/theme-factory/
+.agents/skills/vercel-composition-patterns/
+.agents/skills/vercel-react-best-practices/
+.agents/skills/web-artifacts-builder/
+.agents/skills/web-design-guidelines/
+.agents/skills/webapp-testing/
+
+# Local editor/tooling artifacts
+.claude/
+.vscode/
+skills-lock.json
