@@ -1,0 +1,22 @@
+{
+  "name": "inkewell-skills",
+  "owner": {
+    "name": "Kristopher Baker"
+  },
+  "metadata": {
+    "description": "Inkewell's skills for blogging.",
+    "version": "2026.3.7.0"
+  },
+  "plugins": [
+    {
+      "name": "blogging-skills",
+      "description": "Blogging skills for Inkewell.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/blog-cli",
+        "./skills/blog-writing"
+      ]
+    }
+  ]
+}
