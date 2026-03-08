@@ -32,6 +32,17 @@ mint run KristopherGBaker/inkwell inkwell build
 mint run KristopherGBaker/inkwell inkwell check
 ```
 
+## Optional GitHub Pages Setup
+
+If you want to deploy with GitHub Pages, generate the workflow after initialization:
+
+```bash
+inkwell init
+inkwell deploy setup github-pages
+```
+
+This setup is optional and does not rewrite `blog.config.json`; review `baseURL` for your Pages URL before publishing.
+
 ## Quick Start From Repo
 ```bash
 swift run inkwell init

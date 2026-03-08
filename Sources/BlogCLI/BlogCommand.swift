@@ -10,6 +10,6 @@ struct BlogCommand: ParsableCommand {
         commandName: "inkwell",
         abstract: "Swift static publishing CLI",
         version: "0.1.0",
-        subcommands: [InitCommand.self, PostCommand.self, BuildCommand.self, ServeCommand.self, CheckCommand.self, ThemeCommand.self, PluginCommand.self]
+        subcommands: [InitCommand.self, PostCommand.self, BuildCommand.self, ServeCommand.self, CheckCommand.self, ThemeCommand.self, PluginCommand.self, DeployCommand.self]
     )
 }
