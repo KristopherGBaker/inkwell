@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
-      - name: Install Mint
-        run: brew install mint
+      - name: Install SwiftLint
+        run: brew install swiftlint
       - name: Verify project
-        run: make ci
+        run: make verify SWIFTLINT=swiftlint

@@ -1,4 +1,5 @@
 MINT ?= mint
+SWIFTLINT ?= $(MINT) run realm/SwiftLint@0.63.2 swiftlint
 
 .PHONY: help brew-strap bootstrap-brew bootstrap-mint lint test verify build-css build-site serve ci
 
@@ -24,7 +25,7 @@ bootstrap-mint:
 	$(MINT) bootstrap
 
 lint:
-	$(MINT) run realm/SwiftLint@0.63.2 swiftlint lint --quiet --strict --config .swiftlint.yml
+	$(SWIFTLINT) lint --quiet --strict --config .swiftlint.yml
 
 test:
 	swift test
