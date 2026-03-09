@@ -26,6 +26,13 @@ final class BlogCLISmokeTests: XCTestCase {
         XCTAssertTrue(fm.fileExists(atPath: temp.appendingPathComponent("content/posts").path))
         XCTAssertTrue(fm.fileExists(atPath: temp.appendingPathComponent("themes/default/assets/css/tailwind.css").path))
         XCTAssertTrue(fm.fileExists(atPath: temp.appendingPathComponent("themes/default/assets/js/search.js").path))
+
+        let searchRuntime = try String(contentsOf: temp.appendingPathComponent("themes/default/assets/js/search.js"))
+        XCTAssertTrue(searchRuntime.contains("document.currentScript"))
+        XCTAssertTrue(searchRuntime.contains("/search-index.json"))
+        XCTAssertTrue(searchRuntime.contains("/posts/"))
+        XCTAssertFalse(searchRuntime.contains("fetch('/search-index.json'"))
+        XCTAssertFalse(searchRuntime.contains("href=\"/posts/${post.slug}/\""))
     }
 
     func testPostPublishFlipsDraftToFalseBySlug() throws {

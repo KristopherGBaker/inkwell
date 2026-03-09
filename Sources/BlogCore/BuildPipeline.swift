@@ -15,8 +15,9 @@ public struct BuildReport {
     }
 }
 
-public enum BuildPipelineError: Error {
+public enum BuildPipelineError: Error, Equatable {
     case searchIndexEncodingFailed
+    case taxonomySlugCollision(kind: String, slug: String, labels: [String])
 }
 
 public struct BuildPipeline {
@@ -44,8 +45,9 @@ public struct BuildPipeline {
     }
 
     public func run(in projectRoot: URL) throws -> BuildReport {
-        let outputRoot = projectRoot.appendingPathComponent("docs")
         let siteConfig = loadSiteConfig(projectRoot: projectRoot)
+        let outputRoot = projectRoot.appendingPathComponent(siteConfig.outputDir)
+        let urlBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
         let posts = try loader.loadPosts(in: projectRoot)
         var rendered: [String: String] = [:]
 
@@ -58,24 +60,31 @@ public struct BuildPipeline {
             rendered[slug] = html
         }
 
-        var pages = routeBuilder.buildPages(posts: posts, renderedContent: rendered)
-        pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html)) }
+        try validateTaxonomySlugUniqueness(posts: posts)
+
+        var pages = routeBuilder.buildPages(posts: posts, renderedContent: rendered, baseURL: urlBuilder.baseURL, siteTitle: siteConfig.title)
+        pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL)) }
 
         for page in pages {
             try plugins.runBeforeRender(routeContext: PluginRouteContext(route: page.route))
         }
         try writer.writePages(pages, to: outputRoot)
+        try writer.copyProjectPublicAssets(projectRoot: projectRoot, outputRoot: outputRoot)
         for page in pages {
-            let route = page.route == "/" ? "index.html" : page.route + "index.html"
-            try plugins.runAfterRender(outputPath: route)
+            try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }
         try themes.copyDefaultAssets(projectRoot: projectRoot, outputRoot: outputRoot)
-        try writeSEOArtifacts(posts: posts, routes: pages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig)
+        try writeSEOArtifacts(posts: posts, routes: pages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig, urlBuilder: urlBuilder)
         try writeSearchIndex(posts: posts, outputRoot: outputRoot)
 
         let report = BuildReport(outputDirectory: outputRoot, routes: pages.map(\.route), errors: [])
         try plugins.runOnBuildComplete(report: PluginBuildReport(routes: report.routes, errors: report.errors))
         return report
+    }
+
+    public func outputDirectory(in projectRoot: URL) -> URL {
+        let siteConfig = loadSiteConfig(projectRoot: projectRoot)
+        return projectRoot.appendingPathComponent(siteConfig.outputDir)
     }
 
     private func loadSiteConfig(projectRoot: URL) -> SiteConfig {
@@ -89,10 +98,9 @@ public struct BuildPipeline {
         return config
     }
 
-    private func writeSEOArtifacts(posts: [PostDocument], routes: [String], outputRoot: URL, siteConfig: SiteConfig) throws {
-        let baseURL = normalizedBaseURL(siteConfig.baseURL)
+    private func writeSEOArtifacts(posts: [PostDocument], routes: [String], outputRoot: URL, siteConfig: SiteConfig, urlBuilder: SiteURLBuilder) throws {
         let sitemapEntries = routes.map { route in
-            "  <url><loc>\(xmlEscape(composeURL(baseURL: baseURL, route: route)))</loc></url>"
+            "  <url><loc>\(xmlEscape(urlBuilder.compose(route: route)))</loc></url>"
         }.joined(separator: "\n")
 
         let sitemap = """
@@ -105,7 +113,7 @@ public struct BuildPipeline {
         let robots = """
         User-agent: *
         Allow: /
-        Sitemap: \(composeURL(baseURL: baseURL, route: "/sitemap.xml"))
+        Sitemap: \(urlBuilder.compose(route: "/sitemap.xml"))
         """
 
         let feedPosts = posts
@@ -114,7 +122,7 @@ public struct BuildPipeline {
             .prefix(20)
             .compactMap { post -> String? in
                 guard let slug = post.frontMatter.slug, let title = post.frontMatter.title else { return nil }
-                let link = composeURL(baseURL: baseURL, route: "/posts/\(slug)/")
+                let link = urlBuilder.compose(route: "/posts/\(slug)/")
                 let date = post.frontMatter.date ?? ""
                 let summary = xmlEscape(post.frontMatter.summary ?? "")
                 return """
@@ -134,7 +142,7 @@ public struct BuildPipeline {
         <rss version="2.0">
           <channel>
             <title>\(xmlEscape(siteConfig.title))</title>
-            <link>\(xmlEscape(baseURL))</link>
+            <link>\(xmlEscape(urlBuilder.baseURL))</link>
             <description>Recent posts from \(xmlEscape(siteConfig.title))</description>
         \(feedPosts)
           </channel>
@@ -178,6 +186,12 @@ public struct BuildPipeline {
         try writer.writeFile(relativePath: "search-index.json", content: json, to: outputRoot)
     }
 
+    private func validateTaxonomySlugUniqueness(posts: [PostDocument]) throws {
+        if let collision = TaxonomySlugCollisionValidator.firstCollision(in: posts) {
+            throw BuildPipelineError.taxonomySlugCollision(kind: collision.kind, slug: collision.slug, labels: collision.labels)
+        }
+    }
+
     private func normalizedSearchText(_ markdown: String) -> String {
         let noFenceMarkers = markdown.replacingOccurrences(of: "```", with: " ")
         let noInlineCode = noFenceMarkers.replacingOccurrences(of: "`", with: " ")
@@ -187,19 +201,6 @@ public struct BuildPipeline {
         return compactWhitespace.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func normalizedBaseURL(_ value: String) -> String {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed == "/" {
-            return "http://localhost"
-        }
-        return trimmed.hasSuffix("/") ? String(trimmed.dropLast()) : trimmed
-    }
-
-    private func composeURL(baseURL: String, route: String) -> String {
-        let normalizedRoute = route == "/" ? "/" : route
-        return baseURL + normalizedRoute
-    }
-
     private func xmlEscape(_ value: String) -> String {
         value
             .replacingOccurrences(of: "&", with: "&amp;")
@@ -207,6 +208,41 @@ public struct BuildPipeline {
             .replacingOccurrences(of: ">", with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
             .replacingOccurrences(of: "'", with: "&apos;")
+    }
+}
+
+struct SiteURLBuilder {
+    let baseURL: String
+    private let basePath: String
+
+    init(baseURL: String) {
+        let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "/" {
+            self.baseURL = "http://localhost"
+        } else if trimmed.hasSuffix("/") {
+            self.baseURL = String(trimmed.dropLast())
+        } else {
+            self.baseURL = trimmed
+        }
+
+        if let components = URLComponents(string: self.baseURL),
+           components.path.isEmpty == false,
+           components.path != "/" {
+            self.basePath = components.path.hasSuffix("/") ? String(components.path.dropLast()) : components.path
+        } else {
+            self.basePath = ""
+        }
+    }
+
+    func compose(route: String) -> String {
+        baseURL + route
+    }
+
+    func link(for route: String) -> String {
+        if basePath.isEmpty {
+            return route
+        }
+        return basePath + route
     }
 }
 

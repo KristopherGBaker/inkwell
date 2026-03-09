@@ -53,7 +53,8 @@ public struct ThemeManager {
         try out.write(to: configPath)
     }
 
-    public func injectHeadAssets(into html: String) -> String {
+    public func injectHeadAssets(into html: String, baseURL: String = "/") -> String {
+        let assetPrefix = normalizedAssetPrefix(from: baseURL)
         let tags = """
         <script>
           (function() {
@@ -70,8 +71,8 @@ public struct ThemeManager {
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="/assets/css/tailwind.css">
-        <link rel="stylesheet" href="/assets/css/prism.css">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/tailwind.css">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/prism.css">
         <script type="module">
           import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
           mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
@@ -79,13 +80,30 @@ public struct ThemeManager {
             mermaid.run({ querySelector: ".mermaid" }).catch(function() {});
           });
         </script>
-        <script defer src="/assets/js/search.js"></script>
-        <script defer src="/assets/js/prism.js"></script>
+        <script defer src="\(assetPrefix)/assets/js/search.js"></script>
+        <script defer src="\(assetPrefix)/assets/js/prism.js"></script>
         """
         if html.contains("</head>") {
             return html.replacingOccurrences(of: "</head>", with: tags + "</head>")
         }
         return tags + html
+    }
+
+    private func normalizedAssetPrefix(from baseURL: String) -> String {
+        let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false, trimmed != "/" else {
+            return ""
+        }
+
+        if let components = URLComponents(string: trimmed), components.path.isEmpty == false, components.path != "/" {
+            return components.path.hasSuffix("/") ? String(components.path.dropLast()) : components.path
+        }
+
+        let normalized = trimmed.hasSuffix("/") ? String(trimmed.dropLast()) : trimmed
+        guard normalized.isEmpty == false, normalized != "/" else {
+            return ""
+        }
+        return normalized.hasPrefix("/") ? normalized : "/\(normalized)"
     }
 
     public func copyDefaultAssets(projectRoot: URL, outputRoot: URL) throws {

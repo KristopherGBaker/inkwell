@@ -35,4 +35,10 @@ public struct PostFrontMatter: Codable, Equatable {
         self.canonicalUrl = canonicalUrl
         self.coverImage = coverImage
     }
+
+    public var normalizedCanonicalURL: String? {
+        guard let canonicalUrl else { return nil }
+        let trimmed = canonicalUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
 }

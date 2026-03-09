@@ -1,8 +1,13 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Field Notes</title>
+    <title>Kris Blog</title>
     <meta name="description" content="Personal journal covering work notes, ideas, and life updates.">
+    <link rel="canonical" href="http://localhost/">
+<meta property="og:title" content="Kris Blog">
+<meta property="og:description" content="Personal journal covering work notes, ideas, and life updates.">
+<meta property="og:url" content="http://localhost/">
+<meta name="twitter:card" content="summary">
   <script>
   (function() {
     var saved = localStorage.getItem("theme");
@@ -34,10 +39,13 @@
     <main class="mx-auto max-w-5xl px-6 pb-16 pt-12 md:px-10 md:pt-20">
       <header class="mb-12 border-b border-stone-300/80 pb-8 dark:border-stone-700/80">
         <div class="flex items-center justify-between gap-4">
-          <p class="text-xs uppercase tracking-[0.28em] text-stone-500 dark:text-stone-400">Personal Journal</p>
-          <button type="button" onclick="toggleTheme()" class="rounded-full border border-stone-400/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:border-amber-700/60 hover:text-amber-800 dark:border-stone-600 dark:text-stone-200 dark:hover:border-amber-300 dark:hover:text-amber-200">Toggle Theme</button>
+          <p class="text-xs uppercase tracking-[0.28em] text-stone-500 dark:text-stone-400">Kris Blog</p>
+          <div class="flex items-center gap-3">
+            <a href="/archive/" class="text-xs font-medium uppercase tracking-[0.14em] text-stone-600 transition hover:text-amber-800 dark:text-stone-300 dark:hover:text-amber-200">Archive</a>
+            <button type="button" onclick="toggleTheme()" class="rounded-full border border-stone-400/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:border-amber-700/60 hover:text-amber-800 dark:border-stone-600 dark:text-stone-200 dark:hover:border-amber-300 dark:hover:text-amber-200">Toggle Theme</button>
+          </div>
         </div>
-        <h1 class="mt-4 max-w-3xl font-display text-4xl leading-[1.05] text-stone-900 dark:text-stone-100 md:text-6xl">Field Notes from Work, Life, and Curious Experiments.</h1>
+        <h1 class="mt-4 max-w-3xl font-display text-4xl leading-[1.05] text-stone-900 dark:text-stone-100 md:text-6xl">Kris Blog</h1>
         <p class="mt-5 max-w-2xl text-base leading-relaxed text-stone-700 dark:text-stone-300 md:text-lg">A handcrafted static journal for essays, shipping logs, and personal observations. Each entry is written in markdown and published with the inkwell CLI.</p>
         <div class="mt-7">
           <label for="search-input" class="text-xs uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Search entries</label>
