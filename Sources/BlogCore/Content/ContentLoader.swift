@@ -10,16 +10,21 @@ public struct ContentLoader {
     public init() {}
 
     public func loadPosts(in projectRoot: URL) throws -> [PostDocument] {
+        try postFileURLs(in: projectRoot).map(loadPost)
+    }
+
+    func postFileURLs(in projectRoot: URL) -> [URL] {
         let postsDir = projectRoot.appendingPathComponent("content/posts")
-        guard let files = try? FileManager.default.contentsOfDirectory(at: postsDir, includingPropertiesForKeys: nil)
-            .filter({ $0.pathExtension == "md" }) else {
+        guard let files = try? FileManager.default.contentsOfDirectory(at: postsDir, includingPropertiesForKeys: nil) else {
             return []
         }
 
-        return try files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }).map(loadPost)
+        return files
+            .filter { $0.pathExtension == "md" }
+            .sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
     }
 
-    private func loadPost(from url: URL) throws -> PostDocument {
+    func loadPost(from url: URL) throws -> PostDocument {
         let raw = try String(contentsOf: url)
         guard raw.hasPrefix("---\n") else {
             throw ContentLoaderError.malformedFrontMatter(url)

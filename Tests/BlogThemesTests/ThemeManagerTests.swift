@@ -23,4 +23,14 @@ final class ThemeManagerTests: XCTestCase {
         XCTAssertTrue(output.contains("mermaid.esm.min.mjs"))
         XCTAssertTrue(output.contains("querySelector: \".mermaid\""))
     }
+
+    func testInjectHeadAssetsPrefixesThemeAssetsForSubpathBaseURL() {
+        let input = "<html><head></head><body></body></html>"
+        let output = ThemeManager().injectHeadAssets(into: input, baseURL: "https://example.com/blog/")
+
+        XCTAssertTrue(output.contains("href=\"/blog/assets/css/tailwind.css\""))
+        XCTAssertTrue(output.contains("href=\"/blog/assets/css/prism.css\""))
+        XCTAssertTrue(output.contains("src=\"/blog/assets/js/search.js\""))
+        XCTAssertTrue(output.contains("src=\"/blog/assets/js/prism.js\""))
+    }
 }

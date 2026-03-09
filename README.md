@@ -8,6 +8,18 @@ Static personal blog generator written in Swift.
 - Build-time syntax highlighting with Shiki
 - CLI workflow: `init`, `post new`, `post list`, `build`, `serve`, `check`
 
+## Authoring Workflow
+```bash
+inkwell post new "Hello World"
+inkwell serve --watch
+inkwell check
+```
+
+- `inkwell serve --watch` rebuilds when content, themes, `blog.config.json`, or `public/` files change and live-reloads the preview.
+- The home page links to `/archive/`, and the archive lists published posts newest first while skipping drafts.
+- SEO metadata defaults come from the generated route and your `baseURL`; set `canonicalUrl` in post front matter to override a post page's canonical URL.
+- `inkwell check` now validates front matter/schema errors, broken internal links, malformed `blog.config.json`, missing local `coverImage` assets, and taxonomy slug collisions.
+
 ## Install with Mint
 ```bash
 brew install mint

@@ -51,11 +51,37 @@ struct InitCommand: ParsableCommand {
 
         let searchScript = """
         (() => {
+          const script = document.currentScript;
           let indexPromise = null;
+
+          function resolveBasePath() {
+            if (!script || !script.src) {
+              return '';
+            }
+
+            try {
+              const scriptURL = new URL(script.src, window.location.href);
+              const marker = '/assets/js/';
+              const markerIndex = scriptURL.pathname.indexOf(marker);
+              if (markerIndex >= 0) {
+                return scriptURL.pathname.slice(0, markerIndex);
+              }
+            } catch (_) {
+              return '';
+            }
+
+            return '';
+          }
+
+          const basePath = resolveBasePath();
+
+          function siteURL(path) {
+            return `${basePath}${path}`;
+          }
 
           function fetchIndex() {
             if (!indexPromise) {
-              indexPromise = fetch('/search-index.json', { cache: 'no-store' })
+              indexPromise = fetch(siteURL('/search-index.json'), { cache: 'no-store' })
                 .then((response) => (response.ok ? response.json() : { posts: [] }))
                 .catch(() => ({ posts: [] }));
             }
@@ -93,7 +119,7 @@ struct InitCommand: ParsableCommand {
               .map((post) => {
                 const safeTitle = (post.title || 'Untitled').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const safeSummary = (post.summary || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return `<article class="rounded-xl border border-stone-300/70 bg-stone-50/70 p-4 dark:border-stone-700 dark:bg-stone-900/65"><p class="text-xs uppercase tracking-[0.16em] text-stone-500 dark:text-stone-400">${post.date || ''}</p><h3 class="mt-1 font-display text-xl text-stone-900 dark:text-stone-100"><a class="underline decoration-amber-700/40 underline-offset-4" href="/posts/${post.slug}/">${safeTitle}</a></h3><p class="mt-2 text-sm text-stone-700 dark:text-stone-300">${safeSummary}</p></article>`;
+                return `<article class="rounded-xl border border-stone-300/70 bg-stone-50/70 p-4 dark:border-stone-700 dark:bg-stone-900/65"><p class="text-xs uppercase tracking-[0.16em] text-stone-500 dark:text-stone-400">${post.date || ''}</p><h3 class="mt-1 font-display text-xl text-stone-900 dark:text-stone-100"><a class="underline decoration-amber-700/40 underline-offset-4" href="${siteURL(`/posts/${post.slug}/`)}">${safeTitle}</a></h3><p class="mt-2 text-sm text-stone-700 dark:text-stone-300">${safeSummary}</p></article>`;
               })
               .join('');
 
