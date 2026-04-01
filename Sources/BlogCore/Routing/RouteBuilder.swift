@@ -36,6 +36,7 @@ private struct IndexPageContext {
     let siteTitle: String
     let siteDescription: String
     let siteTagline: String
+    let searchEnabled: Bool
 }
 
 public struct RouteBuilder {
@@ -53,9 +54,10 @@ public struct RouteBuilder {
         let normalizedSiteTitle = siteConfig.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Field Notes" : siteConfig.title
         let siteDescription = siteConfig.description ?? normalizedSiteTitle
         let siteTagline = siteConfig.tagline ?? siteDescription
+        let searchEnabled = siteConfig.searchEnabled ?? true
 
         if chunks.isEmpty {
-            let context = IndexPageContext(route: "/", cards: "", currentPage: 1, totalPages: 1, siteTitle: normalizedSiteTitle, siteDescription: siteDescription, siteTagline: siteTagline)
+            let context = IndexPageContext(route: "/", cards: "", currentPage: 1, totalPages: 1, siteTitle: normalizedSiteTitle, siteDescription: siteDescription, siteTagline: siteTagline, searchEnabled: searchEnabled)
             pages.append(BuiltPage(route: "/", html: renderIndex(context, urlBuilder: urlBuilder)))
         } else {
             for (index, chunk) in chunks.enumerated() {
@@ -69,7 +71,8 @@ public struct RouteBuilder {
                     totalPages: totalPages,
                     siteTitle: normalizedSiteTitle,
                     siteDescription: siteDescription,
-                    siteTagline: siteTagline
+                    siteTagline: siteTagline,
+                    searchEnabled: searchEnabled
                 )
                 pages.append(BuiltPage(route: route, html: renderIndex(context, urlBuilder: urlBuilder)))
             }
@@ -116,6 +119,14 @@ private extension RouteBuilder {
     func renderIndex(_ context: IndexPageContext, urlBuilder: SiteURLBuilder) -> String {
         let pagination = renderPagination(currentPage: context.currentPage, totalPages: context.totalPages, urlBuilder: urlBuilder)
         let archiveLink = urlBuilder.link(for: "/archive/")
+        let searchBlock = context.searchEnabled ? """
+                <div class="mt-7">
+                  <label for="search-input" class="text-xs uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Search entries</label>
+                  <input id="search-input" type="search" autocomplete="off" placeholder="Type 2+ characters to search titles, summaries, and content..." class="mt-2 w-full rounded-xl border border-stone-300/80 bg-white/80 px-4 py-3 text-sm text-stone-800 shadow-sm outline-none transition placeholder:text-stone-500 focus:border-amber-700/60 focus:ring-2 focus:ring-amber-700/20 dark:border-stone-700 dark:bg-stone-900/80 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-amber-300 dark:focus:ring-amber-300/20">
+                  <p id="search-status" class="mt-2 text-xs text-stone-500 dark:text-stone-400"></p>
+                  <div id="search-results" class="mt-4 hidden grid gap-3" aria-live="polite"></div>
+                </div>
+        """ : ""
         let metadata = PageMetadata(
             title: context.siteTitle,
             description: context.siteDescription,
@@ -143,12 +154,7 @@ private extension RouteBuilder {
                 </div>
                 <h1 class="mt-4 max-w-3xl font-display text-4xl leading-[1.05] text-stone-900 dark:text-stone-100 md:text-6xl">\(escapeHTML(context.siteTitle))</h1>
                 <p class="mt-5 max-w-2xl text-base leading-relaxed text-stone-700 dark:text-stone-300 md:text-lg">\(escapeHTML(context.siteTagline))</p>
-                <div class="mt-7">
-                  <label for="search-input" class="text-xs uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Search entries</label>
-                  <input id="search-input" type="search" autocomplete="off" placeholder="Type 2+ characters to search titles, summaries, and content..." class="mt-2 w-full rounded-xl border border-stone-300/80 bg-white/80 px-4 py-3 text-sm text-stone-800 shadow-sm outline-none transition placeholder:text-stone-500 focus:border-amber-700/60 focus:ring-2 focus:ring-amber-700/20 dark:border-stone-700 dark:bg-stone-900/80 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-amber-300 dark:focus:ring-amber-300/20">
-                  <p id="search-status" class="mt-2 text-xs text-stone-500 dark:text-stone-400"></p>
-                  <div id="search-results" class="mt-4 hidden grid gap-3" aria-live="polite"></div>
-                </div>
+                \(searchBlock)
               </header>
               <section class="grid gap-5 md:grid-cols-2">\(context.cards)</section>
               \(pagination)
