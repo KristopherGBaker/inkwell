@@ -34,6 +34,8 @@ private struct IndexPageContext {
     let currentPage: Int
     let totalPages: Int
     let siteTitle: String
+    let siteDescription: String
+    let siteTagline: String
 }
 
 public struct RouteBuilder {
@@ -41,17 +43,19 @@ public struct RouteBuilder {
 
     public init() {}
 
-    public func buildPages(posts: [PostDocument], renderedContent: [String: String], baseURL: String = "/", siteTitle: String = "Field Notes") -> [BuiltPage] {
+    public func buildPages(posts: [PostDocument], renderedContent: [String: String], baseURL: String = "/", siteConfig: SiteConfig = SiteConfig(title: "Field Notes")) -> [BuiltPage] {
         let mapped = posts.compactMap(mapPost).sorted { $0.date > $1.date }
         let urlBuilder = SiteURLBuilder(baseURL: baseURL)
         var pages: [BuiltPage] = []
 
         let chunks = mapped.chunked(into: postsPerPage)
         let totalPages = max(chunks.count, 1)
-        let normalizedSiteTitle = siteTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Field Notes" : siteTitle
+        let normalizedSiteTitle = siteConfig.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Field Notes" : siteConfig.title
+        let siteDescription = siteConfig.description ?? normalizedSiteTitle
+        let siteTagline = siteConfig.tagline ?? siteDescription
 
         if chunks.isEmpty {
-            let context = IndexPageContext(route: "/", cards: "", currentPage: 1, totalPages: 1, siteTitle: normalizedSiteTitle)
+            let context = IndexPageContext(route: "/", cards: "", currentPage: 1, totalPages: 1, siteTitle: normalizedSiteTitle, siteDescription: siteDescription, siteTagline: siteTagline)
             pages.append(BuiltPage(route: "/", html: renderIndex(context, urlBuilder: urlBuilder)))
         } else {
             for (index, chunk) in chunks.enumerated() {
@@ -63,7 +67,9 @@ public struct RouteBuilder {
                     cards: cards,
                     currentPage: page,
                     totalPages: totalPages,
-                    siteTitle: normalizedSiteTitle
+                    siteTitle: normalizedSiteTitle,
+                    siteDescription: siteDescription,
+                    siteTagline: siteTagline
                 )
                 pages.append(BuiltPage(route: route, html: renderIndex(context, urlBuilder: urlBuilder)))
             }
@@ -112,7 +118,7 @@ private extension RouteBuilder {
         let archiveLink = urlBuilder.link(for: "/archive/")
         let metadata = PageMetadata(
             title: context.siteTitle,
-            description: "Personal journal covering work notes, ideas, and life updates.",
+            description: context.siteDescription,
             canonicalURL: urlBuilder.compose(route: context.route),
             twitterCard: "summary"
         )
@@ -121,7 +127,7 @@ private extension RouteBuilder {
           <head>
             <meta charset="utf-8">
             <title>\(escapeHTML(context.siteTitle))</title>
-            <meta name="description" content="Personal journal covering work notes, ideas, and life updates.">
+            <meta name="description" content="\(escapeAttribute(context.siteDescription))">
             \(renderMetadata(metadata))
           </head>
           <body class="antialiased text-stone-800 dark:bg-stone-950 dark:text-stone-100">
@@ -136,7 +142,7 @@ private extension RouteBuilder {
                   </div>
                 </div>
                 <h1 class="mt-4 max-w-3xl font-display text-4xl leading-[1.05] text-stone-900 dark:text-stone-100 md:text-6xl">\(escapeHTML(context.siteTitle))</h1>
-                <p class="mt-5 max-w-2xl text-base leading-relaxed text-stone-700 dark:text-stone-300 md:text-lg">A handcrafted static journal for essays, shipping logs, and personal observations. Each entry is written in markdown and published with the inkwell CLI.</p>
+                <p class="mt-5 max-w-2xl text-base leading-relaxed text-stone-700 dark:text-stone-300 md:text-lg">\(escapeHTML(context.siteTagline))</p>
                 <div class="mt-7">
                   <label for="search-input" class="text-xs uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Search entries</label>
                   <input id="search-input" type="search" autocomplete="off" placeholder="Type 2+ characters to search titles, summaries, and content..." class="mt-2 w-full rounded-xl border border-stone-300/80 bg-white/80 px-4 py-3 text-sm text-stone-800 shadow-sm outline-none transition placeholder:text-stone-500 focus:border-amber-700/60 focus:ring-2 focus:ring-amber-700/20 dark:border-stone-700 dark:bg-stone-900/80 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-amber-300 dark:focus:ring-amber-300/20">

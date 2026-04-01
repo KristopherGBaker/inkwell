@@ -62,7 +62,7 @@ public struct BuildPipeline {
 
         try validateTaxonomySlugUniqueness(posts: posts)
 
-        var pages = routeBuilder.buildPages(posts: posts, renderedContent: rendered, baseURL: urlBuilder.baseURL, siteTitle: siteConfig.title)
+        var pages = routeBuilder.buildPages(posts: posts, renderedContent: rendered, baseURL: urlBuilder.baseURL, siteConfig: siteConfig)
         pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL)) }
 
         for page in pages {
