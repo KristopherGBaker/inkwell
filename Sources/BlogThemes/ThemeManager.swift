@@ -96,8 +96,16 @@ public struct ThemeManager {
             return ""
         }
 
-        if let components = URLComponents(string: trimmed), components.path.isEmpty == false, components.path != "/" {
-            return components.path.hasSuffix("/") ? String(components.path.dropLast()) : components.path
+        if let components = URLComponents(string: trimmed) {
+            // Full URL (has a scheme) — use only the path component
+            if components.scheme != nil {
+                let path = components.path.hasSuffix("/") ? String(components.path.dropLast()) : components.path
+                return (path.isEmpty || path == "/") ? "" : path
+            }
+            // Path-only URL
+            if components.path.isEmpty == false, components.path != "/" {
+                return components.path.hasSuffix("/") ? String(components.path.dropLast()) : components.path
+            }
         }
 
         let normalized = trimmed.hasSuffix("/") ? String(trimmed.dropLast()) : trimmed
