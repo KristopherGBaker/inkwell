@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build universal binary and publish release
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build arm64
+        run: swift build -c release --arch arm64
+
+      - name: Build x86_64
+        run: swift build -c release --arch x86_64
+
+      - name: Create universal binary
+        run: |
+          lipo -create \
+            .build/arm64-apple-macosx/release/inkwell \
+            .build/x86_64-apple-macosx/release/inkwell \
+            -output inkwell
+          chmod +x inkwell
+
+      - name: Compute checksum
+        run: shasum -a 256 inkwell | tee inkwell.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            inkwell
+            inkwell.sha256
+          generate_release_notes: true
+
+      - name: Bump Homebrew tap
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          SHA256=$(shasum -a 256 inkwell | awk '{print $1}')
+
+          gh repo clone KristopherGBaker/homebrew-tap tap-repo
+          cd tap-repo
+
+          sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Formula/inkwell.rb
+          sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Formula/inkwell.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/KristopherGBaker/homebrew-tap.git"
+          git commit -am "chore: bump inkwell to ${VERSION}"
+          git push

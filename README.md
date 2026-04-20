@@ -20,7 +20,14 @@ inkwell check
 - SEO metadata defaults come from the generated route and your `baseURL`; set `canonicalUrl` in post front matter to override a post page's canonical URL.
 - `inkwell check` now validates front matter/schema errors, broken internal links, malformed `blog.config.json`, missing local `coverImage` assets, and taxonomy slug collisions.
 
-## Install with Mint
+## Install
+
+Homebrew (recommended):
+```bash
+brew tap KristopherGBaker/tap && brew install inkwell
+```
+
+Mint:
 ```bash
 brew install mint
 mint install KristopherGBaker/inkwell
@@ -42,6 +49,13 @@ mint run KristopherGBaker/inkwell inkwell init
 mint run KristopherGBaker/inkwell inkwell post new "Hello World"
 mint run KristopherGBaker/inkwell inkwell build
 mint run KristopherGBaker/inkwell inkwell check
+```
+
+Or download the latest release binary directly:
+
+```bash
+curl -L https://github.com/KristopherGBaker/inkwell/releases/latest/download/inkwell \
+  -o /usr/local/bin/inkwell && chmod +x /usr/local/bin/inkwell
 ```
 
 ## Optional GitHub Pages Setup

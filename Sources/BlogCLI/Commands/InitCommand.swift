@@ -26,8 +26,8 @@ struct InitCommand: ParsableCommand {
         let themeManifest = """
         {
           "name": "default",
-          "version": "0.1.0",
-          "compatibleCore": ">=0.1.0"
+          "version": "\(BlogVersion.version)",
+          "compatibleCore": ">=\(BlogVersion.version)"
         }
         """
         try themeManifest.write(to: cwd.appendingPathComponent("themes/default/theme.json"), atomically: true, encoding: .utf8)

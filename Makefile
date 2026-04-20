@@ -1,7 +1,7 @@
 MINT ?= mint
 SWIFTLINT ?= $(MINT) run realm/SwiftLint@0.63.2 swiftlint
 
-.PHONY: help brew-strap bootstrap-brew bootstrap-mint lint test verify build-css build-site serve ci
+.PHONY: help brew-strap bootstrap-brew bootstrap-mint lint test verify build-css build-site serve ci install bump-patch bump-minor bump-major
 
 help:
 	@printf "Available targets:\n"
@@ -15,6 +15,10 @@ help:
 	@printf "  build-site      Build static site output\n"
 	@printf "  serve           Serve generated site locally\n"
 	@printf "  ci              Bootstrap Mint tools and run verify\n"
+	@printf "  install         Build and copy release binary to /usr/local/bin\n"
+	@printf "  bump-patch      Bump semantic version patch number\n"
+	@printf "  bump-minor      Bump semantic version minor number\n"
+	@printf "  bump-major      Bump semantic version major number\n"
 
 brew-strap:
 	brew bundle --file Brewfile
@@ -42,3 +46,16 @@ serve:
 	swift run inkwell serve
 
 ci: bootstrap-mint verify
+
+install:
+	swift build -c release
+	cp .build/release/inkwell /usr/local/bin/inkwell
+
+bump-patch:
+	python3 Scripts/bump_version.py --part patch
+
+bump-minor:
+	python3 Scripts/bump_version.py --part minor
+
+bump-major:
+	python3 Scripts/bump_version.py --part major
