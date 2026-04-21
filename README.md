@@ -1,4 +1,4 @@
-# Swift Blog
+# Inkwell
 
 Static personal blog generator written in Swift.
 
@@ -49,13 +49,6 @@ mint run KristopherGBaker/inkwell inkwell init
 mint run KristopherGBaker/inkwell inkwell post new "Hello World"
 mint run KristopherGBaker/inkwell inkwell build
 mint run KristopherGBaker/inkwell inkwell check
-```
-
-Or download the latest release binary directly:
-
-```bash
-curl -L https://github.com/KristopherGBaker/inkwell/releases/latest/download/inkwell \
-  -o /usr/local/bin/inkwell && chmod +x /usr/local/bin/inkwell
 ```
 
 ## Optional GitHub Pages Setup
