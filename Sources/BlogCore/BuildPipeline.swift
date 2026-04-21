@@ -63,7 +63,8 @@ public struct BuildPipeline {
         try validateTaxonomySlugUniqueness(posts: posts)
 
         var pages = routeBuilder.buildPages(posts: posts, renderedContent: rendered, baseURL: urlBuilder.baseURL, siteConfig: siteConfig)
-        pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL)) }
+        let extraHead = loadExtraHead(projectRoot: projectRoot, siteConfig: siteConfig)
+        pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead)) }
 
         for page in pages {
             try plugins.runBeforeRender(routeContext: PluginRouteContext(route: page.route))
@@ -97,6 +98,16 @@ public struct BuildPipeline {
             return SiteConfig(title: "Blog")
         }
         return config
+    }
+
+    private func loadExtraHead(projectRoot: URL, siteConfig: SiteConfig) -> String {
+        guard let relative = siteConfig.head, relative.isEmpty == false else { return "" }
+        let url = projectRoot.appendingPathComponent(relative)
+        guard let contents = try? String(contentsOf: url, encoding: .utf8) else {
+            FileHandle.standardError.write(Data("warning: head file not found at \(url.path)\n".utf8))
+            return ""
+        }
+        return contents
     }
 
     private func writeSEOArtifacts(posts: [PostDocument], routes: [String], outputRoot: URL, siteConfig: SiteConfig, urlBuilder: SiteURLBuilder) throws {

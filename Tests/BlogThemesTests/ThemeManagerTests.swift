@@ -33,4 +33,19 @@ final class ThemeManagerTests: XCTestCase {
         XCTAssertTrue(output.contains("src=\"/blog/assets/js/search.js\""))
         XCTAssertTrue(output.contains("src=\"/blog/assets/js/prism.js\""))
     }
+
+    func testInjectHeadAssetsAppendsExtraHeadBeforeClosingHead() {
+        let input = "<html><head></head><body></body></html>"
+        let extra = "<link rel=\"icon\" href=\"/favicon.ico\">"
+        let output = ThemeManager().injectHeadAssets(into: input, extraHead: extra)
+
+        XCTAssertTrue(output.contains(extra))
+        let extraIndex = output.range(of: extra)?.lowerBound
+        let closingIndex = output.range(of: "</head>")?.lowerBound
+        XCTAssertNotNil(extraIndex)
+        XCTAssertNotNil(closingIndex)
+        if let extraIndex, let closingIndex {
+            XCTAssertLessThan(extraIndex, closingIndex)
+        }
+    }
 }

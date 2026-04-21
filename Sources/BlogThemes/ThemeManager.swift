@@ -53,9 +53,9 @@ public struct ThemeManager {
         try out.write(to: configPath)
     }
 
-    public func injectHeadAssets(into html: String, baseURL: String = "/") -> String {
+    public func injectHeadAssets(into html: String, baseURL: String = "/", extraHead: String = "") -> String {
         let assetPrefix = normalizedAssetPrefix(from: baseURL)
-        let tags = """
+        var tags = """
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script>
           (function() {
@@ -84,6 +84,10 @@ public struct ThemeManager {
         <script defer src="\(assetPrefix)/assets/js/search.js"></script>
         <script defer src="\(assetPrefix)/assets/js/prism.js"></script>
         """
+        let extra = extraHead.trimmingCharacters(in: .whitespacesAndNewlines)
+        if extra.isEmpty == false {
+            tags += "\n" + extra
+        }
         if html.contains("</head>") {
             return html.replacingOccurrences(of: "</head>", with: tags + "</head>")
         }
