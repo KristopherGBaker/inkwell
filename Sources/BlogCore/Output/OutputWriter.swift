@@ -42,9 +42,17 @@ public struct OutputWriter {
         try content.write(to: fullPath, atomically: true, encoding: .utf8)
     }
 
+    public func copyProjectStaticAssets(projectRoot: URL, outputRoot: URL) throws {
+        try copyDirectory(named: "static", projectRoot: projectRoot, outputRoot: outputRoot)
+    }
+
     public func copyProjectPublicAssets(projectRoot: URL, outputRoot: URL) throws {
+        try copyDirectory(named: "public", projectRoot: projectRoot, outputRoot: outputRoot)
+    }
+
+    private func copyDirectory(named name: String, projectRoot: URL, outputRoot: URL) throws {
         let fm = FileManager.default
-        let sourceRoot = projectRoot.appendingPathComponent("public")
+        let sourceRoot = projectRoot.appendingPathComponent(name)
         let standardizedSourceRootPath = sourceRoot.standardizedFileURL.path
         let standardizedOutputRootPath = outputRoot.standardizedFileURL.path
         let excludedRelativePrefix: String?

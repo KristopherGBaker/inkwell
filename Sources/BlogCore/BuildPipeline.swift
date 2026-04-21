@@ -70,6 +70,7 @@ public struct BuildPipeline {
         }
         try writer.writePages(pages, to: outputRoot)
         try writer.copyProjectPublicAssets(projectRoot: projectRoot, outputRoot: outputRoot)
+        try writer.copyProjectStaticAssets(projectRoot: projectRoot, outputRoot: outputRoot)
         for page in pages {
             try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }

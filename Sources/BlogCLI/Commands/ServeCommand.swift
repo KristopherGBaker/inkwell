@@ -61,7 +61,8 @@ struct ServeCommand: ParsableCommand {
             root.appendingPathComponent("content"),
             root.appendingPathComponent("themes"),
             root.appendingPathComponent("blog.config.json"),
-            root.appendingPathComponent("public")
+            root.appendingPathComponent("public"),
+            root.appendingPathComponent("static")
         ]
     }
 
