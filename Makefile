@@ -52,10 +52,10 @@ install:
 	cp .build/release/inkwell /usr/local/bin/inkwell
 
 bump-patch:
-	python3 Scripts/bump_version.py --part patch
+	python3 scripts/bump_version.py --part patch
 
 bump-minor:
-	python3 Scripts/bump_version.py --part minor
+	python3 scripts/bump_version.py --part minor
 
 bump-major:
-	python3 Scripts/bump_version.py --part major
+	python3 scripts/bump_version.py --part major
