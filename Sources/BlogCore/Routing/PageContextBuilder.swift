@@ -90,6 +90,15 @@ public struct PageContextBuilder {
                     urlBuilder: urlBuilder
                 ))
             }
+            if let home = siteConfig.home {
+                plans = plans.filter { $0.route != "/" }
+                plans.append(makeHomePlan(
+                    home: home,
+                    site: siteContext,
+                    collections: collections,
+                    urlBuilder: urlBuilder
+                ))
+            }
             if data.isEmpty == false {
                 plans = plans.map { plan in
                     var context = plan.context
@@ -169,6 +178,16 @@ public struct PageContextBuilder {
                 page: page,
                 rendered: pageRenderedContent[page.route] ?? "",
                 site: siteContext,
+                urlBuilder: urlBuilder
+            ))
+        }
+
+        if let home = siteConfig.home {
+            plans = plans.filter { $0.route != "/" }
+            plans.append(makeHomePlan(
+                home: home,
+                site: siteContext,
+                collections: collections,
                 urlBuilder: urlBuilder
             ))
         }
@@ -380,6 +399,58 @@ private extension PageContextBuilder {
             ]
         }
         return tagChips + categoryChips
+    }
+
+    func makeHomePlan(
+        home: HomeConfig,
+        site: [String: Any],
+        collections: [String: Collection],
+        urlBuilder: SiteURLBuilder
+    ) -> PagePlan {
+        let route = "/"
+        let title = (site["title"] as? String) ?? "Home"
+        let description = (site["description"] as? String) ?? title
+
+        let featured: [[String: Any]] = home.featuredCollection
+            .flatMap { collections[$0] }
+            .map { collection in
+                let count = home.featuredCount ?? 4
+                return Array(collection.items.prefix(count)).map {
+                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
+                }
+            } ?? []
+        let recent: [[String: Any]] = home.recentCollection
+            .flatMap { collections[$0] }
+            .map { collection in
+                let count = home.recentCount ?? 3
+                return Array(collection.items.prefix(count)).map {
+                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
+                }
+            } ?? []
+
+        let pageContext: [String: Any] = [
+            "type": "home",
+            "title": title,
+            "description": description,
+            "canonicalURL": escapeHTML(urlBuilder.compose(route: route)),
+            "twitterCard": "summary"
+        ]
+        let homeContext: [String: Any] = [
+            "featured": featured,
+            "recent": recent
+        ]
+        let context: [String: Any] = [
+            "site": site,
+            "page": pageContext,
+            "home": homeContext,
+            "links": [
+                "home": urlBuilder.link(for: "/"),
+                "archive": urlBuilder.link(for: "/archive/")
+            ],
+            "posts": [],
+            "pagination": ["currentPage": 1, "totalPages": 1, "items": []]
+        ]
+        return PagePlan(route: route, template: "layouts/\(home.template)", context: context)
     }
 
     func makeStandalonePagePlan(
