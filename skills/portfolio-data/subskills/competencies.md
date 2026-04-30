@@ -9,7 +9,7 @@ Group the user's skills into themed competency areas with one-line descriptions,
 "Another Area": "..."
 ```
 
-The file is an ordered YAML map. Order is meaningful — top entries appear first on the rendered page. See `templates/competencies.yml` for an annotated example.
+The file is a list of `{area, description}` objects. Order is meaningful — top entries appear first on the rendered page. See `templates/competencies.yml` for an annotated example.
 
 ## Extraction Rules
 

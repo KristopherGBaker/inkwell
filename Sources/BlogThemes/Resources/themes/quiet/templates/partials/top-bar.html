@@ -1,0 +1,7 @@
+<header class="top-bar container">
+  <a href="{{ links.home }}" class="brand-pill">{{ site.title }}</a>
+  <nav class="top-nav">
+    {% for item in site.nav %}<a href="{{ item.route }}" class="nav-link">{{ item.label }}</a>{% endfor %}
+    <button type="button" onclick="toggleTheme()" class="chip no-print">Theme</button>
+  </nav>
+</header>

@@ -46,26 +46,42 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 - Validate front matter completeness and consistency
 - Catch missing assets, invalid cover image references, and malformed config values
 
-### v0.3 - Richer Content Workflows
+### v0.3 - Content Collections + Templating Migration (Shipped)
+
+**Status:** shipped. See `docs/rfcs/2026-04-30-content-collections-and-templating.md` and `docs/plans/2026-04-30-v0-3-implementation-plan.md`.
+
+#### Shipped
+- Stencil-based templating; HTML moved out of `RouteBuilder.swift` into theme templates owned by themes
+- Generic content collections via `blog.config.json` (`collections: [{id, dir, route, sortBy, taxonomies, ...}]`)
+- Standalone pages from `content/pages/`, with theme-resolved layouts
+- Data files (`data/*.yml|json`) exposed in template contexts under `data.<name>`
+- Configurable home page (`home.template`, `home.featuredCollection`, `home.recentCollection`)
+- `author`, `nav` site-identity config, with the `quiet` theme rendering them
+- `inkwell content new <collection> "<title>"` scaffolding for any declared collection
+- Asset path validation in `inkwell check` (rejects relative paths, surfaces missing files)
+- Bundled `quiet` theme covering landing, work-list, case-study, post, page, post-list, taxonomy, 404, and resume layouts
+- `portfolio-data` skill for importing résumé content into `data/*.yml`
+
+### Deferred / Future Workflows
 
 **Objective:** support more realistic long-term blogging workflows.
 
-#### 5. Scheduled Publishing
+#### Scheduled Publishing
 - Support future-dated posts without rendering them publicly before publish time
 - Make preview behavior explicit for scheduled content
 - Surface schedule state in CLI post listing
 
-#### 6. Series Support
+#### Series Support
 - Promote the existing `series` concept into user-facing site behavior
 - Add series navigation on posts
 - Add a series landing/index page if the model supports it cleanly
 
-#### 7. Redirects and Permalink Stability
+#### Redirects and Permalink Stability
 - Add redirects for renamed or moved posts
 - Support simple redirect definitions in config or front matter
 - Help preserve links when URL structures evolve
 
-#### 8. Shortcodes and Embeds
+#### Shortcodes and Embeds
 - Add a lightweight embed/shortcode model for common rich content
 - Target practical cases like YouTube, GitHub gists, and callout-style blocks
 - Keep it simple and avoid turning posts into full application templates
@@ -85,10 +101,10 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 - Add related posts using tags, categories, or series membership
 - Improve content discovery without adding noisy recommendations
 
-#### 11. Theme Extensibility
-- Strengthen the theme API beyond the default theme path
-- Clarify what themes can override and how they package assets/templates
-- Make custom themes feel first-class instead of incidental
+#### 11. Theme Extensibility (Partial — shipped in v0.3)
+- ~~Stencil-backed templates owned by themes; default + quiet themes ship with the binary~~ — shipped
+- ~~Project-side `themes/<name>/templates/` shadow bundled templates file-by-file~~ — shipped
+- Remaining: stable theme manifest schema, third-party theme installation, theme versioning
 
 #### 12. Additional Deployment Setup Targets
 - Keep deployment setup optional
@@ -106,9 +122,10 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 - Make plugin behavior predictable and safe
 - Support future integrations without bloating core
 
-#### 14. Data Files and Computed Content
-- Support YAML/JSON/TOML data files for richer pages
-- Enable non-post content such as projects, links, notes, or custom collections
+#### 14. Data Files and Computed Content (Shipped in v0.3)
+- ~~Support YAML/JSON data files for richer pages~~ — shipped
+- ~~Enable non-post content such as projects, links, notes, or custom collections~~ — shipped
+- TOML support remains future work
 
 #### 15. Faster Incremental Builds
 - Reduce rebuild time during active authoring

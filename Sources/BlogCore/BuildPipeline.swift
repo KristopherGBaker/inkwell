@@ -22,23 +22,26 @@ public enum BuildPipelineError: Error, Equatable {
 
 public struct BuildPipeline {
     private let loader: ContentLoader
+    private let dataLoader: DataLoader
     private let renderer: MarkdownRenderer
-    private let routeBuilder: RouteBuilder
+    private let pageContextBuilder: PageContextBuilder
     private let writer: OutputWriter
     private let plugins: PluginManager
     private let themes: ThemeManager
 
     public init(
         loader: ContentLoader = ContentLoader(),
+        dataLoader: DataLoader = DataLoader(),
         renderer: MarkdownRenderer = MarkdownRenderer(),
-        routeBuilder: RouteBuilder = RouteBuilder(),
+        pageContextBuilder: PageContextBuilder = PageContextBuilder(),
         writer: OutputWriter = OutputWriter(),
         plugins: PluginManager = PluginManager(),
         themes: ThemeManager = ThemeManager()
     ) {
         self.loader = loader
+        self.dataLoader = dataLoader
         self.renderer = renderer
-        self.routeBuilder = routeBuilder
+        self.pageContextBuilder = pageContextBuilder
         self.writer = writer
         self.plugins = plugins
         self.themes = themes
@@ -62,24 +65,59 @@ public struct BuildPipeline {
 
         try validateTaxonomySlugUniqueness(posts: posts)
 
-        var pages = routeBuilder.buildPages(posts: posts, renderedContent: rendered, baseURL: urlBuilder.baseURL, siteConfig: siteConfig)
-        let extraHead = loadExtraHead(projectRoot: projectRoot, siteConfig: siteConfig)
-        pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead)) }
+        let data = try dataLoader.load(in: projectRoot)
 
+        var collections: [String: Collection] = [:]
+        var collectionRendered: [String: [String: String]] = [:]
+        if let configs = siteConfig.collections, configs.isEmpty == false {
+            collections = try loader.loadCollections(configs, in: projectRoot)
+            for (id, collection) in collections {
+                var perSlug: [String: String] = [:]
+                for item in collection.items {
+                    perSlug[item.slug] = try renderer.render(item.body)
+                }
+                collectionRendered[id] = perSlug
+            }
+        }
+
+        let pages = try loader.loadPages(in: projectRoot)
+        var pageRendered: [String: String] = [:]
         for page in pages {
+            pageRendered[page.route] = try renderer.render(page.body)
+        }
+
+        let plans = pageContextBuilder.buildPlans(
+            posts: posts,
+            renderedContent: rendered,
+            baseURL: urlBuilder.baseURL,
+            siteConfig: siteConfig,
+            data: data,
+            collections: collections,
+            collectionRenderedContent: collectionRendered,
+            pages: pages,
+            pageRenderedContent: pageRendered
+        )
+        let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
+        var builtPages = try plans.map { plan in
+            BuiltPage(route: plan.route, html: try templateRenderer.render(template: plan.template, context: plan.context))
+        }
+        let extraHead = loadExtraHead(projectRoot: projectRoot, siteConfig: siteConfig)
+        builtPages = builtPages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead, theme: siteConfig.theme)) }
+
+        for page in builtPages {
             try plugins.runBeforeRender(routeContext: PluginRouteContext(route: page.route))
         }
-        try writer.writePages(pages, to: outputRoot)
+        try writer.writePages(builtPages, to: outputRoot)
         try writer.copyProjectPublicAssets(projectRoot: projectRoot, outputRoot: outputRoot)
         try writer.copyProjectStaticAssets(projectRoot: projectRoot, outputRoot: outputRoot)
-        for page in pages {
+        for page in builtPages {
             try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }
-        try themes.copyDefaultAssets(projectRoot: projectRoot, outputRoot: outputRoot)
-        try writeSEOArtifacts(posts: posts, routes: pages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig, urlBuilder: urlBuilder)
+        try themes.copyThemeAssets(theme: siteConfig.theme, projectRoot: projectRoot, outputRoot: outputRoot)
+        try writeSEOArtifacts(posts: posts, routes: builtPages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig, urlBuilder: urlBuilder)
         try writeSearchIndex(posts: posts, outputRoot: outputRoot)
 
-        let report = BuildReport(outputDirectory: outputRoot, routes: pages.map(\.route), errors: [])
+        let report = BuildReport(outputDirectory: outputRoot, routes: builtPages.map(\.route), errors: [])
         try plugins.runOnBuildComplete(report: PluginBuildReport(routes: report.routes, errors: report.errors))
         return report
     }

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{{ page.title }}</title>
+    <meta name="description" content="{{ page.description }}">
+    <link rel="canonical" href="{{ page.canonicalURL }}">
+    <meta property="og:title" content="{{ page.title }}">
+    <meta property="og:description" content="{{ page.description }}">
+    <meta property="og:url" content="{{ page.canonicalURL }}">
+    <meta name="twitter:card" content="{{ page.twitterCard }}">
+  </head>
+  <body>
+    {% include "top-bar.html" %}
+{% block main %}{% endblock %}
+    {% include "footer.html" %}
+  </body>
+</html>
