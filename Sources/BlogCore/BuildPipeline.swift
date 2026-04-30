@@ -23,7 +23,7 @@ public enum BuildPipelineError: Error, Equatable {
 public struct BuildPipeline {
     private let loader: ContentLoader
     private let renderer: MarkdownRenderer
-    private let routeBuilder: RouteBuilder
+    private let pageContextBuilder: PageContextBuilder
     private let writer: OutputWriter
     private let plugins: PluginManager
     private let themes: ThemeManager
@@ -31,14 +31,14 @@ public struct BuildPipeline {
     public init(
         loader: ContentLoader = ContentLoader(),
         renderer: MarkdownRenderer = MarkdownRenderer(),
-        routeBuilder: RouteBuilder = RouteBuilder(),
+        pageContextBuilder: PageContextBuilder = PageContextBuilder(),
         writer: OutputWriter = OutputWriter(),
         plugins: PluginManager = PluginManager(),
         themes: ThemeManager = ThemeManager()
     ) {
         self.loader = loader
         self.renderer = renderer
-        self.routeBuilder = routeBuilder
+        self.pageContextBuilder = pageContextBuilder
         self.writer = writer
         self.plugins = plugins
         self.themes = themes
@@ -62,7 +62,16 @@ public struct BuildPipeline {
 
         try validateTaxonomySlugUniqueness(posts: posts)
 
-        var pages = routeBuilder.buildPages(posts: posts, renderedContent: rendered, baseURL: urlBuilder.baseURL, siteConfig: siteConfig)
+        let plans = pageContextBuilder.buildPlans(
+            posts: posts,
+            renderedContent: rendered,
+            baseURL: urlBuilder.baseURL,
+            siteConfig: siteConfig
+        )
+        let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
+        var pages = try plans.map { plan in
+            BuiltPage(route: plan.route, html: try templateRenderer.render(template: plan.template, context: plan.context))
+        }
         let extraHead = loadExtraHead(projectRoot: projectRoot, siteConfig: siteConfig)
         pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead)) }
 
