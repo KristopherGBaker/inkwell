@@ -92,6 +92,8 @@ public struct ProjectChecker {
             return "\(relativePath(for: url, root: projectRoot)): Malformed front matter"
         case let .invalidFrontMatter(url, description):
             return "\(relativePath(for: url, root: projectRoot)): Invalid front matter: \(description)"
+        case let .unknownCollection(id):
+            return "Unknown collection: \(id)"
         }
     }
 

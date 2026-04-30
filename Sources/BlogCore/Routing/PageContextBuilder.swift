@@ -46,11 +46,11 @@ public struct PageContextBuilder {
         renderedContent: [String: String],
         baseURL: String = "/",
         siteConfig: SiteConfig = SiteConfig(title: "Field Notes"),
-        data: [String: Any] = [:]
+        data: [String: Any] = [:],
+        collections: [String: Collection] = [:],
+        collectionRenderedContent: [String: [String: String]] = [:]
     ) -> [PagePlan] {
-        let mapped = posts.compactMap(mapPost).sorted { $0.date > $1.date }
         let urlBuilder = SiteURLBuilder(baseURL: baseURL)
-        var plans: [PagePlan] = []
 
         let normalizedSiteTitle = siteConfig.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? "Field Notes"
@@ -66,6 +66,31 @@ public struct PageContextBuilder {
             "searchEnabled": searchEnabled,
             "baseURL": siteConfig.baseURL
         ]
+
+        var plans: [PagePlan] = []
+
+        if let configs = siteConfig.collections, configs.isEmpty == false {
+            for config in configs {
+                guard let collection = collections[config.id] else { continue }
+                let rendered = collectionRenderedContent[config.id] ?? [:]
+                plans.append(contentsOf: makeCollectionPlans(
+                    collection: collection,
+                    rendered: rendered,
+                    site: siteContext,
+                    urlBuilder: urlBuilder
+                ))
+            }
+            if data.isEmpty == false {
+                plans = plans.map { plan in
+                    var context = plan.context
+                    context["data"] = data
+                    return PagePlan(route: plan.route, template: plan.template, context: context)
+                }
+            }
+            return plans
+        }
+
+        let mapped = posts.compactMap(mapPost).sorted { $0.date > $1.date }
 
         let chunks = mapped.chunked(into: postsPerPage)
         let totalPages = max(chunks.count, 1)
@@ -336,6 +361,192 @@ private extension PageContextBuilder {
             ]
         }
         return tagChips + categoryChips
+    }
+
+    func makeCollectionPlans(
+        collection: Collection,
+        rendered: [String: String],
+        site: [String: Any],
+        urlBuilder: SiteURLBuilder
+    ) -> [PagePlan] {
+        let route = normalizedCollectionRoute(collection.config.route)
+        let listTemplate = collection.config.listTemplate ?? "layouts/post-list"
+        let detailTemplate = collection.config.detailTemplate ?? "layouts/post"
+
+        var plans: [PagePlan] = []
+
+        let itemContexts = collection.items.map {
+            collectionItemCardContext($0, route: route, urlBuilder: urlBuilder)
+        }
+
+        let listPageContext: [String: Any] = [
+            "type": "collection-list",
+            "title": escapeHTML(collection.config.id.capitalized),
+            "description": escapeHTML("\(collection.config.id.capitalized) listing"),
+            "canonicalURL": escapeHTML(urlBuilder.compose(route: route)),
+            "twitterCard": "summary"
+        ]
+        let listContext: [String: Any] = [
+            "site": site,
+            "page": listPageContext,
+            "links": ["home": urlBuilder.link(for: "/")],
+            "collection": [
+                "id": collection.config.id,
+                "route": urlBuilder.link(for: route)
+            ],
+            "posts": itemContexts,
+            "items": itemContexts
+        ]
+        plans.append(PagePlan(route: route, template: listTemplate, context: listContext))
+
+        for item in collection.items {
+            let detailRoute = "\(route)\(item.slug)/"
+            let chips = makeCollectionTaxonomyChips(
+                item: item,
+                taxonomies: collection.config.resolvedTaxonomies,
+                collectionRoute: route,
+                urlBuilder: urlBuilder
+            )
+            let trimmedCoverImage = item.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
+            var pageContext: [String: Any] = [
+                "type": "collection-detail",
+                "title": escapeHTML(item.title),
+                "description": escapeHTML(item.summary ?? item.title),
+                "date": escapeHTML(item.date ?? ""),
+                "canonicalURL": escapeHTML(item.normalizedCanonicalURL ?? urlBuilder.compose(route: detailRoute)),
+                "twitterCard": (trimmedCoverImage?.isEmpty == false) ? "summary_large_image" : "summary",
+                "chips": chips,
+                "content": rendered[item.slug] ?? "",
+                "frontMatter": item.frontMatter
+            ]
+            if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
+                let resolved = trimmed.hasPrefix("/") ? urlBuilder.link(for: trimmed) : trimmed
+                pageContext["coverImage"] = [
+                    "src": escapeHTML(resolved),
+                    "alt": escapeHTML(item.title)
+                ]
+            }
+
+            let context: [String: Any] = [
+                "site": site,
+                "page": pageContext,
+                "links": ["home": urlBuilder.link(for: "/")],
+                "collection": [
+                    "id": collection.config.id,
+                    "route": urlBuilder.link(for: route)
+                ]
+            ]
+            plans.append(PagePlan(route: detailRoute, template: detailTemplate, context: context))
+        }
+
+        for taxonomy in collection.config.resolvedTaxonomies {
+            let extractor: (CollectionItem) -> [String]
+            switch taxonomy {
+            case "tags":
+                extractor = { $0.tags ?? [] }
+            case "categories":
+                extractor = { $0.categories ?? [] }
+            default:
+                extractor = { item in
+                    if let array = item.frontMatter[taxonomy] as? [String] { return array }
+                    if let array = item.frontMatter[taxonomy] as? [Any] { return array.compactMap { $0 as? String } }
+                    return []
+                }
+            }
+
+            var grouped: [String: [CollectionItem]] = [:]
+            for item in collection.items {
+                for value in extractor(item) {
+                    grouped[value, default: []].append(item)
+                }
+            }
+
+            for key in grouped.keys.sorted() {
+                let slug = taxonomySlug(key)
+                let taxRoute = "\(route)\(taxonomy)/\(slug)/"
+                let title = "\(taxonomy.capitalized): \(key)"
+                let description = "Archive page for \(taxonomy) \(key)."
+                let cards = (grouped[key] ?? []).map {
+                    collectionItemCardContext($0, route: route, urlBuilder: urlBuilder)
+                }
+                let pageContext: [String: Any] = [
+                    "type": "collection-taxonomy",
+                    "kind": taxonomy,
+                    "label": escapeHTML(key),
+                    "title": escapeHTML(title),
+                    "description": escapeHTML(description),
+                    "canonicalURL": escapeHTML(urlBuilder.compose(route: taxRoute)),
+                    "twitterCard": "summary"
+                ]
+                let taxContext: [String: Any] = [
+                    "site": site,
+                    "page": pageContext,
+                    "links": ["home": urlBuilder.link(for: "/")],
+                    "collection": [
+                        "id": collection.config.id,
+                        "route": urlBuilder.link(for: route)
+                    ],
+                    "posts": cards,
+                    "items": cards
+                ]
+                plans.append(PagePlan(route: taxRoute, template: "layouts/taxonomy", context: taxContext))
+            }
+        }
+
+        return plans
+    }
+
+    func collectionItemCardContext(_ item: CollectionItem, route: String, urlBuilder: SiteURLBuilder) -> [String: Any] {
+        let detailRoute = "\(route)\(item.slug)/"
+        return [
+            "slug": item.slug,
+            "title": escapeHTML(item.title),
+            "summary": escapeHTML(item.summary ?? ""),
+            "date": escapeHTML(item.date ?? ""),
+            "link": urlBuilder.link(for: detailRoute),
+            "chips": [], // chips are typed-only here; keep callers using card partial happy
+            "frontMatter": item.frontMatter
+        ]
+    }
+
+    func makeCollectionTaxonomyChips(
+        item: CollectionItem,
+        taxonomies: [String],
+        collectionRoute: String,
+        urlBuilder: SiteURLBuilder
+    ) -> [[String: Any]] {
+        var chips: [[String: Any]] = []
+        for taxonomy in taxonomies {
+            let values: [String]
+            switch taxonomy {
+            case "tags": values = item.tags ?? []
+            case "categories": values = item.categories ?? []
+            default:
+                if let array = item.frontMatter[taxonomy] as? [String] { values = array }
+                else if let array = item.frontMatter[taxonomy] as? [Any] { values = array.compactMap { $0 as? String } }
+                else { values = [] }
+            }
+            for value in values.prefix(3) {
+                chips.append([
+                    "label": escapeHTML(value),
+                    "href": urlBuilder.link(for: "\(collectionRoute)\(taxonomy)/\(taxonomySlug(value))/")
+                ])
+            }
+        }
+        return chips
+    }
+
+    /// Ensures a collection route ends with a trailing slash so concatenating
+    /// `<slug>/` produces a clean detail route.
+    func normalizedCollectionRoute(_ raw: String) -> String {
+        var route = raw
+        if route.hasPrefix("/") == false {
+            route = "/" + route
+        }
+        if route.hasSuffix("/") == false {
+            route = route + "/"
+        }
+        return route
     }
 
     func taxonomySlug(_ value: String) -> String {

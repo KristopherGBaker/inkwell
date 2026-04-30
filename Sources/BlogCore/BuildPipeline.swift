@@ -66,12 +66,28 @@ public struct BuildPipeline {
         try validateTaxonomySlugUniqueness(posts: posts)
 
         let data = try dataLoader.load(in: projectRoot)
+
+        var collections: [String: Collection] = [:]
+        var collectionRendered: [String: [String: String]] = [:]
+        if let configs = siteConfig.collections, configs.isEmpty == false {
+            collections = try loader.loadCollections(configs, in: projectRoot)
+            for (id, collection) in collections {
+                var perSlug: [String: String] = [:]
+                for item in collection.items {
+                    perSlug[item.slug] = try renderer.render(item.body)
+                }
+                collectionRendered[id] = perSlug
+            }
+        }
+
         let plans = pageContextBuilder.buildPlans(
             posts: posts,
             renderedContent: rendered,
             baseURL: urlBuilder.baseURL,
             siteConfig: siteConfig,
-            data: data
+            data: data,
+            collections: collections,
+            collectionRenderedContent: collectionRendered
         )
         let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
         var pages = try plans.map { plan in
