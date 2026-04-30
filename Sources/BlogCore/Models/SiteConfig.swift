@@ -12,8 +12,25 @@ public struct SiteConfig: Codable, Equatable {
     /// are injected into every page's `<head>`. Useful for favicons, analytics
     /// snippets, structured data, or other per-site metadata.
     public var head: String?
+    public var author: AuthorConfig?
+    public var nav: [NavItem]?
+    public var collections: [CollectionConfig]?
+    public var home: HomeConfig?
 
-    public init(title: String, baseURL: String = "/", theme: String = "default", outputDir: String = "docs", description: String? = nil, tagline: String? = nil, searchEnabled: Bool? = nil, head: String? = nil) {
+    public init(
+        title: String,
+        baseURL: String = "/",
+        theme: String = "default",
+        outputDir: String = "docs",
+        description: String? = nil,
+        tagline: String? = nil,
+        searchEnabled: Bool? = nil,
+        head: String? = nil,
+        author: AuthorConfig? = nil,
+        nav: [NavItem]? = nil,
+        collections: [CollectionConfig]? = nil,
+        home: HomeConfig? = nil
+    ) {
         self.title = title
         self.baseURL = baseURL
         self.theme = theme
@@ -22,5 +39,25 @@ public struct SiteConfig: Codable, Equatable {
         self.tagline = tagline
         self.searchEnabled = searchEnabled
         self.head = head
+        self.author = author
+        self.nav = nav
+        self.collections = collections
+        self.home = home
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.title = try container.decodeIfPresent(String.self, forKey: .title) ?? "Blog"
+        self.baseURL = try container.decodeIfPresent(String.self, forKey: .baseURL) ?? "/"
+        self.theme = try container.decodeIfPresent(String.self, forKey: .theme) ?? "default"
+        self.outputDir = try container.decodeIfPresent(String.self, forKey: .outputDir) ?? "docs"
+        self.description = try container.decodeIfPresent(String.self, forKey: .description)
+        self.tagline = try container.decodeIfPresent(String.self, forKey: .tagline)
+        self.searchEnabled = try container.decodeIfPresent(Bool.self, forKey: .searchEnabled)
+        self.head = try container.decodeIfPresent(String.self, forKey: .head)
+        self.author = try container.decodeIfPresent(AuthorConfig.self, forKey: .author)
+        self.nav = try container.decodeIfPresent([NavItem].self, forKey: .nav)
+        self.collections = try container.decodeIfPresent([CollectionConfig].self, forKey: .collections)
+        self.home = try container.decodeIfPresent(HomeConfig.self, forKey: .home)
     }
 }
