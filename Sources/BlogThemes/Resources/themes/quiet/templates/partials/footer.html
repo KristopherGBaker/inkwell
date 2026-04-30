@@ -1,7 +1,7 @@
 <footer class="site-footer container no-print">
   <hr class="hairline-soft">
   <div class="footer-row">
-    <p class="caption">{{ site.title }}{% if site.author %} · {{ site.author.name }}{% endif %}</p>
+    <p class="caption">{{ site.title }}{% if site.author and site.author.name != site.title %} · {{ site.author.name }}{% endif %}</p>
     {% if site.author.social %}<ul class="footer-social">{% for link in site.author.social %}<li><a href="{{ link.url }}" class="nav-link">{{ link.label }}</a></li>{% endfor %}</ul>{% endif %}
   </div>
 </footer>
