@@ -235,8 +235,11 @@ public struct ContentLoader {
     static func pageRoute(fromRelativePath relativePath: String) -> String {
         var path = relativePath
         if path.hasSuffix(".md") { path = String(path.dropLast(3)) }
-        if path.hasSuffix("/index") { path = String(path.dropLast("/index".count)) }
-        else if path == "index" { path = "" }
+        if path.hasSuffix("/index") {
+            path = String(path.dropLast("/index".count))
+        } else if path == "index" {
+            path = ""
+        }
         if path.isEmpty { return "/" }
         return "/\(path)/"
     }

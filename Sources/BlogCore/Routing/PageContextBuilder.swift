@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 
 public struct BuiltPage: Equatable {
@@ -225,6 +226,7 @@ public struct PageContextBuilder {
     }
 }
 
+// swiftlint:disable function_parameter_count
 private extension PageContextBuilder {
     func makeLandingPlan(
         route: String,
@@ -649,9 +651,13 @@ private extension PageContextBuilder {
             case "tags": values = item.tags ?? []
             case "categories": values = item.categories ?? []
             default:
-                if let array = item.frontMatter[taxonomy] as? [String] { values = array }
-                else if let array = item.frontMatter[taxonomy] as? [Any] { values = array.compactMap { $0 as? String } }
-                else { values = [] }
+                if let array = item.frontMatter[taxonomy] as? [String] {
+                    values = array
+                } else if let array = item.frontMatter[taxonomy] as? [Any] {
+                    values = array.compactMap { $0 as? String }
+                } else {
+                    values = []
+                }
             }
             for value in values.prefix(3) {
                 chips.append([
@@ -671,7 +677,7 @@ private extension PageContextBuilder {
             route = "/" + route
         }
         if route.hasSuffix("/") == false {
-            route = route + "/"
+            route += "/"
         }
         return route
     }
@@ -690,6 +696,7 @@ private extension PageContextBuilder {
             .replacingOccurrences(of: ">", with: "&gt;")
     }
 }
+// swiftlint:enable function_parameter_count
 
 private extension Array {
     func chunked(into size: Int) -> [[Element]] {
