@@ -100,6 +100,40 @@ final class QuietThemeIntegrationTests: XCTestCase {
         XCTAssertTrue(html.contains("Subscribers added"), "Got:\n\(html)")
     }
 
+    func testQuietThemeRendersNavAndAuthorFromConfig() throws {
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "theme": "quiet",
+          "author": {
+            "name": "Kristopher Baker",
+            "social": [{ "label": "GitHub", "url": "https://github.com/x" }]
+          },
+          "nav": [
+            { "label": "Work", "route": "/work/" },
+            { "label": "Writing", "route": "/posts/" }
+          ]
+        }
+        """)
+        try writeFile(root, "content/posts/2026-03-05-hello.md", """
+        ---
+        title: Hello
+        slug: hello
+        date: 2026-03-05T00:00:00Z
+        ---
+        Body
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+        let html = try String(contentsOf: root.appendingPathComponent("docs/index.html"))
+        XCTAssertTrue(html.contains("href=\"/work/\""), "Top bar should render nav items, got:\n\(html)")
+        XCTAssertTrue(html.contains(">Work</a>"), "Top bar should render nav label, got:\n\(html)")
+        XCTAssertTrue(html.contains("https://github.com/x"), "Footer should render author social link, got:\n\(html)")
+        XCTAssertTrue(html.contains("Kristopher Baker"), "Footer should render author name, got:\n\(html)")
+    }
+
     private func writeBlogConfig(_ root: URL, _ content: String) throws {
         try content.write(to: root.appendingPathComponent("blog.config.json"), atomically: true, encoding: .utf8)
     }

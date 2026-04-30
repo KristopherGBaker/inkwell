@@ -62,13 +62,24 @@ public struct PageContextBuilder {
         let siteTagline = siteConfig.tagline ?? siteDescription
         let searchEnabled = siteConfig.searchEnabled ?? true
 
-        let siteContext: [String: Any] = [
+        var siteContext: [String: Any] = [
             "title": escapeHTML(normalizedSiteTitle),
             "description": escapeHTML(siteDescription),
             "tagline": escapeHTML(siteTagline),
             "searchEnabled": searchEnabled,
             "baseURL": siteConfig.baseURL
         ]
+        if let author = siteConfig.author {
+            siteContext["author"] = authorContext(author, urlBuilder: urlBuilder)
+        }
+        if let nav = siteConfig.nav, nav.isEmpty == false {
+            siteContext["nav"] = nav.map { item -> [String: String] in
+                [
+                    "label": escapeHTML(item.label),
+                    "route": urlBuilder.link(for: item.route)
+                ]
+            }
+        }
 
         var plans: [PagePlan] = []
 
@@ -453,6 +464,24 @@ private extension PageContextBuilder {
             "pagination": ["currentPage": 1, "totalPages": 1, "items": []]
         ]
         return PagePlan(route: route, template: "layouts/\(home.template)", context: context)
+    }
+
+    func authorContext(_ author: AuthorConfig, urlBuilder: SiteURLBuilder) -> [String: Any] {
+        var context: [String: Any] = [
+            "name": escapeHTML(author.name)
+        ]
+        if let role = author.role { context["role"] = escapeHTML(role) }
+        if let location = author.location { context["location"] = escapeHTML(location) }
+        if let email = author.email { context["email"] = escapeHTML(email) }
+        if let social = author.social, social.isEmpty == false {
+            context["social"] = social.map { link -> [String: String] in
+                [
+                    "label": escapeHTML(link.label),
+                    "url": link.url
+                ]
+            }
+        }
+        return context
     }
 
     func makeStandalonePagePlan(
