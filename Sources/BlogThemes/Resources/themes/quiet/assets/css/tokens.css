@@ -1,0 +1,318 @@
+/* ============================================================
+   Portfolio + Journal — unified tokens
+   Pulled directly from krisbaker.com (Tailwind stone + amber).
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-display: 'Fraunces', 'Times New Roman', serif;
+  --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --fs-mono-xs: 11px;
+  --fs-mono-sm: 12px;
+  --fs-caption: 13px;
+  --fs-body: 16px;
+  --fs-body-lg: 18px;
+  --fs-h6: 20px;
+  --fs-h5: 24px;
+  --fs-h4: 30px;
+  --fs-h3: 40px;
+  --fs-h2: 56px;
+  --fs-h1: 80px;
+  --fs-display: 112px;
+
+  --lh-tight: 1.05;
+  --lh-snug: 1.18;
+  --lh-body: 1.6;
+
+  --tracking-tight: -0.015em;
+  --tracking-wide: 0.14em;
+  --tracking-caps: 0.22em;
+  --tracking-caps-loose: 0.28em;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+  --space-9: 96px; --space-10: 128px;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-2xl: 20px;
+
+  --page-max: 1024px;
+  --reading-max: 680px;
+  --topbar-h: 0px; /* header is in-flow, not fixed, like the blog */
+
+  --ease-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 480ms;
+  --dur-page: 520ms;
+}
+
+/* Light (default) — matches blog's stone-50 + amber */
+:root, [data-theme="light"] {
+  --bg: #faf7f2;       /* stone-50ish, blog's actual */
+  --bg-2: #f4efe7;     /* gradient bottom */
+  --bg-3: #e9e2d5;
+  --surface: rgba(250, 250, 249, 0.6);    /* card bg-stone-50/60 */
+  --surface-strong: #fafaf9;
+  --ink: #1c1917;      /* stone-900 */
+  --ink-2: #44403c;    /* stone-700 */
+  --ink-3: #78716c;    /* stone-500 */
+  --ink-4: #a8a29e;    /* stone-400 */
+  --border: rgba(214, 211, 209, 0.7);   /* stone-300/70 */
+  --border-strong: rgba(168, 162, 158, 0.9); /* stone-400/90 */
+  --accent: #b45309;     /* amber-700 */
+  --accent-2: #92400e;   /* amber-800 */
+  --accent-soft: rgba(245, 158, 11, 0.13); /* amber-500/13 — exact blog gradient stop */
+  --accent-ink: #faf7f2;
+  --success: #4d7c0f;
+  --selection: #fde68a;
+  --shadow-card: 0 10px 40px -22px rgba(28, 25, 23, 0.45);
+  --shadow-card-hover: 0 18px 50px -24px rgba(146, 64, 14, 0.35);
+
+  --bg-radial:
+    radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.13), transparent 48%),
+    radial-gradient(circle at 80% 0%, rgba(28, 25, 23, 0.08), transparent 35%),
+    linear-gradient(to bottom, #faf7f2, #f4efe7);
+}
+
+[data-theme="dark"] {
+  --bg: #111315;
+  --bg-2: #0a0b0d;
+  --bg-3: #1c1f22;
+  --surface: rgba(28, 25, 23, 0.55);  /* stone-900/55 */
+  --surface-strong: #18181b;
+  --ink: #fafaf9;       /* stone-50 */
+  --ink-2: #d6d3d1;     /* stone-300 */
+  --ink-3: #a8a29e;     /* stone-400 */
+  --ink-4: #78716c;     /* stone-500 */
+  --border: #44403c;    /* stone-700 */
+  --border-strong: #57534e;
+  --accent: #fcd34d;     /* amber-300 — used in dark links */
+  --accent-2: #fbbf24;   /* amber-400 */
+  --accent-soft: rgba(245, 158, 11, 0.08);
+  --accent-ink: #111315;
+  --success: #84cc16;
+  --selection: rgba(252, 211, 77, 0.3);
+  --shadow-card: 0 16px 42px -28px rgba(0, 0, 0, 0.8);
+  --shadow-card-hover: 0 22px 60px -28px rgba(146, 64, 14, 0.4);
+
+  --bg-radial:
+    radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.08), transparent 42%),
+    radial-gradient(circle at 75% 0%, rgba(250, 250, 249, 0.06), transparent 28%),
+    linear-gradient(to bottom, #111315, #0a0b0d);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+html {
+  background: var(--bg);
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink-2);
+  position: relative;
+  transition: background var(--dur-base) var(--ease-soft), color var(--dur-base) var(--ease-soft);
+}
+
+/* The blog's signature radial-gradient page bg, behind everything */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background: var(--bg-radial);
+  pointer-events: none;
+  transition: background var(--dur-base) var(--ease-soft);
+}
+
+::selection { background: var(--selection); color: var(--ink); }
+
+/* === Headings === */
+.h-display, .h1, .h2, .h3, .h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-tight);
+  color: var(--ink);
+  margin: 0;
+  font-feature-settings: 'ss01';
+}
+.h-display { font-size: clamp(56px, 10vw, var(--fs-display)); }
+.h1 { font-size: clamp(40px, 6vw, var(--fs-h1)); }
+.h2 { font-size: clamp(32px, 4.5vw, var(--fs-h2)); line-height: 1.05; }
+.h3 { font-size: var(--fs-h3); line-height: var(--lh-snug); }
+.h4 { font-size: var(--fs-h4); line-height: var(--lh-snug); }
+
+/* The blog uses Fraunces 500 for card titles — not display weight */
+.h-card {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-h5);
+  line-height: 1.18;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  margin: 0;
+}
+
+.h5, .h6 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: var(--lh-snug);
+  margin: 0;
+  color: var(--ink);
+}
+.h5 { font-size: var(--fs-h5); }
+.h6 { font-size: var(--fs-h6); }
+
+.body-lg { font-size: var(--fs-body-lg); line-height: var(--lh-body); color: var(--ink-2); }
+.body { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--ink-2); }
+.caption { font-size: var(--fs-caption); line-height: var(--lh-body); color: var(--ink-3); }
+.mono { font-family: var(--font-mono); font-size: var(--fs-mono-sm); line-height: 1.5; }
+.mono-xs { font-family: var(--font-mono); font-size: var(--fs-mono-xs); line-height: 1.5; }
+
+/* The blog's signature small-caps timestamp / wordmark style */
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--ink-3);
+}
+.eyebrow-loose {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-loose);
+  color: var(--ink-3);
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Amber chip nav button (Archive / Toggle Theme) */
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--ink-2);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), color var(--dur-fast);
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Plain bare nav link (Archive) */
+.nav-link {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color var(--dur-fast);
+}
+.nav-link:hover { color: var(--accent); }
+.nav-link.is-active { color: var(--accent); }
+
+/* "Read entry →" affordance */
+.read-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  transition: gap var(--dur-base) var(--ease-soft);
+}
+.read-link .arrow {
+  transition: transform var(--dur-base) var(--ease-soft);
+}
+.read-link:hover { gap: 12px; }
+.read-link:hover .arrow { transform: translateX(2px); }
+
+/* Card */
+.card {
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: var(--space-5) var(--space-5);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-base) var(--ease-soft),
+              border-color var(--dur-base) var(--ease-soft),
+              box-shadow var(--dur-base) var(--ease-soft);
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Container */
+.container { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--space-5); }
+@media (min-width: 768px) { .container { padding: 0 var(--space-7); } }
+.reading { max-width: var(--reading-max); margin: 0 auto; }
+
+.hairline { height: 1px; background: var(--border); border: 0; margin: 0; }
+
+/* CTAs */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink);
+  font-family: var(--font-body); font-weight: 500; font-size: 14px;
+  border: none; cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-soft), background var(--dur-base);
+}
+.btn-primary:hover { transform: translateY(-1px); background: var(--accent-2); }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 999px;
+  background: transparent; color: var(--ink);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-body); font-weight: 500; font-size: 14px;
+  cursor: pointer;
+  transition: border-color var(--dur-base);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+:root { --shadow-pop: 0 12px 40px -16px rgba(28,25,23,0.25); }
+[data-theme="dark"] { --shadow-pop: 0 14px 48px -16px rgba(0,0,0,0.6); }
+
+/* Subtle grain (optional) */
+.grain-bg::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:1;
+  opacity: var(--grain-opacity-on, 1);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: multiply;
+  transition: opacity var(--dur-base);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

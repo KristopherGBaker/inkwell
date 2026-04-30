@@ -1,0 +1,5 @@
+<article class="post-list-item">
+  <p class="eyebrow">{{ post.date }}</p>
+  <h3 class="h-card"><a href="{{ post.link }}">{{ post.title }}</a></h3>
+  {% if post.summary %}<p class="body">{{ post.summary }}</p>{% endif %}
+</article>

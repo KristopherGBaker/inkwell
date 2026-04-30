@@ -53,9 +53,23 @@ public struct ThemeManager {
         try out.write(to: configPath)
     }
 
-    public func injectHeadAssets(into html: String, baseURL: String = "/", extraHead: String = "") -> String {
+    public func injectHeadAssets(into html: String, baseURL: String = "/", extraHead: String = "", theme: String = "default") -> String {
         let assetPrefix = normalizedAssetPrefix(from: baseURL)
-        var tags = """
+        var tags = theme == "quiet"
+            ? quietThemeHead(assetPrefix: assetPrefix)
+            : defaultThemeHead(assetPrefix: assetPrefix)
+        let extra = extraHead.trimmingCharacters(in: .whitespacesAndNewlines)
+        if extra.isEmpty == false {
+            tags += "\n" + extra
+        }
+        if html.contains("</head>") {
+            return html.replacingOccurrences(of: "</head>", with: tags + "</head>")
+        }
+        return tags + html
+    }
+
+    private func defaultThemeHead(assetPrefix: String) -> String {
+        return """
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script>
           (function() {
@@ -84,14 +98,16 @@ public struct ThemeManager {
         <script defer src="\(assetPrefix)/assets/js/search.js"></script>
         <script defer src="\(assetPrefix)/assets/js/prism.js"></script>
         """
-        let extra = extraHead.trimmingCharacters(in: .whitespacesAndNewlines)
-        if extra.isEmpty == false {
-            tags += "\n" + extra
-        }
-        if html.contains("</head>") {
-            return html.replacingOccurrences(of: "</head>", with: tags + "</head>")
-        }
-        return tags + html
+    }
+
+    private func quietThemeHead(assetPrefix: String) -> String {
+        return """
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/tokens.css">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/components.css">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/print.css" media="print">
+        <script defer src="\(assetPrefix)/assets/js/theme-toggle.js"></script>
+        """
     }
 
     private func normalizedAssetPrefix(from baseURL: String) -> String {
@@ -120,14 +136,33 @@ public struct ThemeManager {
     }
 
     public func copyDefaultAssets(projectRoot: URL, outputRoot: URL) throws {
+        try copyThemeAssets(theme: "default", projectRoot: projectRoot, outputRoot: outputRoot)
+    }
+
+    /// Copies the active theme's `assets/` directory into `outputRoot/assets/`.
+    /// Project-side assets (`projectRoot/themes/<theme>/assets`) override the
+    /// bundled theme assets file-by-file; bundled assets fill in anything the
+    /// project doesn't override.
+    public func copyThemeAssets(theme: String, projectRoot: URL, outputRoot: URL) throws {
         let fm = FileManager.default
-        let sourceRoot = projectRoot.appendingPathComponent("themes/default/assets")
         let destinationRoot = outputRoot.appendingPathComponent("assets")
         if fm.fileExists(atPath: destinationRoot.path) {
             try fm.removeItem(at: destinationRoot)
         }
         try fm.createDirectory(at: destinationRoot, withIntermediateDirectories: true)
 
+        if let bundleURL = Bundle.module.resourceURL?
+            .appendingPathComponent("themes")
+            .appendingPathComponent(theme)
+            .appendingPathComponent("assets") {
+            try copyTreeIfPresent(at: bundleURL, into: destinationRoot)
+        }
+        let projectAssets = projectRoot.appendingPathComponent("themes/\(theme)/assets")
+        try copyTreeIfPresent(at: projectAssets, into: destinationRoot)
+    }
+
+    private func copyTreeIfPresent(at sourceRoot: URL, into destinationRoot: URL) throws {
+        let fm = FileManager.default
         guard fm.fileExists(atPath: sourceRoot.path) else { return }
         let files = try fm.subpathsOfDirectory(atPath: sourceRoot.path)
         for relative in files {
@@ -136,6 +171,9 @@ public struct ThemeManager {
             guard fm.fileExists(atPath: source.path, isDirectory: &isDirectory), !isDirectory.boolValue else { continue }
             let destination = destinationRoot.appendingPathComponent(relative)
             try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if fm.fileExists(atPath: destination.path) {
+                try fm.removeItem(at: destination)
+            }
             try fm.copyItem(at: source, to: destination)
         }
     }

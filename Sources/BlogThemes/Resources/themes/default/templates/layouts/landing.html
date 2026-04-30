@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block main %}    <main class="mx-auto max-w-5xl px-6 pb-16 pt-12 md:px-10 md:pt-20">
+      <header class="mb-12 border-b border-stone-300/80 pb-8 dark:border-stone-700/80">
+        <div class="flex items-center justify-between gap-4">
+          <p class="text-xs uppercase tracking-[0.28em] text-stone-500 dark:text-stone-400">{{ site.title }}</p>
+          <div class="flex items-center gap-3">
+            <a href="{{ links.archive }}" class="text-xs font-medium uppercase tracking-[0.14em] text-stone-600 transition hover:text-amber-800 dark:text-stone-300 dark:hover:text-amber-200">Archive</a>
+            <button type="button" onclick="toggleTheme()" class="rounded-full border border-stone-400/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:border-amber-700/60 hover:text-amber-800 dark:border-stone-600 dark:text-stone-200 dark:hover:border-amber-300 dark:hover:text-amber-200">Toggle Theme</button>
+          </div>
+        </div>
+        <h1 class="mt-4 max-w-3xl font-display text-4xl leading-[1.05] text-stone-900 dark:text-stone-100 md:text-6xl">{{ site.title }}</h1>
+        <p class="mt-5 max-w-2xl text-base leading-relaxed text-stone-700 dark:text-stone-300 md:text-lg">{{ site.tagline }}</p>
+{% if site.searchEnabled %}        <div class="mt-7">
+                  <label for="search-input" class="text-xs uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">Search entries</label>
+                  <input id="search-input" type="search" autocomplete="off" placeholder="Type 2+ characters to search titles, summaries, and content..." class="mt-2 w-full rounded-xl border border-stone-300/80 bg-white/80 px-4 py-3 text-sm text-stone-800 shadow-sm outline-none transition placeholder:text-stone-500 focus:border-amber-700/60 focus:ring-2 focus:ring-amber-700/20 dark:border-stone-700 dark:bg-stone-900/80 dark:text-stone-100 dark:placeholder:text-stone-400 dark:focus:border-amber-300 dark:focus:ring-amber-300/20">
+                  <p id="search-status" class="mt-2 text-xs text-stone-500 dark:text-stone-400"></p>
+                  <div id="search-results" class="mt-4 hidden grid gap-3" aria-live="polite"></div>
+                </div>{% endif %}
+      </header>
+      <section class="grid gap-5 md:grid-cols-2">{% for post in posts %}{% include "post-card.html" %}{% endfor %}</section>
+{% if pagination.totalPages > 1 %}<nav class="mt-10 flex flex-wrap items-center gap-2" aria-label="Pagination">{% for item in pagination.items %}<a href="{{ item.href }}" class="rounded-full border px-3 py-1 text-sm {% if item.active %}border-amber-700 bg-amber-100 text-amber-900 dark:border-amber-300 dark:bg-amber-300/15 dark:text-amber-200{% else %}border-stone-300 text-stone-700 hover:border-amber-600 hover:text-amber-800 dark:border-stone-700 dark:text-stone-300 dark:hover:border-amber-300 dark:hover:text-amber-200{% endif %}">{{ item.page }}</a>{% endfor %}</nav>{% endif %}
+    </main>
+{% endblock %}

@@ -41,6 +41,22 @@ public struct ProjectChecker {
             errors.append("Taxonomy slug collision for \(collision.kind) '\(collision.slug)': \(collision.labels.joined(separator: ", "))")
         }
 
+        // Collection items: validate asset-shaped front-matter fields.
+        if let configs = configResult.config.collections, configs.isEmpty == false {
+            do {
+                let collections = try contentLoader.loadCollections(configs, in: projectRoot)
+                for (_, collection) in collections {
+                    for item in collection.items {
+                        errors.append(contentsOf: assetErrors(in: item.frontMatter, source: item.sourcePath, projectRoot: projectRoot))
+                    }
+                }
+            } catch let error as ContentLoaderError {
+                errors.append(describe(contentLoaderError: error, projectRoot: projectRoot))
+            } catch {
+                errors.append("collections: \(error.localizedDescription)")
+            }
+        }
+
         return ProjectCheckResult(
             brokenLinks: brokenLinks,
             errors: errors.sorted()
@@ -92,7 +108,58 @@ public struct ProjectChecker {
             return "\(relativePath(for: url, root: projectRoot)): Malformed front matter"
         case let .invalidFrontMatter(url, description):
             return "\(relativePath(for: url, root: projectRoot)): Invalid front matter: \(description)"
+        case let .unknownCollection(id):
+            return "Unknown collection: \(id)"
         }
+    }
+
+    private static let assetFieldNames: Set<String> = [
+        "coverImage", "shots", "featuredImage", "ogImage", "thumbnail"
+    ]
+
+    private func assetErrors(in frontMatter: [String: Any], source: URL, projectRoot: URL) -> [String] {
+        var errors: [String] = []
+        for (key, value) in frontMatter where Self.assetFieldNames.contains(key) {
+            for path in extractAssetPaths(from: value) {
+                if let error = validateAssetPath(path, field: key, source: source, projectRoot: projectRoot) {
+                    errors.append(error)
+                }
+            }
+        }
+        return errors
+    }
+
+    private func extractAssetPaths(from value: Any) -> [String] {
+        if let string = value as? String { return [string] }
+        if let array = value as? [String] { return array }
+        if let array = value as? [Any] { return array.compactMap { $0 as? String } }
+        return []
+    }
+
+    private func validateAssetPath(_ raw: String, field: String, source: URL, projectRoot: URL) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else { return nil }
+        if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") || trimmed.hasPrefix("//") {
+            return nil
+        }
+        if trimmed.hasPrefix("/") == false {
+            return "\(relativePath(for: source, root: projectRoot)): \(field) has relative asset path \"\(trimmed)\" — use \"/assets/...\" or a fully-qualified URL"
+        }
+        if trimmed.hasPrefix("/assets/") {
+            let suffix = String(trimmed.dropFirst("/assets/".count))
+            let staticURL = projectRoot.appendingPathComponent("static/assets").appendingPathComponent(suffix)
+            let publicURL = projectRoot.appendingPathComponent("public/assets").appendingPathComponent(suffix)
+            if FileManager.default.fileExists(atPath: staticURL.path) || FileManager.default.fileExists(atPath: publicURL.path) {
+                return nil
+            }
+            return "\(relativePath(for: source, root: projectRoot)): \(field) references missing asset \(trimmed)"
+        }
+        // Other root-absolute paths: resolve under public/ for legacy compat.
+        let legacy = projectRoot.appendingPathComponent("public").appendingPathComponent(String(trimmed.drop(while: { $0 == "/" })))
+        if FileManager.default.fileExists(atPath: legacy.path) {
+            return nil
+        }
+        return "\(relativePath(for: source, root: projectRoot)): \(field) references missing asset \(trimmed)"
     }
 
     private func relativePath(for url: URL, root: URL) -> String {

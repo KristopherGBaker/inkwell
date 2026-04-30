@@ -1,0 +1,9 @@
+/* Quiet theme — print rules (résumé) */
+@media print {
+  body::before, .grain-bg::after, .scroll-progress, .top-bar, .site-footer, .no-print {
+    display: none !important;
+  }
+  body { background: #fff !important; color: #000 !important; }
+  * { color: #000 !important; box-shadow: none !important; }
+  .resume-page { padding: 0 !important; max-width: none !important; }
+}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block main %}    <main class="mx-auto max-w-5xl px-6 pb-16 pt-12 md:px-10 md:pt-20">
+      <a href="{{ links.home }}" class="text-sm text-amber-800 dark:text-amber-300">← Back to home</a>
+      <h1 class="mt-4 font-display text-4xl text-stone-900 dark:text-stone-100">{{ page.title }}</h1>
+      <section class="mt-8 grid gap-5 md:grid-cols-2">{% for post in posts %}{% include "post-card.html" %}{% endfor %}</section>
+    </main>
+{% endblock %}

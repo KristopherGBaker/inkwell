@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block main %}    <main class="container resume-page page-shell">
+      <header class="resume-header">
+        <h1 class="h1">{{ site.author.name }}</h1>
+        {% if site.author.role %}<p class="body-lg">{{ site.author.role }}{% if site.author.location %} · {{ site.author.location }}{% endif %}</p>{% endif %}
+        {% if site.author.email %}<p class="caption">{{ site.author.email }}</p>{% endif %}
+        <button type="button" onclick="window.print()" class="btn-ghost no-print">Print / Save as PDF</button>
+      </header>
+
+      {% if data.competencies %}<section class="resume-section">
+        <h2 class="h3">Core competencies</h2>
+        <dl class="competencies">{% for area in data.competencies %}<div class="competency"><dt class="h6">{{ area.area }}</dt><dd>{{ area.description }}</dd></div>{% endfor %}</dl>
+      </section>{% endif %}
+
+      {% if data.experience %}<section class="resume-section">
+        <h2 class="h3">Experience</h2>
+        <ol class="experience">{% for role in data.experience %}<li class="experience-item">
+          <p class="eyebrow">{{ role.years }}</p>
+          <h3 class="h-card">{{ role.role }} — {{ role.org }}</h3>
+          {% if role.bullets %}<ul class="role-bullets">{% for line in role.bullets %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+        </li>{% endfor %}</ol>
+      </section>{% endif %}
+
+      {% if data.education %}<section class="resume-section">
+        <h2 class="h3">Education</h2>
+        <p class="eyebrow">{{ data.education.school }}</p>
+        <p class="body">{{ data.education.degree }}{% if data.education.honors %} — {{ data.education.honors }}{% endif %}</p>
+      </section>{% endif %}
+    </main>
+{% endblock %}

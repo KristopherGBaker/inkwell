@@ -158,6 +158,111 @@ final class ProjectCheckerTests: XCTestCase {
         }
     }
 
+    func testCheckRejectsRelativeAssetPathInCollectionFrontMatter() throws {
+        let root = try makeProjectRoot()
+        try writeConfig(to: root, json: """
+        {
+          "title": "Kris",
+          "collections": [
+            { "id": "projects", "dir": "content/projects", "route": "/work", "sortBy": "year" }
+          ]
+        }
+        """)
+        try writeProject(to: root, named: "wolt.md", markdown: """
+        ---
+        title: Wolt
+        slug: wolt
+        year: 2023
+        shots: ["assets/foo.png"]
+        ---
+        body
+        """)
+
+        let result = ProjectChecker().check(projectRoot: root)
+        XCTAssertFalse(result.isValid)
+        XCTAssertTrue(result.errors.contains { $0.contains("relative asset path") }, "errors: \(result.errors)")
+    }
+
+    func testCheckRejectsMissingAssetFileInCollection() throws {
+        let root = try makeProjectRoot()
+        try writeConfig(to: root, json: """
+        {
+          "title": "Kris",
+          "collections": [
+            { "id": "projects", "dir": "content/projects", "route": "/work", "sortBy": "year" }
+          ]
+        }
+        """)
+        try writeProject(to: root, named: "wolt.md", markdown: """
+        ---
+        title: Wolt
+        slug: wolt
+        year: 2023
+        shots: ["/assets/missing.png"]
+        ---
+        body
+        """)
+
+        let result = ProjectChecker().check(projectRoot: root)
+        XCTAssertTrue(result.errors.contains { $0.contains("missing.png") }, "errors: \(result.errors)")
+    }
+
+    func testCheckAllowsFullyQualifiedAssetURLInCollection() throws {
+        let root = try makeProjectRoot()
+        try writeConfig(to: root, json: """
+        {
+          "title": "Kris",
+          "collections": [
+            { "id": "projects", "dir": "content/projects", "route": "/work", "sortBy": "year" }
+          ]
+        }
+        """)
+        try writeProject(to: root, named: "wolt.md", markdown: """
+        ---
+        title: Wolt
+        slug: wolt
+        year: 2023
+        shots: ["https://cdn.example.com/foo.png"]
+        ---
+        body
+        """)
+
+        let result = ProjectChecker().check(projectRoot: root)
+        XCTAssertFalse(result.errors.contains { $0.contains("foo.png") }, "errors: \(result.errors)")
+    }
+
+    func testCheckResolvesAssetUnderStaticDirectory() throws {
+        let root = try makeProjectRoot()
+        try writeConfig(to: root, json: """
+        {
+          "title": "Kris",
+          "collections": [
+            { "id": "projects", "dir": "content/projects", "route": "/work", "sortBy": "year" }
+          ]
+        }
+        """)
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("static/assets/shots"), withIntermediateDirectories: true)
+        try Data().write(to: root.appendingPathComponent("static/assets/shots/wolt.png"))
+        try writeProject(to: root, named: "wolt.md", markdown: """
+        ---
+        title: Wolt
+        slug: wolt
+        year: 2023
+        shots: ["/assets/shots/wolt.png"]
+        ---
+        body
+        """)
+
+        let result = ProjectChecker().check(projectRoot: root)
+        XCTAssertFalse(result.errors.contains { $0.contains("wolt.png") }, "errors: \(result.errors)")
+    }
+
+    private func writeProject(to root: URL, named fileName: String, markdown: String) throws {
+        let dir = root.appendingPathComponent("content/projects")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try markdown.write(to: dir.appendingPathComponent(fileName), atomically: true, encoding: .utf8)
+    }
+
     private func makeProjectRoot() throws -> URL {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root.appendingPathComponent("content/posts"), withIntermediateDirectories: true)

@@ -5,18 +5,20 @@
   },
   "metadata": {
     "description": "Inkewell's skills for blogging and portfolio publishing.",
-    "version": "2026.4.30.0"
+    "version": "2026.4.30.1"
   },
   "plugins": [
     {
       "name": "blogging-skills",
-      "description": "Blogging and portfolio skills for Inkewell.",
+      "description": "Authoring and operations skills for Inkwell sites — CLI workflows, post drafting, portfolio data import, initial setup, and theme customization.",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/blog-cli",
         "./skills/blog-writing",
-        "./skills/portfolio-data"
+        "./skills/portfolio-data",
+        "./skills/site-setup",
+        "./skills/theme-customize"
       ]
     }
   ]
