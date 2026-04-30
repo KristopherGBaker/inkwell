@@ -1,0 +1,6 @@
+# data/education.yml — single education entry
+# Omit `honors` if not applicable (don't write `honors: ""` or `honors: null`).
+
+school: University of Illinois Springfield
+degree: B.S. Computer Science · Minor in Mathematics
+honors: Summa Cum Laude

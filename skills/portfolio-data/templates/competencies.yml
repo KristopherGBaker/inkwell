@@ -1,0 +1,14 @@
+# data/competencies.yml — résumé "Core Competencies" section
+# Ordered map. Top entries appear first.
+# 3–6 areas. Area names should describe the kind of work, not just the tool category.
+# Descriptions are comma-separated noun phrases.
+
+"Product & Growth": Subscription systems, conversion funnels, A/B testing, telemetry design, data-driven iteration
+
+"AI-Enabled Product": LLM integration (Anthropic, OpenAI, OpenRouter, Ollama), RAG, real-time speech (STT/TTS), multi-modal
+
+"Architecture": Modular architecture, protocol-oriented design, dependency injection, event-driven, backend-driven UI
+
+"Concurrency & Performance": Swift concurrency (async/await, actors, Sendable), real-time pipelines, profiling, memory optimization
+
+"Languages & Frameworks": Swift, Objective-C, Python; UIKit, SwiftUI, AppKit, AVFoundation

@@ -4,18 +4,19 @@
     "name": "Kristopher Baker"
   },
   "metadata": {
-    "description": "Inkewell's skills for blogging.",
-    "version": "2026.3.7.0"
+    "description": "Inkewell's skills for blogging and portfolio publishing.",
+    "version": "2026.4.30.0"
   },
   "plugins": [
     {
       "name": "blogging-skills",
-      "description": "Blogging skills for Inkewell.",
+      "description": "Blogging and portfolio skills for Inkewell.",
       "source": "./",
       "strict": false,
       "skills": [
         "./skills/blog-cli",
-        "./skills/blog-writing"
+        "./skills/blog-writing",
+        "./skills/portfolio-data"
       ]
     }
   ]

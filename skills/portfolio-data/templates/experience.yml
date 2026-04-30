@@ -1,0 +1,27 @@
+# data/experience.yml — résumé work history
+# Reverse-chronological. Each entry = one role.
+# Preserve dates, numbers, and bullet phrasing verbatim from the source.
+
+- org: Wolt / DoorDash
+  role: Senior Software Engineer
+  years: 2023 — Now
+  location: Tokyo, Japan
+  bullets:
+    - Lead engineer for membership growth in a large-scale consumer app, owning features end-to-end from proposal through delivery and post-launch analysis.
+    - Led implementation of subscription funnel improvements, contributing to +29.8% incremental membership sign-ups through experimentation and iteration.
+    - Identified and addressed key friction points in checkout, contributing to +27,000 incremental subscribers annually.
+
+- org: SmartNews
+  role: Senior Software Engineer, iOS
+  years: 2019 — 2023
+  location: Tokyo, Japan
+  bullets:
+    - Core iOS engineer on a consumer news application serving tens of millions of users globally.
+    - Led Objective-C to Swift migration and established SwiftLint / SwiftFormat standards.
+
+# - org: Earlier Company
+#   role: Earlier Title
+#   years: YYYY — YYYY
+#   location: City, Country
+#   bullets:
+#     - ...
