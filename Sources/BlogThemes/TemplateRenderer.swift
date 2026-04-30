@@ -76,16 +76,12 @@ public struct TemplateRenderer {
     }
 
     static func bundledTemplatesURL(theme: String) -> URL? {
-        guard let resourceURL = Bundle.module.resourceURL else { return nil }
-        return resourceURL
-            .appendingPathComponent("themes")
-            .appendingPathComponent(theme)
-            .appendingPathComponent("templates")
+        bundledThemeRoot(theme: theme)?.appendingPathComponent("templates")
     }
 
     public static func bundledThemeRoot(theme: String) -> URL? {
-        guard let resourceURL = Bundle.module.resourceURL else { return nil }
-        return resourceURL
+        guard let bundleURL = BundleResources.bundleURL else { return nil }
+        return bundleURL
             .appendingPathComponent("themes")
             .appendingPathComponent(theme)
     }

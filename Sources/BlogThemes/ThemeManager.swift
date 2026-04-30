@@ -151,7 +151,7 @@ public struct ThemeManager {
         }
         try fm.createDirectory(at: destinationRoot, withIntermediateDirectories: true)
 
-        if let bundleURL = Bundle.module.resourceURL?
+        if let bundleURL = BundleResources.bundleURL?
             .appendingPathComponent("themes")
             .appendingPathComponent(theme)
             .appendingPathComponent("assets") {
