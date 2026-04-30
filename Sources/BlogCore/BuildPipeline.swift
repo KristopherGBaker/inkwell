@@ -22,6 +22,7 @@ public enum BuildPipelineError: Error, Equatable {
 
 public struct BuildPipeline {
     private let loader: ContentLoader
+    private let dataLoader: DataLoader
     private let renderer: MarkdownRenderer
     private let pageContextBuilder: PageContextBuilder
     private let writer: OutputWriter
@@ -30,6 +31,7 @@ public struct BuildPipeline {
 
     public init(
         loader: ContentLoader = ContentLoader(),
+        dataLoader: DataLoader = DataLoader(),
         renderer: MarkdownRenderer = MarkdownRenderer(),
         pageContextBuilder: PageContextBuilder = PageContextBuilder(),
         writer: OutputWriter = OutputWriter(),
@@ -37,6 +39,7 @@ public struct BuildPipeline {
         themes: ThemeManager = ThemeManager()
     ) {
         self.loader = loader
+        self.dataLoader = dataLoader
         self.renderer = renderer
         self.pageContextBuilder = pageContextBuilder
         self.writer = writer
@@ -62,11 +65,13 @@ public struct BuildPipeline {
 
         try validateTaxonomySlugUniqueness(posts: posts)
 
+        let data = try dataLoader.load(in: projectRoot)
         let plans = pageContextBuilder.buildPlans(
             posts: posts,
             renderedContent: rendered,
             baseURL: urlBuilder.baseURL,
-            siteConfig: siteConfig
+            siteConfig: siteConfig,
+            data: data
         )
         let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
         var pages = try plans.map { plan in

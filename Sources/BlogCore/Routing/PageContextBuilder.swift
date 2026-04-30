@@ -45,7 +45,8 @@ public struct PageContextBuilder {
         posts: [PostDocument],
         renderedContent: [String: String],
         baseURL: String = "/",
-        siteConfig: SiteConfig = SiteConfig(title: "Field Notes")
+        siteConfig: SiteConfig = SiteConfig(title: "Field Notes"),
+        data: [String: Any] = [:]
     ) -> [PagePlan] {
         let mapped = posts.compactMap(mapPost).sorted { $0.date > $1.date }
         let urlBuilder = SiteURLBuilder(baseURL: baseURL)
@@ -127,6 +128,14 @@ public struct PageContextBuilder {
             urlBuilder: urlBuilder,
             extractor: { $0.categories }
         ))
+
+        if data.isEmpty == false {
+            plans = plans.map { plan in
+                var context = plan.context
+                context["data"] = data
+                return PagePlan(route: plan.route, template: plan.template, context: context)
+            }
+        }
 
         return plans
     }
