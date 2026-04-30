@@ -170,4 +170,92 @@ public struct ContentLoader {
         }
         return nil
     }
+
+    // MARK: - Standalone pages
+
+    /// Walks `content/pages/` and returns one `Page` per Markdown file.
+    /// Routes are derived from the relative path: `about.md` → `/about/`,
+    /// `now/index.md` → `/now/`, `projects/wolt.md` → `/projects/wolt/`.
+    public func loadPages(in projectRoot: URL) throws -> [Page] {
+        let pagesDir = projectRoot.appendingPathComponent("content/pages")
+        guard FileManager.default.fileExists(atPath: pagesDir.path) else { return [] }
+
+        var pages: [Page] = []
+        let pagesPath = pagesDir.standardizedFileURL.path
+        guard let enumerator = FileManager.default.enumerator(
+            at: pagesDir,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+
+        for case let url as URL in enumerator {
+            guard url.pathExtension == "md" else { continue }
+            let standardized = url.standardizedFileURL.path
+            guard standardized.hasPrefix(pagesPath) else { continue }
+            var relative = String(standardized.dropFirst(pagesPath.count))
+            if relative.hasPrefix("/") { relative = String(relative.dropFirst()) }
+
+            let route = Self.pageRoute(fromRelativePath: relative)
+
+            let raw = try String(contentsOf: url)
+            let parsed = try Self.splitFrontMatter(raw, source: url)
+            let frontMatterBlock = parsed.frontMatter
+            let body = parsed.body
+
+            let dict: [String: Any]
+            do {
+                dict = (try Yams.load(yaml: frontMatterBlock) as? [String: Any]) ?? [:]
+            } catch {
+                throw ContentLoaderError.invalidFrontMatter(url, String(describing: error))
+            }
+
+            let layout = (dict["layout"] as? String) ?? "page"
+            pages.append(Page(
+                route: route,
+                layout: layout,
+                title: dict["title"] as? String,
+                summary: dict["summary"] as? String,
+                frontMatter: dict,
+                body: body,
+                sourcePath: url
+            ))
+        }
+
+        return pages.sorted { $0.route < $1.route }
+    }
+
+    /// Splits a Markdown file's `---\n…\n---\n?` front matter block from its
+    /// body. Tolerates files that end at the closing `---` with no trailing
+    /// newline (i.e. empty body), and files where the closing `---` is on
+    /// the very last line.
+    static func splitFrontMatter(_ raw: String, source: URL) throws -> (frontMatter: String, body: String) {
+        guard raw.hasPrefix("---\n") else {
+            throw ContentLoaderError.malformedFrontMatter(source)
+        }
+        let rest = String(raw.dropFirst(4))
+
+        if let closing = rest.range(of: "\n---\n") {
+            let fm = String(rest[..<closing.lowerBound])
+            let body = String(rest[closing.upperBound...])
+            return (fm, body)
+        }
+
+        if rest.hasSuffix("\n---") {
+            let fm = String(rest.dropLast(4))
+            return (fm, "")
+        }
+
+        throw ContentLoaderError.malformedFrontMatter(source)
+    }
+
+    static func pageRoute(fromRelativePath relativePath: String) -> String {
+        var path = relativePath
+        if path.hasSuffix(".md") { path = String(path.dropLast(3)) }
+        if path.hasSuffix("/index") { path = String(path.dropLast("/index".count)) }
+        else if path == "index" { path = "" }
+        if path.isEmpty { return "/" }
+        return "/\(path)/"
+    }
 }

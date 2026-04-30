@@ -48,7 +48,9 @@ public struct PageContextBuilder {
         siteConfig: SiteConfig = SiteConfig(title: "Field Notes"),
         data: [String: Any] = [:],
         collections: [String: Collection] = [:],
-        collectionRenderedContent: [String: [String: String]] = [:]
+        collectionRenderedContent: [String: [String: String]] = [:],
+        pages: [Page] = [],
+        pageRenderedContent: [String: String] = [:]
     ) -> [PagePlan] {
         let urlBuilder = SiteURLBuilder(baseURL: baseURL)
 
@@ -76,6 +78,14 @@ public struct PageContextBuilder {
                 plans.append(contentsOf: makeCollectionPlans(
                     collection: collection,
                     rendered: rendered,
+                    site: siteContext,
+                    urlBuilder: urlBuilder
+                ))
+            }
+            for page in pages {
+                plans.append(makeStandalonePagePlan(
+                    page: page,
+                    rendered: pageRenderedContent[page.route] ?? "",
                     site: siteContext,
                     urlBuilder: urlBuilder
                 ))
@@ -153,6 +163,15 @@ public struct PageContextBuilder {
             urlBuilder: urlBuilder,
             extractor: { $0.categories }
         ))
+
+        for page in pages {
+            plans.append(makeStandalonePagePlan(
+                page: page,
+                rendered: pageRenderedContent[page.route] ?? "",
+                site: siteContext,
+                urlBuilder: urlBuilder
+            ))
+        }
 
         if data.isEmpty == false {
             plans = plans.map { plan in
@@ -361,6 +380,43 @@ private extension PageContextBuilder {
             ]
         }
         return tagChips + categoryChips
+    }
+
+    func makeStandalonePagePlan(
+        page: Page,
+        rendered: String,
+        site: [String: Any],
+        urlBuilder: SiteURLBuilder
+    ) -> PagePlan {
+        let title = page.title ?? humanize(routeAsTitle: page.route)
+        let description = page.summary ?? title
+        let pageContext: [String: Any] = [
+            "type": "page",
+            "title": escapeHTML(title),
+            "description": escapeHTML(description),
+            "canonicalURL": escapeHTML(urlBuilder.compose(route: page.route)),
+            "twitterCard": "summary",
+            "layout": page.layout,
+            "content": rendered,
+            "frontMatter": page.frontMatter
+        ]
+        let context: [String: Any] = [
+            "site": site,
+            "page": pageContext,
+            "links": ["home": urlBuilder.link(for: "/")]
+        ]
+        return PagePlan(route: page.route, template: "layouts/\(page.layout)", context: context)
+    }
+
+    /// Best-effort title from a route ("/about/" → "About"). Used only when
+    /// the page front matter omits a `title`.
+    func humanize(routeAsTitle route: String) -> String {
+        let trimmed = route.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if trimmed.isEmpty { return "Home" }
+        let last = trimmed.split(separator: "/").last.map(String.init) ?? trimmed
+        return last
+            .replacingOccurrences(of: "-", with: " ")
+            .capitalized
     }
 
     func makeCollectionPlans(

@@ -80,6 +80,12 @@ public struct BuildPipeline {
             }
         }
 
+        let pages = try loader.loadPages(in: projectRoot)
+        var pageRendered: [String: String] = [:]
+        for page in pages {
+            pageRendered[page.route] = try renderer.render(page.body)
+        }
+
         let plans = pageContextBuilder.buildPlans(
             posts: posts,
             renderedContent: rendered,
@@ -87,29 +93,31 @@ public struct BuildPipeline {
             siteConfig: siteConfig,
             data: data,
             collections: collections,
-            collectionRenderedContent: collectionRendered
+            collectionRenderedContent: collectionRendered,
+            pages: pages,
+            pageRenderedContent: pageRendered
         )
         let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
-        var pages = try plans.map { plan in
+        var builtPages = try plans.map { plan in
             BuiltPage(route: plan.route, html: try templateRenderer.render(template: plan.template, context: plan.context))
         }
         let extraHead = loadExtraHead(projectRoot: projectRoot, siteConfig: siteConfig)
-        pages = pages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead)) }
+        builtPages = builtPages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead)) }
 
-        for page in pages {
+        for page in builtPages {
             try plugins.runBeforeRender(routeContext: PluginRouteContext(route: page.route))
         }
-        try writer.writePages(pages, to: outputRoot)
+        try writer.writePages(builtPages, to: outputRoot)
         try writer.copyProjectPublicAssets(projectRoot: projectRoot, outputRoot: outputRoot)
         try writer.copyProjectStaticAssets(projectRoot: projectRoot, outputRoot: outputRoot)
-        for page in pages {
+        for page in builtPages {
             try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }
         try themes.copyDefaultAssets(projectRoot: projectRoot, outputRoot: outputRoot)
-        try writeSEOArtifacts(posts: posts, routes: pages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig, urlBuilder: urlBuilder)
+        try writeSEOArtifacts(posts: posts, routes: builtPages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig, urlBuilder: urlBuilder)
         try writeSearchIndex(posts: posts, outputRoot: outputRoot)
 
-        let report = BuildReport(outputDirectory: outputRoot, routes: pages.map(\.route), errors: [])
+        let report = BuildReport(outputDirectory: outputRoot, routes: builtPages.map(\.route), errors: [])
         try plugins.runOnBuildComplete(report: PluginBuildReport(routes: report.routes, errors: report.errors))
         return report
     }
