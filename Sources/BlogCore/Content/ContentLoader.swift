@@ -29,19 +29,9 @@ public struct ContentLoader {
 
     func loadPost(from url: URL) throws -> PostDocument {
         let raw = try String(contentsOf: url)
-        guard raw.hasPrefix("---\n") else {
-            throw ContentLoaderError.malformedFrontMatter(url)
-        }
-
-        let rest = String(raw.dropFirst(4))
-        guard let closingRange = rest.range(of: "\n---\n") else {
-            throw ContentLoaderError.malformedFrontMatter(url)
-        }
-
-        let frontMatterBlock = String(rest[..<closingRange.lowerBound])
-        let body = String(rest[closingRange.upperBound...])
-        let frontMatter = try parseTypedFrontMatter(frontMatterBlock, source: url)
-        return PostDocument(frontMatter: frontMatter, body: body, sourcePath: url)
+        let parsed = try Self.splitFrontMatter(raw, source: url)
+        let frontMatter = try parseTypedFrontMatter(parsed.frontMatter, source: url)
+        return PostDocument(frontMatter: frontMatter, body: parsed.body, sourcePath: url)
     }
 
     private func parseTypedFrontMatter(_ block: String, source: URL) throws -> PostFrontMatter {
@@ -81,17 +71,9 @@ public struct ContentLoader {
 
     private func loadCollectionItem(from url: URL) throws -> CollectionItem? {
         let raw = try String(contentsOf: url)
-        guard raw.hasPrefix("---\n") else {
-            throw ContentLoaderError.malformedFrontMatter(url)
-        }
-
-        let rest = String(raw.dropFirst(4))
-        guard let closingRange = rest.range(of: "\n---\n") else {
-            throw ContentLoaderError.malformedFrontMatter(url)
-        }
-
-        let frontMatterBlock = String(rest[..<closingRange.lowerBound])
-        let body = String(rest[closingRange.upperBound...])
+        let parsed = try Self.splitFrontMatter(raw, source: url)
+        let frontMatterBlock = parsed.frontMatter
+        let body = parsed.body
 
         let dict: [String: Any]
         do {

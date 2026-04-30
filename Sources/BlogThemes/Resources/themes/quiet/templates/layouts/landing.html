@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block main %}    <main class="container page-shell">
+      <section class="hero">
+        <p class="eyebrow eyebrow-dot">{% if site.author.location %}{{ site.author.location }} · {% endif %}{{ site.tagline }}</p>
+        <h1 class="h-display">{{ site.title }}</h1>
+        {% if site.description %}<p class="body-lg hero-summary">{{ site.description }}</p>{% endif %}
+      </section>
+      <hr class="hairline-soft">
+      {% if home.featured %}<section class="featured-work">
+        <div class="section-head">
+          <h2 class="h2">Selected work</h2>
+        </div>
+        <div class="featured-grid">{% for item in home.featured %}{% include "work-card.html" %}{% endfor %}</div>
+      </section>
+      <hr class="hairline-soft">{% endif %}
+      {% if home.recent %}<section class="recent-writing">
+        <div class="section-head">
+          <h2 class="h2">Recent writing</h2>
+        </div>
+        <div class="reading">{% for post in home.recent %}{% include "post-list-item.html" %}{% endfor %}</div>
+      </section>{% endif %}
+    </main>
+{% endblock %}

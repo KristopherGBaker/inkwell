@@ -1,0 +1,6 @@
+<article class="card work-card">
+  <p class="eyebrow">{% if item.frontMatter.year %}{{ item.frontMatter.year }}{% endif %}{% if item.frontMatter.org %} · {{ item.frontMatter.org }}{% endif %}</p>
+  <h3 class="h-card"><a href="{{ item.link }}">{{ item.title }}</a></h3>
+  {% if item.summary %}<p class="body">{{ item.summary }}</p>{% endif %}
+  <a href="{{ item.link }}" class="read-link">Case study <span class="arrow">→</span></a>
+</article>

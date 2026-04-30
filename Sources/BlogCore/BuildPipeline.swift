@@ -102,7 +102,7 @@ public struct BuildPipeline {
             BuiltPage(route: plan.route, html: try templateRenderer.render(template: plan.template, context: plan.context))
         }
         let extraHead = loadExtraHead(projectRoot: projectRoot, siteConfig: siteConfig)
-        builtPages = builtPages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead)) }
+        builtPages = builtPages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead, theme: siteConfig.theme)) }
 
         for page in builtPages {
             try plugins.runBeforeRender(routeContext: PluginRouteContext(route: page.route))
@@ -113,7 +113,7 @@ public struct BuildPipeline {
         for page in builtPages {
             try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }
-        try themes.copyDefaultAssets(projectRoot: projectRoot, outputRoot: outputRoot)
+        try themes.copyThemeAssets(theme: siteConfig.theme, projectRoot: projectRoot, outputRoot: outputRoot)
         try writeSEOArtifacts(posts: posts, routes: builtPages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig, urlBuilder: urlBuilder)
         try writeSearchIndex(posts: posts, outputRoot: outputRoot)
 
