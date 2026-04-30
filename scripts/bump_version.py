@@ -92,6 +92,8 @@ def main() -> int:
     managed_files = [
         repo_root / "Sources/BlogCLI/Version.swift",
         repo_root / "themes/default/theme.json",
+        repo_root / "Sources/BlogThemes/Resources/themes/default/theme.json",
+        repo_root / "Sources/BlogThemes/Resources/themes/quiet/theme.json",
     ]
 
     current_version = read_current_version(repo_root)
