@@ -6,7 +6,11 @@ Static personal blog generator written in Swift.
 - Markdown posts with front matter
 - GFM rendering (tables, task lists, strikethrough, fenced code)
 - Build-time syntax highlighting with Shiki
-- CLI workflow: `init`, `post new`, `post list`, `build`, `serve`, `check`
+- CLI workflow: `init`, `post new`, `content new`, `post list`, `build`, `serve`, `check`
+- Generic content collections (e.g. `posts`, `projects`) configurable in `blog.config.json`
+- Standalone pages from `content/pages/`
+- Static data files (`data/*.yml|json`) exposed as `data.<name>` in templates
+- Stencil-based templates with two bundled themes (`default`, `quiet`)
 
 ## Authoring Workflow
 ```bash
