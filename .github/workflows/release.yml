@@ -31,13 +31,25 @@ jobs:
             -output inkwell
           chmod +x inkwell
 
-      - name: Compute checksum
-        run: shasum -a 256 inkwell | tee inkwell.sha256
+      - name: Stage resource bundle alongside binary
+        run: |
+          # SwiftPM produces an identical resource bundle for both architectures.
+          cp -R .build/arm64-apple-macosx/release/swift-blog_BlogThemes.bundle .
+
+      - name: Package binary + bundle into tarball
+        run: tar -czf inkwell-macos.tar.gz inkwell swift-blog_BlogThemes.bundle
+
+      - name: Compute checksums
+        run: |
+          shasum -a 256 inkwell | tee inkwell.sha256
+          shasum -a 256 inkwell-macos.tar.gz | tee inkwell-macos.tar.gz.sha256
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            inkwell-macos.tar.gz
+            inkwell-macos.tar.gz.sha256
             inkwell
             inkwell.sha256
           generate_release_notes: true
@@ -47,13 +59,32 @@ jobs:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          SHA256=$(shasum -a 256 inkwell | awk '{print $1}')
+          SHA256=$(shasum -a 256 inkwell-macos.tar.gz | awk '{print $1}')
 
           gh repo clone KristopherGBaker/homebrew-tap tap-repo
           cd tap-repo
 
-          sed -i '' "s/version \".*\"/version \"${VERSION}\"/" Formula/inkwell.rb
-          sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Formula/inkwell.rb
+          cat > Formula/inkwell.rb <<EOF
+          class Inkwell < Formula
+            desc "Swift static publishing CLI"
+            homepage "https://github.com/KristopherGBaker/inkwell"
+            version "${VERSION}"
+
+            on_macos do
+              url "https://github.com/KristopherGBaker/inkwell/releases/download/v#{version}/inkwell-macos.tar.gz"
+              sha256 "${SHA256}"
+            end
+
+            def install
+              bin.install "inkwell"
+              bin.install "swift-blog_BlogThemes.bundle"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/inkwell --version")
+            end
+          end
+          EOF
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
