@@ -10,8 +10,8 @@
     {% if site.author.role %}<p class="resume-header-role">{{ site.author.role }}{% if data.resume.subtitle %} · {{ data.resume.subtitle }}{% endif %}</p>{% endif %}
     <div class="resume-header-meta">
       {% if site.author.location %}<span>{{ site.author.location }}</span>{% endif %}
-      {% if site.author.email %}<span>{{ site.author.email }}</span>{% endif %}
-      {% if site.author.social %}{% for link in site.author.social %}<span>{{ link.label }}</span>{% endfor %}{% endif %}
+      {% if site.author.email %}<span><a href="mailto:{{ site.author.email }}">{{ site.author.email }}</a></span>{% endif %}
+      {% if site.author.social %}{% for link in site.author.social %}<span><a href="{{ link.url }}">{{ link.label }}</a></span>{% endfor %}{% endif %}
       {% if data.resume.status %}<span>{{ data.resume.status }}</span>{% endif %}
     </div>
   </header>
