@@ -77,8 +77,17 @@ When the user says they need help defining their voice:
 - Draft a project case study: `inkwell content new projects "Title"`.
 - Build preview after editing: `inkwell serve --watch` (live-reloads as you save).
 
+## Translations (v0.5+)
+
+If the site has `i18n` configured and the user wants a translated version of a post, project, or page:
+
+- Translate by adding a sibling file with a `<base>.<lang>.md` suffix — `foo.md` (default) and `foo.ja.md` (Japanese). Keep the same `slug` in the front matter; that's what pairs them.
+- Co-located static assets (videos, images under `static/posts/<slug>/`) don't need to be duplicated. Inkwell rewrites relative `src` / `href` URLs in markdown to absolute canonical paths at build time, so a single asset works from any language URL.
+- Translations are independent — if the user only wants to translate one paragraph, leave the rest in the default language and ship; the JA listing will fall back to the default-language version where no `.ja.md` exists.
+- Match the voice profile's tone in the target language; don't simply translate phrase by phrase. Read the user's existing translated content first if any exists.
+
 ## Related Skills
 
 - `portfolio-data` for résumé / experience content (those go in `data/*.yml`, not prose).
-- `site-setup` for initial project configuration.
+- `site-setup` for initial project configuration, including i18n setup.
 - `blog-cli` for build / preview / publish commands.

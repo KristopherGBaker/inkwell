@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ page.lang|default:"en" }}">
   <head>
     <meta charset="utf-8">
     <title>{{ page.title }}</title>
@@ -9,11 +9,34 @@
     <meta property="og:description" content="{{ page.description }}">
     <meta property="og:url" content="{{ page.canonicalURL }}">
     <meta name="twitter:card" content="{{ page.twitterCard }}">
+    {% if page.translations %}{% for alt in page.translations %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
+    {% endfor %}{% endif %}
   </head>
   <body class="grain-bg">
     <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
     {% include "top-bar.html" %}
 {% block main %}{% endblock %}
     {% include "footer.html" %}
+    {% if site.languages %}<script>
+      (function(){
+        try {
+          var configured = "{{ site.languages|join:"," }}".split(",");
+          var defaultLang = "{{ site.defaultLanguage|default:"en" }}";
+          if (localStorage.getItem("lang")) return;
+          var path = location.pathname;
+          var hasLangPrefix = configured.some(function(l){ return path === "/" + l || path.indexOf("/" + l + "/") === 0; });
+          if (hasLangPrefix) return;
+          var preferred = (navigator.languages || [navigator.language || "en"]).map(function(l){ return l.toLowerCase().split("-")[0]; });
+          for (var i = 0; i < preferred.length; i++) {
+            var match = configured.find(function(c){ return c.toLowerCase().split("-")[0] === preferred[i]; });
+            if (match && match !== defaultLang) {
+              location.replace("/" + match + path);
+              return;
+            }
+            if (match === defaultLang) return;
+          }
+        } catch (e) {}
+      })();
+    </script>{% endif %}
   </body>
 </html>

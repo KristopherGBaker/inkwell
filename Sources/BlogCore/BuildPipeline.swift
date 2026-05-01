@@ -65,25 +65,54 @@ public struct BuildPipeline {
 
         try validateTaxonomySlugUniqueness(posts: posts)
 
-        let data = try dataLoader.load(in: projectRoot)
+        let defaultLanguage = siteConfig.i18n?.resolvedDefaultLanguage ?? "en"
+        let configuredLanguages = siteConfig.i18n?.resolvedLanguages ?? [defaultLanguage]
+
+        // Per-language data dicts. Files without a language suffix back-fill
+        // every language; suffixed files override only their own language.
+        var dataByLang: [String: [String: Any]] = [:]
+        for lang in configuredLanguages {
+            dataByLang[lang] = try dataLoader.load(in: projectRoot, lang: lang)
+        }
 
         var collections: [String: Collection] = [:]
-        var collectionRendered: [String: [String: String]] = [:]
+        var collectionRendered: [String: [String: [String: String]]] = [:]
         if let configs = siteConfig.collections, configs.isEmpty == false {
-            collections = try loader.loadCollections(configs, in: projectRoot)
+            collections = try loader.loadCollections(
+                configs,
+                in: projectRoot,
+                defaultLanguage: defaultLanguage,
+                configuredLanguages: configuredLanguages
+            )
             for (id, collection) in collections {
-                var perSlug: [String: String] = [:]
+                var perLang: [String: [String: String]] = [:]
+                let raw = collection.config.route
+                let collectionRoute: String = {
+                    var route = raw
+                    if route.hasPrefix("/") == false { route = "/" + route }
+                    if route.hasSuffix("/") == false { route += "/" }
+                    return route
+                }()
                 for item in collection.items {
-                    perSlug[item.slug] = try renderer.render(item.body)
+                    let html = try renderer.render(item.body)
+                    let canonicalBase = "\(collectionRoute)\(item.slug)/"
+                    perLang[item.lang, default: [:]][item.slug] =
+                        AssetURLRewriter.rewriteRelativeURLs(in: html, base: canonicalBase)
                 }
-                collectionRendered[id] = perSlug
+                collectionRendered[id] = perLang
             }
         }
 
-        let pages = try loader.loadPages(in: projectRoot)
-        var pageRendered: [String: String] = [:]
+        let pages = try loader.loadPages(
+            in: projectRoot,
+            defaultLanguage: defaultLanguage,
+            configuredLanguages: configuredLanguages
+        )
+        var pageRendered: [String: [String: String]] = [:]
         for page in pages {
-            pageRendered[page.route] = try renderer.render(page.body)
+            let html = try renderer.render(page.body)
+            pageRendered[page.lang, default: [:]][page.route] =
+                AssetURLRewriter.rewriteRelativeURLs(in: html, base: page.route)
         }
 
         let plans = pageContextBuilder.buildPlans(
@@ -91,7 +120,7 @@ public struct BuildPipeline {
             renderedContent: rendered,
             baseURL: urlBuilder.baseURL,
             siteConfig: siteConfig,
-            data: data,
+            dataByLanguage: dataByLang,
             collections: collections,
             collectionRenderedContent: collectionRendered,
             pages: pages,
@@ -264,8 +293,11 @@ public struct BuildPipeline {
 struct SiteURLBuilder {
     let baseURL: String
     private let basePath: String
+    /// Language prefix for non-default languages. Empty for the default
+    /// language. Always rendered as `/<lang>` (no trailing slash).
+    let langPrefix: String
 
-    init(baseURL: String) {
+    init(baseURL: String, langPrefix: String = "") {
         let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed == "/" {
             self.baseURL = "http://localhost"
@@ -282,17 +314,26 @@ struct SiteURLBuilder {
         } else {
             self.basePath = ""
         }
+
+        let normalized = langPrefix.trimmingCharacters(in: .whitespacesAndNewlines)
+        if normalized.isEmpty {
+            self.langPrefix = ""
+        } else if normalized.hasPrefix("/") {
+            self.langPrefix = normalized
+        } else {
+            self.langPrefix = "/\(normalized)"
+        }
     }
 
     func compose(route: String) -> String {
-        baseURL + route
+        baseURL + langPrefix + route
     }
 
     func link(for route: String) -> String {
         if basePath.isEmpty {
-            return route
+            return langPrefix + route
         }
-        return basePath + route
+        return basePath + langPrefix + route
     }
 }
 
