@@ -58,6 +58,21 @@ public struct PageContextBuilder {
 
         var plans: [PagePlan] = []
         for lang in configuredLangs {
+            // Merge rendered content: prefer the current lang's render, fall
+            // back to the default language's render for items only available
+            // in default language.
+            let mergedCollectionRenders: [String: [String: String]] = collectionRenderedContent.mapValues { perLang in
+                var merged = perLang[defaultLang] ?? [:]
+                for (slug, html) in perLang[lang] ?? [:] {
+                    merged[slug] = html
+                }
+                return merged
+            }
+            var mergedPageRenders = pageRenderedContent[defaultLang] ?? [:]
+            for (route, html) in pageRenderedContent[lang] ?? [:] {
+                mergedPageRenders[route] = html
+            }
+
             let perLang = buildPlansForLanguage(
                 lang: lang,
                 defaultLanguage: defaultLang,
@@ -68,9 +83,9 @@ public struct PageContextBuilder {
                 siteConfig: siteConfig,
                 data: dataByLanguage[lang] ?? [:],
                 collections: collections,
-                collectionRenderedContent: collectionRenderedContent.mapValues { $0[lang] ?? [:] },
+                collectionRenderedContent: mergedCollectionRenders,
                 pages: pages,
-                pageRenderedContent: pageRenderedContent[lang] ?? [:]
+                pageRenderedContent: mergedPageRenders
             )
             plans.append(contentsOf: perLang)
         }
@@ -177,12 +192,10 @@ public struct PageContextBuilder {
         if let configs = siteConfig.collections, configs.isEmpty == false {
             for config in configs {
                 guard let collection = collections[config.id] else { continue }
-                let rendered = collectionRenderedContent[config.id] ?? [:]
                 let resolvedConfig = applyOverlay(to: config, overlay: overlay)
-                let langCollection = Collection(
-                    config: resolvedConfig,
-                    items: collection.items.filter { $0.lang == lang }
-                )
+                let resolvedItems = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
+                let rendered = collectionRenderedContent[config.id] ?? [:]
+                let langCollection = Collection(config: resolvedConfig, items: resolvedItems)
                 plans.append(contentsOf: makeCollectionPlans(
                     collection: langCollection,
                     rendered: rendered,
@@ -194,7 +207,8 @@ public struct PageContextBuilder {
                     baseURL: baseURL
                 ))
             }
-            for page in pages where page.lang == lang {
+            let resolvedPages = bestFitPages(pages, lang: lang, defaultLanguage: defaultLanguage)
+            for page in resolvedPages {
                 plans.append(makeStandalonePagePlan(
                     page: page,
                     rendered: pageRenderedContent[page.route] ?? "",
@@ -209,7 +223,7 @@ public struct PageContextBuilder {
                 let homeRoute = (lang == defaultLanguage) ? "/" : "/\(lang)/"
                 plans = plans.filter { $0.route != homeRoute }
                 plans.append(makeHomePlan(
-                    home: home,
+                    home: applyOverlay(to: home, overlay: overlay),
                     site: siteContext,
                     collections: collections,
                     urlBuilder: urlBuilder,
@@ -565,8 +579,8 @@ private extension PageContextBuilder {
             .flatMap { collections[$0] }
             .map { collection in
                 let count = home.featuredCount ?? 4
-                let langItems = collection.items.filter { $0.lang == lang }
-                return Array(langItems.prefix(count)).map {
+                let resolved = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
+                return Array(resolved.prefix(count)).map {
                     collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
                 }
             } ?? []
@@ -574,8 +588,8 @@ private extension PageContextBuilder {
             .flatMap { collections[$0] }
             .map { collection in
                 let count = home.recentCount ?? 3
-                let langItems = collection.items.filter { $0.lang == lang }
-                return Array(langItems.prefix(count)).map {
+                let resolved = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
+                return Array(resolved.prefix(count)).map {
                     collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
                 }
             } ?? []
@@ -699,6 +713,10 @@ private extension PageContextBuilder {
             "aboutEyebrow": escapeHTML(over?.aboutEyebrow ?? base?.aboutEyebrow ?? "04 · About"),
             "aboutResumeCta": escapeHTML(over?.aboutResumeCta ?? base?.aboutResumeCta ?? "Read the résumé"),
             "aboutEmailCta": escapeHTML(over?.aboutEmailCta ?? base?.aboutEmailCta ?? "Email me"),
+            "postBack": escapeHTML(over?.postBack ?? base?.postBack ?? "← All entries"),
+            "postMoreCta": escapeHTML(over?.postMoreCta ?? base?.postMoreCta ?? "More writing"),
+            "postReplyEmailCta": escapeHTML(over?.postReplyEmailCta ?? base?.postReplyEmailCta ?? "Reply by email"),
+            "postMinRead": escapeHTML(over?.postMinRead ?? base?.postMinRead ?? "min read"),
             "notFoundEyebrow": escapeHTML(over?.notFoundEyebrow ?? base?.notFoundEyebrow ?? "404 · NOT FOUND"),
             "notFoundHeadline": escapeHTML(over?.notFoundHeadline ?? base?.notFoundHeadline ?? "This page is in another castle."),
             "notFoundBody": escapeHTML(over?.notFoundBody ?? base?.notFoundBody ?? "Or it never existed. Or it's still drafted in a markdown file on my laptop. Try the home page."),
@@ -759,6 +777,43 @@ private extension PageContextBuilder {
         return context
     }
 
+    /// For each unique slug in `items`, returns the variant best suited to
+    /// the requested language: the lang variant if it exists, otherwise the
+    /// default-language variant, otherwise whatever's available. Preserves
+    /// the input ordering of first appearance per slug.
+    func bestFitItems(_ items: [CollectionItem], lang: String, defaultLanguage: String) -> [CollectionItem] {
+        var seen = Set<String>()
+        var resolved: [CollectionItem] = []
+        for item in items where seen.contains(item.slug) == false {
+            seen.insert(item.slug)
+            if let langItem = items.first(where: { $0.slug == item.slug && $0.lang == lang }) {
+                resolved.append(langItem)
+            } else if let defaultItem = items.first(where: { $0.slug == item.slug && $0.lang == defaultLanguage }) {
+                resolved.append(defaultItem)
+            } else {
+                resolved.append(item)
+            }
+        }
+        return resolved
+    }
+
+    /// Same as `bestFitItems` but for standalone pages, keyed by route.
+    func bestFitPages(_ pages: [Page], lang: String, defaultLanguage: String) -> [Page] {
+        var seen = Set<String>()
+        var resolved: [Page] = []
+        for page in pages where seen.contains(page.route) == false {
+            seen.insert(page.route)
+            if let langPage = pages.first(where: { $0.route == page.route && $0.lang == lang }) {
+                resolved.append(langPage)
+            } else if let defaultPage = pages.first(where: { $0.route == page.route && $0.lang == defaultLanguage }) {
+                resolved.append(defaultPage)
+            } else {
+                resolved.append(page)
+            }
+        }
+        return resolved
+    }
+
     /// Returns the collection config with translatable fields (eyebrow,
     /// headline, lede) overridden from the overlay when present.
     func applyOverlay(to config: CollectionConfig, overlay: TranslationOverlay?) -> CollectionConfig {
@@ -769,6 +824,23 @@ private extension PageContextBuilder {
         if let eyebrow = collectionOverlay.eyebrow { copy.eyebrow = eyebrow }
         if let headline = collectionOverlay.headline { copy.headline = headline }
         if let lede = collectionOverlay.lede { copy.lede = lede }
+        return copy
+    }
+
+    /// Returns the home config with translatable fields (CTAs, section
+    /// labels, about-teaser links) overridden from the overlay when present.
+    /// Structural fields (template, featuredCollection, etc.) are unchanged.
+    func applyOverlay(to config: HomeConfig, overlay: TranslationOverlay?) -> HomeConfig {
+        guard let homeOverlay = overlay?.home else { return config }
+        var copy = config
+        if let cta = homeOverlay.heroPrimaryCta { copy.heroPrimaryCta = cta }
+        if let cta = homeOverlay.heroSecondaryCta { copy.heroSecondaryCta = cta }
+        if let label = homeOverlay.featuredLabel { copy.featuredLabel = label }
+        if let cta = homeOverlay.featuredCta { copy.featuredCta = cta }
+        if let label = homeOverlay.recentLabel { copy.recentLabel = label }
+        if let cta = homeOverlay.recentCta { copy.recentCta = cta }
+        if let eyebrow = homeOverlay.aboutEyebrow { copy.aboutEyebrow = eyebrow }
+        if let links = homeOverlay.aboutLinks { copy.aboutLinks = links }
         return copy
     }
 

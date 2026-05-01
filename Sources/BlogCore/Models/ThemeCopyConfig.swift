@@ -12,6 +12,10 @@ public struct ThemeCopyConfig: Codable, Equatable {
     public var aboutEyebrow: String?
     public var aboutResumeCta: String?
     public var aboutEmailCta: String?
+    public var postBack: String?
+    public var postMoreCta: String?
+    public var postReplyEmailCta: String?
+    public var postMinRead: String?
     public var notFoundEyebrow: String?
     public var notFoundHeadline: String?
     public var notFoundBody: String?
@@ -26,6 +30,10 @@ public struct ThemeCopyConfig: Codable, Equatable {
         aboutEyebrow: String? = nil,
         aboutResumeCta: String? = nil,
         aboutEmailCta: String? = nil,
+        postBack: String? = nil,
+        postMoreCta: String? = nil,
+        postReplyEmailCta: String? = nil,
+        postMinRead: String? = nil,
         notFoundEyebrow: String? = nil,
         notFoundHeadline: String? = nil,
         notFoundBody: String? = nil,
@@ -39,6 +47,10 @@ public struct ThemeCopyConfig: Codable, Equatable {
         self.aboutEyebrow = aboutEyebrow
         self.aboutResumeCta = aboutResumeCta
         self.aboutEmailCta = aboutEmailCta
+        self.postBack = postBack
+        self.postMoreCta = postMoreCta
+        self.postReplyEmailCta = postReplyEmailCta
+        self.postMinRead = postMinRead
         self.notFoundEyebrow = notFoundEyebrow
         self.notFoundHeadline = notFoundHeadline
         self.notFoundBody = notFoundBody
