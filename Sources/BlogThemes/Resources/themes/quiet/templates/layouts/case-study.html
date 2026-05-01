@@ -28,5 +28,14 @@
   {% if page.frontMatter.shots %}<section class="case-study-shots">
     {% for shot in page.frontMatter.shots %}<figure class="shot-frame"><img src="{{ shot }}" alt=""></figure>{% endfor %}
   </section>{% endif %}
+
+  {% if collection.next %}<div class="case-study-next">
+    <p class="case-study-next-label">Next</p>
+    <a href="{{ collection.next.link }}" class="case-study-next-row">
+      <span class="case-study-next-title">{{ collection.next.title }}</span>
+      <span class="read-link">{% if collection.next.org %}{{ collection.next.org }}{% else %}Read case study{% endif %} <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
+  </div>{% endif %}
 </main>
 {% endblock %}
+

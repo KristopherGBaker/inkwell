@@ -653,7 +653,7 @@ private extension PageContextBuilder {
         ]
         plans.append(PagePlan(route: route, template: listTemplate, context: listContext))
 
-        for item in collection.items {
+        for (index, item) in collection.items.enumerated() {
             let detailRoute = "\(route)\(item.slug)/"
             let chips = makeCollectionTaxonomyChips(
                 item: item,
@@ -699,14 +699,33 @@ private extension PageContextBuilder {
                 ]
             }
 
+            // Wrap-around "next" sibling — used by the case-study layout's
+            // bottom navigation. Skipped when the collection has only one item.
+            var collectionContext: [String: Any] = [
+                "id": collection.config.id,
+                "route": urlBuilder.link(for: route)
+            ]
+            if collection.items.count > 1 {
+                let nextItem = collection.items[(index + 1) % collection.items.count]
+                let nextDetailRoute = "\(route)\(nextItem.slug)/"
+                var next: [String: Any] = [
+                    "title": escapeHTML(nextItem.title),
+                    "link": urlBuilder.link(for: nextDetailRoute)
+                ]
+                if let nextOrg = nextItem.frontMatter["org"] as? String {
+                    next["org"] = escapeHTML(nextOrg)
+                }
+                if let nextYear = nextItem.frontMatter["year"] {
+                    next["year"] = String(describing: nextYear)
+                }
+                collectionContext["next"] = next
+            }
+
             let context: [String: Any] = [
                 "site": site,
                 "page": pageContext,
                 "links": ["home": urlBuilder.link(for: "/")],
-                "collection": [
-                    "id": collection.config.id,
-                    "route": urlBuilder.link(for: route)
-                ]
+                "collection": collectionContext
             ]
             plans.append(PagePlan(route: detailRoute, template: detailTemplate, context: context))
         }
@@ -847,7 +866,7 @@ private extension PageContextBuilder {
                     values = []
                 }
             }
-            for value in values.prefix(3) {
+            for value in values {
                 chips.append([
                     "label": escapeHTML(value),
                     "href": urlBuilder.link(for: "\(collectionRoute)\(taxonomy)/\(taxonomySlug(value))/")
