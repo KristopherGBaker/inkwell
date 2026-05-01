@@ -24,6 +24,14 @@ final class ThemeManagerTests: XCTestCase {
         XCTAssertTrue(output.contains("querySelector: \".mermaid\""))
     }
 
+    func testInjectHeadAssetsIncludesMermaidRuntimeForQuietTheme() {
+        let input = "<html><head></head><body></body></html>"
+        let output = ThemeManager().injectHeadAssets(into: input, theme: "quiet")
+
+        XCTAssertTrue(output.contains("mermaid.esm.min.mjs"))
+        XCTAssertTrue(output.contains("querySelector: \".mermaid\""))
+    }
+
     func testInjectHeadAssetsPrefixesThemeAssetsForSubpathBaseURL() {
         let input = "<html><head></head><body></body></html>"
         let output = ThemeManager().injectHeadAssets(into: input, baseURL: "https://example.com/blog/")
