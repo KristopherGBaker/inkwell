@@ -74,7 +74,42 @@ public struct PageContextBuilder {
             )
             plans.append(contentsOf: perLang)
         }
+
+        // Emit /<defaultLang>/... alias redirects so URLs are consistent
+        // whether or not callers include the explicit lang prefix.
+        if siteConfig.i18n != nil, configuredLangs.count > 1 {
+            let urlBuilder = SiteURLBuilder(baseURL: baseURL)
+            let defaultLangPrefix = "/\(defaultLang)"
+            for plan in plans where plan.route.hasPrefix("/") && plan.route.hasPrefix(defaultLangPrefix + "/") == false {
+                // Skip plans that already belong to a non-default language.
+                let isOtherLangPlan = configuredLangs
+                    .filter { $0 != defaultLang }
+                    .contains { plan.route.hasPrefix("/\($0)/") || plan.route == "/\($0)/" }
+                if isOtherLangPlan { continue }
+
+                let aliasRoute = defaultLangPrefix + plan.route
+                let canonicalURL = urlBuilder.compose(route: plan.route)
+                plans.append(makeRedirectPlan(route: aliasRoute, canonicalURL: canonicalURL))
+            }
+        }
+
         return plans
+    }
+
+    /// Builds a plan for an HTML page that immediately redirects to `canonicalURL`
+    /// via meta-refresh + JS, with a `<link rel="canonical">` so search engines
+    /// don't index the alias.
+    func makeRedirectPlan(route: String, canonicalURL: String) -> PagePlan {
+        let context: [String: Any] = [
+            "canonicalURL": canonicalURL,
+            "site": [String: Any](),
+            "page": [
+                "type": "redirect",
+                "title": "Redirecting…",
+                "canonicalURL": canonicalURL
+            ]
+        ]
+        return PagePlan(route: route, template: "layouts/redirect", context: context)
     }
 
     // swiftlint:disable function_body_length
@@ -155,6 +190,7 @@ public struct PageContextBuilder {
                     urlBuilder: urlBuilder,
                     lang: lang,
                     defaultLanguage: defaultLanguage,
+                    allLanguages: allLanguages,
                     baseURL: baseURL
                 ))
             }
@@ -178,7 +214,9 @@ public struct PageContextBuilder {
                     collections: collections,
                     urlBuilder: urlBuilder,
                     lang: lang,
-                    defaultLanguage: defaultLanguage
+                    defaultLanguage: defaultLanguage,
+                    allLanguages: allLanguages,
+                    baseURL: baseURL
                 ))
             }
             if data.isEmpty == false {
@@ -514,7 +552,9 @@ private extension PageContextBuilder {
         collections: [String: Collection],
         urlBuilder: SiteURLBuilder,
         lang: String = "en",
-        defaultLanguage: String = "en"
+        defaultLanguage: String = "en",
+        allLanguages: [String] = ["en"],
+        baseURL: String = "/"
     ) -> PagePlan {
         let route = "/"
         let langPrefix = (lang == defaultLanguage) ? "" : "/\(lang)"
@@ -545,7 +585,15 @@ private extension PageContextBuilder {
             "title": title,
             "description": description,
             "canonicalURL": escapeHTML(urlBuilder.compose(route: route)),
-            "twitterCard": "summary"
+            "twitterCard": "summary",
+            "lang": lang,
+            "translations": translationLinks(
+                availableLanguages: allLanguages,
+                currentLang: lang,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: route
+            )
         ]
         var homeContext: [String: Any] = [
             "featured": featured,
@@ -802,8 +850,10 @@ private extension PageContextBuilder {
         urlBuilder: SiteURLBuilder,
         lang: String = "en",
         defaultLanguage: String = "en",
+        allLanguages: [String]? = nil,
         baseURL: String = "/"
     ) -> [PagePlan] {
+        let listLanguages = allLanguages ?? [lang]
         let route = normalizedCollectionRoute(collection.config.route)
         let listTemplate = collection.config.listTemplate ?? "layouts/post-list"
         let detailTemplate = collection.config.detailTemplate ?? "layouts/post"
@@ -822,7 +872,15 @@ private extension PageContextBuilder {
             "headline": renderAccentItalics(listTitle),
             "description": escapeHTML(collection.config.lede ?? "\(collection.config.id.capitalized) listing"),
             "canonicalURL": escapeHTML(urlBuilder.compose(route: route)),
-            "twitterCard": "summary"
+            "twitterCard": "summary",
+            "lang": lang,
+            "translations": translationLinks(
+                availableLanguages: listLanguages,
+                currentLang: lang,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: route
+            )
         ]
         if let eyebrow = collection.config.eyebrow {
             listPageContext["eyebrow"] = escapeHTML(eyebrow)
@@ -864,7 +922,15 @@ private extension PageContextBuilder {
                 "twitterCard": (trimmedCoverImage?.isEmpty == false) ? "summary_large_image" : "summary",
                 "chips": chips,
                 "content": rendered[item.slug] ?? "",
-                "frontMatter": item.frontMatter
+                "frontMatter": item.frontMatter,
+                "lang": lang,
+                "translations": translationLinks(
+                    availableLanguages: item.availableLanguages,
+                    currentLang: lang,
+                    defaultLanguage: defaultLanguage,
+                    baseURL: baseURL,
+                    canonicalRoute: detailRoute
+                )
             ]
             if let primary = item.tags?.first {
                 pageContext["primaryTag"] = escapeHTML(primary)
