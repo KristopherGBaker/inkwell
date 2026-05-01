@@ -20,6 +20,13 @@ public struct SiteConfig: Codable, Equatable {
     /// segments (rendered with the theme's accent color). Falls back to the
     /// site title when not set.
     public var heroHeadline: String?
+    /// Optional footer call-to-action overrides. When unset, the theme's
+    /// default eyebrow/headline copy is used.
+    public var footerCta: FooterCtaConfig?
+    /// Optional theme-level chrome strings (work-card CTA, case-study
+    /// next/back, about-page CTAs, 404 copy, theme-toggle aria). Each field
+    /// falls back to the theme's English default when unset.
+    public var themeCopy: ThemeCopyConfig?
 
     public init(
         title: String,
@@ -34,7 +41,9 @@ public struct SiteConfig: Codable, Equatable {
         nav: [NavItem]? = nil,
         collections: [CollectionConfig]? = nil,
         home: HomeConfig? = nil,
-        heroHeadline: String? = nil
+        heroHeadline: String? = nil,
+        footerCta: FooterCtaConfig? = nil,
+        themeCopy: ThemeCopyConfig? = nil
     ) {
         self.title = title
         self.baseURL = baseURL
@@ -49,6 +58,8 @@ public struct SiteConfig: Codable, Equatable {
         self.collections = collections
         self.home = home
         self.heroHeadline = heroHeadline
+        self.footerCta = footerCta
+        self.themeCopy = themeCopy
     }
 
     public init(from decoder: Decoder) throws {
@@ -66,5 +77,7 @@ public struct SiteConfig: Codable, Equatable {
         self.collections = try container.decodeIfPresent([CollectionConfig].self, forKey: .collections)
         self.home = try container.decodeIfPresent(HomeConfig.self, forKey: .home)
         self.heroHeadline = try container.decodeIfPresent(String.self, forKey: .heroHeadline)
+        self.footerCta = try container.decodeIfPresent(FooterCtaConfig.self, forKey: .footerCta)
+        self.themeCopy = try container.decodeIfPresent(ThemeCopyConfig.self, forKey: .themeCopy)
     }
 }

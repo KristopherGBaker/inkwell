@@ -4,17 +4,17 @@
     {% if site.tagline %}<p class="eyebrow eyebrow-dot">{{ site.tagline }}</p>{% endif %}
     <h1 class="h-display">{{ site.heroHeadline }}</h1>
     {% if site.author.heroSummary %}<p class="home-hero-summary">{{ site.author.heroSummary }}</p>{% else %}{% if site.description %}<p class="home-hero-summary">{{ site.description }}</p>{% endif %}{% endif %}
-    {% if site.nav %}<div class="home-hero-ctas">
-      <a href="/work/" class="btn-primary">See selected work →</a>
-      <a href="/about/" class="btn-ghost">About me</a>
+    {% if home.heroPrimaryCta or home.heroSecondaryCta %}<div class="home-hero-ctas">
+      {% if home.heroPrimaryCta %}<a href="{{ home.heroPrimaryCta.href }}" class="btn-primary">{{ home.heroPrimaryCta.label }} →</a>{% endif %}
+      {% if home.heroSecondaryCta %}<a href="{{ home.heroSecondaryCta.href }}" class="btn-ghost">{{ home.heroSecondaryCta.label }}</a>{% endif %}
     </div>{% endif %}
   </section>
 
   {% if home.featured %}<hr class="hairline-soft">
   <section class="scroll-section">
     <div class="section-head">
-      <h2 class="h2">Selected work</h2>
-      <a href="/work/" class="read-link">All projects <span class="arrow" aria-hidden="true">→</span></a>
+      <h2 class="h2">{{ home.featuredLabel }}</h2>
+      {% if home.featuredCta %}<a href="{{ home.featuredCta.href }}" class="read-link">{{ home.featuredCta.label }} <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
     </div>
     <div class="featured-grid">{% for item in home.featured %}{% include "work-card.html" %}{% endfor %}</div>
   </section>{% endif %}
@@ -22,8 +22,8 @@
   {% if home.recent %}<hr class="hairline-soft">
   <section class="scroll-section">
     <div class="section-head">
-      <h2 class="h2">Recent writing</h2>
-      <a href="/posts/" class="read-link">Archive <span class="arrow" aria-hidden="true">→</span></a>
+      <h2 class="h2">{{ home.recentLabel }}</h2>
+      {% if home.recentCta %}<a href="{{ home.recentCta.href }}" class="read-link">{{ home.recentCta.label }} <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
     </div>
     <div class="reading">{% for post in home.recent %}{% include "post-list-item.html" %}{% endfor %}</div>
   </section>{% endif %}
@@ -32,12 +32,11 @@
   <section class="about-teaser">
     {% if site.author.portrait %}<div class="about-teaser-portrait"><img src="{{ site.author.portrait }}" alt="{{ site.author.name }}"></div>{% else %}<div class="about-teaser-portrait" aria-hidden="true"></div>{% endif %}
     <div>
-      <p class="eyebrow" style="margin-bottom: 16px;">About</p>
+      <p class="eyebrow" style="margin-bottom: 16px;">{{ home.aboutEyebrow }}</p>
       <p class="about-teaser-quote">{{ site.author.aboutTeaser }}</p>
-      <div class="about-teaser-actions">
-        <a href="/about/" class="read-link">More about me <span class="arrow" aria-hidden="true">→</span></a>
-        <a href="/resume/" class="read-link">Résumé <span class="arrow" aria-hidden="true">→</span></a>
-      </div>
+      {% if home.aboutLinks %}<div class="about-teaser-actions">
+        {% for link in home.aboutLinks %}<a href="{{ link.href }}" class="read-link">{{ link.label }} <span class="arrow" aria-hidden="true">→</span></a>{% endfor %}
+      </div>{% endif %}
     </div>
   </section>{% endif %}
 </main>

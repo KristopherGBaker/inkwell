@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block main %}<main class="container about-page page-shell">
-  <p class="eyebrow" style="margin-bottom: 18px;">04 · About</p>
+  <p class="eyebrow" style="margin-bottom: 18px;">{{ site.themeCopy.aboutEyebrow }}</p>
   <h1 class="h1" style="max-width: 880px; margin-bottom: 36px;">{{ page.title }}</h1>
 
   <div class="about-page-grid">
@@ -15,8 +15,8 @@
     <article class="about-page-prose prose">
       {{ page.content }}
       <div class="about-page-actions no-print">
-        <a href="/resume/" class="read-link">Read the résumé <span class="arrow" aria-hidden="true">→</span></a>
-        {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="read-link">Email me <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
+        <a href="/resume/" class="read-link">{{ site.themeCopy.aboutResumeCta }} <span class="arrow" aria-hidden="true">→</span></a>
+        {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="read-link">{{ site.themeCopy.aboutEmailCta }} <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
       </div>
     </article>
   </div>

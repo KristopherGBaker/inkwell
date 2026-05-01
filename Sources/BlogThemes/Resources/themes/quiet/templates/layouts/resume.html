@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block main %}<main class="resume-page page-shell">
   <div class="no-print resume-toolbar">
-    <a href="/about/" class="resume-toolbar-back">← About</a>
-    <button type="button" onclick="window.print()" class="btn-ghost">Print / Save as PDF →</button>
+    <a href="/about/" class="resume-toolbar-back">{{ data.resume.labels.back|default:"← About" }}</a>
+    <button type="button" onclick="window.print()" class="btn-ghost">{{ data.resume.labels.print|default:"Print / Save as PDF" }} →</button>
   </div>
 
   <header class="resume-header">
@@ -17,17 +17,17 @@
   </header>
 
   {% if data.resume.summary %}<section class="resume-section">
-    <h2 class="resume-label">Summary</h2>
+    <h2 class="resume-label">{{ data.resume.labels.summary|default:"Summary" }}</h2>
     <p class="resume-summary">{{ data.resume.summary }}</p>
   </section>{% endif %}
 
   {% if data.competencies %}<section class="resume-section">
-    <h2 class="resume-label">Core Competencies</h2>
+    <h2 class="resume-label">{{ data.resume.labels.competencies|default:"Core Competencies" }}</h2>
     <div class="resume-competencies">{% for area in data.competencies %}<div class="resume-competency-key">{{ area.area }}</div><div class="resume-competency-val">{{ area.description }}</div>{% endfor %}</div>
   </section>{% endif %}
 
   {% if data.experience %}<section class="resume-section">
-    <h2 class="resume-label">Experience</h2>
+    <h2 class="resume-label">{{ data.resume.labels.experience|default:"Experience" }}</h2>
     {% for role in data.experience %}<div class="resume-job">
       <div class="resume-job-head">
         <div>
@@ -42,7 +42,7 @@
   </section>{% endif %}
 
   {% if data.projects %}<section class="resume-section">
-    <h2 class="resume-label">Projects</h2>
+    <h2 class="resume-label">{{ data.resume.labels.projects|default:"Projects" }}</h2>
     {% for project in data.projects %}<div class="resume-job">
       <div class="resume-project-name">{{ project.name }}</div>
       {% if project.meta %}<p class="resume-project-meta">{{ project.meta }}</p>{% endif %}
@@ -51,7 +51,7 @@
   </section>{% endif %}
 
   {% if data.education %}<section class="resume-section">
-    <h2 class="resume-label">Education</h2>
+    <h2 class="resume-label">{{ data.resume.labels.education|default:"Education" }}</h2>
     <p class="resume-education-school">{{ data.education.school }}</p>
     <p class="resume-education-degree">{{ data.education.degree }}{% if data.education.honors %} · {{ data.education.honors }}{% endif %}</p>
   </section>{% endif %}
