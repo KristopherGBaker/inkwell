@@ -9,6 +9,7 @@
     </a>
     <nav class="top-nav">
       {% for item in site.nav %}<a href="{{ item.route }}" class="nav-link">{{ item.label }}</a>{% endfor %}
+      {% if page.translations %}{% for alt in page.translations %}<a href="{{ alt.href }}" class="nav-link lang-switch" hreflang="{{ alt.lang }}" onclick="try{localStorage.setItem('lang','{{ alt.lang }}')}catch(e){}">{{ alt.lang|uppercase }}</a>{% endfor %}{% endif %}
       <button type="button" onclick="toggleTheme()" class="chip no-print" aria-label="{{ site.themeCopy.themeToggleLabel }}">☼</button>
     </nav>
   </div>

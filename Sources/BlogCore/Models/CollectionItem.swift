@@ -20,6 +20,13 @@ public struct CollectionItem {
     public var frontMatter: [String: Any]
     public var body: String
     public var sourcePath: URL
+    /// BCP-47 language tag for this item. Defaults to the site's default
+    /// language. Set from the filename suffix (`foo.ja.md` → `"ja"`).
+    public var lang: String
+    /// All languages this item is available in (including its own). Populated
+    /// after loading, by pairing items that share a `slug`. Monolingual items
+    /// have a single-element array.
+    public var availableLanguages: [String]
 
     public init(
         slug: String,
@@ -34,7 +41,9 @@ public struct CollectionItem {
         coverImage: String? = nil,
         frontMatter: [String: Any] = [:],
         body: String = "",
-        sourcePath: URL = URL(fileURLWithPath: "/dev/null")
+        sourcePath: URL = URL(fileURLWithPath: "/dev/null"),
+        lang: String = "en",
+        availableLanguages: [String] = ["en"]
     ) {
         self.slug = slug
         self.title = title
@@ -49,6 +58,8 @@ public struct CollectionItem {
         self.frontMatter = frontMatter
         self.body = body
         self.sourcePath = sourcePath
+        self.lang = lang
+        self.availableLanguages = availableLanguages
     }
 
     public var normalizedCanonicalURL: String? {

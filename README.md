@@ -9,6 +9,7 @@ Static site generator written in Swift. Started as a personal blog tool; v0.3 ge
 - **Static data files.** YAML/JSON in `data/` is exposed to every template — drives data-driven pages like a résumé.
 - **Configurable home.** Pull featured + recent items from any collection into the landing page via a `home` config block.
 - **Themes.** Two themes bundled (`default` for blogs, `quiet` for portfolios + blogs). Stencil templates, project-side files override bundled ones per file.
+- **Multi-language (v0.5).** Opt-in i18n with default-at-root URLs (`/posts/foo/`) and prefixed translations (`/ja/posts/foo/`). File-suffix authoring — `foo.md` is the default, `foo.ja.md` is the translation. Browser-language detection on first visit, language switcher in the top bar, `<link rel="alternate" hreflang>` for SEO, and graceful fallback so partial translation never hides content.
 - **Authoring CLI.** `init`, `post new`, `content new`, `build`, `serve --watch`, `check`, `theme`, `deploy`.
 - **Markdown.** GFM (tables, task lists, strikethrough, alerts, fenced code) plus Mermaid blocks; build-time syntax highlighting with Shiki.
 - **SEO + feeds.** Canonical URLs, Open Graph, Twitter cards, sitemap.xml, robots.txt, RSS, search index.
@@ -112,7 +113,44 @@ The `resume` layout reads from `data/experience.yml`, `data/competencies.yml`, a
 - **Pages** are markdown files in `content/pages/` whose route comes from their path (`about.md → /about/`, `now/index.md → /now/`). Front-matter `layout: <name>` selects the theme template.
 - **Data files** are YAML/JSON in `data/`, loaded as `data.<basename>` in every template's context. Use them for résumé content, link rolls, structured profile data — anything where keeping the content out of markdown is cleaner.
 - **Themes** ship with the binary; project-side `themes/<name>/templates/` and `themes/<name>/assets/` override on a per-file basis. The `default` theme keeps the v0.2 blog look (Tailwind, amber/stone). The `quiet` theme is portfolio-friendly (Fraunces / Manrope / JetBrains Mono, generous whitespace, print-friendly résumé).
-- **Backward compatibility.** A v0.2 `blog.config.json` with no `collections`/`home`/`author`/`nav` keeps today's URL structure verbatim — `/posts/<slug>/`, `/archive/`, top-level `/tags/<slug>/`, paginated `/`.
+- **Backward compatibility.** A v0.2 `blog.config.json` with no `collections`/`home`/`author`/`nav` keeps today's URL structure verbatim — `/posts/<slug>/`, `/archive/`, top-level `/tags/<slug>/`, paginated `/`. Sites without an `i18n` block stay monolingual.
+
+## Multi-language
+
+Set up languages in `blog.config.json`:
+
+```json
+{
+  "i18n": { "defaultLanguage": "en", "languages": ["en", "ja"] },
+  "heroHeadline": "I build *millions* of...",
+  "footerCta": { "headline": "Quietly open to good work." },
+  "translations": {
+    "ja": {
+      "heroHeadline": "*数百万人*のための...",
+      "footerCta": { "headline": "良い仕事に静かに開いています。" },
+      "themeCopy": { "workCardCta": "ケーススタディを読む" },
+      "home": { "featuredLabel": "選ばれた仕事" },
+      "nav": [{ "label": "仕事", "route": "/work/" }],
+      "collections": [{ "id": "posts", "headline": "ある現場のメモ。" }]
+    }
+  }
+}
+```
+
+Authoring conventions:
+
+- Translate a post by adding `foo.ja.md` next to `foo.md`. Same `slug` in front matter pairs them.
+- Translate a page by adding `about.ja.md` next to `about.md`.
+- Translate a data file by adding `resume.ja.yml` next to `resume.yml`.
+- Co-located static assets (`static/posts/<slug>/cover.mp4`) are referenced once by their canonical absolute URL — the renderer rewrites relative paths automatically, so the same asset works from `/posts/foo/` and `/ja/posts/foo/`.
+
+Renderer behavior:
+
+- Default language renders at canonical root URLs; non-default languages at `/<lang>/...`.
+- `/<defaultLang>/<route>/` (e.g., `/en/posts/foo/`) emits a meta-refresh redirect to the canonical root path so explicit-prefix URLs work as aliases.
+- Listing pages, the home featured/recent strips, and detail pages always include every item — translated where available, falling back to the default language otherwise.
+- The quiet theme renders a language switcher in the top bar (only on pages that have alternate translations) and an inline browser-language redirect script that runs once per visitor (respects `localStorage.lang` so manual switches stick).
+- `<html lang="...">` and `<link rel="alternate" hreflang="...">` are emitted automatically.
 
 ## CLI reference
 
