@@ -70,7 +70,9 @@ public struct PageContextBuilder {
             "baseURL": siteConfig.baseURL,
             "brandInitial": brandInitial(for: siteConfig),
             "copyrightLine": copyrightLine(for: siteConfig),
-            "heroHeadline": heroHeadline(for: siteConfig)
+            "heroHeadline": heroHeadline(for: siteConfig),
+            "footerCta": footerCtaContext(for: siteConfig),
+            "themeCopy": themeCopyContext(for: siteConfig)
         ]
         if let brandSubtitle = siteConfig.author?.tagline {
             siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
@@ -474,10 +476,28 @@ private extension PageContextBuilder {
             "canonicalURL": escapeHTML(urlBuilder.compose(route: route)),
             "twitterCard": "summary"
         ]
-        let homeContext: [String: Any] = [
+        var homeContext: [String: Any] = [
             "featured": featured,
             "recent": recent
         ]
+        if let cta = home.heroPrimaryCta {
+            homeContext["heroPrimaryCta"] = ctaContext(cta)
+        }
+        if let cta = home.heroSecondaryCta {
+            homeContext["heroSecondaryCta"] = ctaContext(cta)
+        }
+        homeContext["featuredLabel"] = escapeHTML(home.featuredLabel ?? "Selected work")
+        homeContext["recentLabel"] = escapeHTML(home.recentLabel ?? "Recent writing")
+        homeContext["aboutEyebrow"] = escapeHTML(home.aboutEyebrow ?? "About")
+        if let cta = home.featuredCta {
+            homeContext["featuredCta"] = ctaContext(cta)
+        }
+        if let cta = home.recentCta {
+            homeContext["recentCta"] = ctaContext(cta)
+        }
+        if let links = home.aboutLinks, links.isEmpty == false {
+            homeContext["aboutLinks"] = links.map { ctaContext($0) }
+        }
         let context: [String: Any] = [
             "site": site,
             "page": pageContext,
@@ -529,6 +549,42 @@ private extension PageContextBuilder {
             result += "*"
         }
         return result
+    }
+
+    /// Footer call-to-action strings — escaped, with theme defaults when
+    /// `siteConfig.footerCta` is unset or only partially specified.
+    func footerCtaContext(for siteConfig: SiteConfig) -> [String: String] {
+        let eyebrow = siteConfig.footerCta?.eyebrow ?? "Get in touch"
+        let headline = siteConfig.footerCta?.headline ?? "Quietly open to good work."
+        return [
+            "eyebrow": escapeHTML(eyebrow),
+            "headline": escapeHTML(headline)
+        ]
+    }
+
+    /// Theme-level chrome strings — escaped, with the quiet-theme English
+    /// defaults filled in for any field the site config omits.
+    func themeCopyContext(for siteConfig: SiteConfig) -> [String: String] {
+        let copy = siteConfig.themeCopy
+        return [
+            "workCardCta": escapeHTML(copy?.workCardCta ?? "Read case study"),
+            "caseStudyBack": escapeHTML(copy?.caseStudyBack ?? "← All work"),
+            "caseStudyNextLabel": escapeHTML(copy?.caseStudyNextLabel ?? "Next"),
+            "caseStudyNextFallbackCta": escapeHTML(copy?.caseStudyNextFallbackCta ?? "Read case study"),
+            "aboutEyebrow": escapeHTML(copy?.aboutEyebrow ?? "04 · About"),
+            "aboutResumeCta": escapeHTML(copy?.aboutResumeCta ?? "Read the résumé"),
+            "aboutEmailCta": escapeHTML(copy?.aboutEmailCta ?? "Email me"),
+            "notFoundEyebrow": escapeHTML(copy?.notFoundEyebrow ?? "404 · NOT FOUND"),
+            "notFoundHeadline": escapeHTML(copy?.notFoundHeadline ?? "This page is in another castle."),
+            "notFoundBody": escapeHTML(copy?.notFoundBody ?? "Or it never existed. Or it's still drafted in a markdown file on my laptop. Try the home page."),
+            "notFoundCta": escapeHTML(copy?.notFoundCta ?? "Back home"),
+            "themeToggleLabel": escapeHTML(copy?.themeToggleLabel ?? "Toggle theme")
+        ]
+    }
+
+    /// Renders a `HomeCta` as an escaped {label, href} dict for templates.
+    func ctaContext(_ cta: HomeCta) -> [String: String] {
+        ["label": escapeHTML(cta.label), "href": escapeHTML(cta.href)]
     }
 
     /// First letter of the author's name (or site title), uppercased. Used by

@@ -9,7 +9,7 @@
     </a>
     <nav class="top-nav">
       {% for item in site.nav %}<a href="{{ item.route }}" class="nav-link">{{ item.label }}</a>{% endfor %}
-      <button type="button" onclick="toggleTheme()" class="chip no-print" aria-label="Toggle theme">☼</button>
+      <button type="button" onclick="toggleTheme()" class="chip no-print" aria-label="{{ site.themeCopy.themeToggleLabel }}">☼</button>
     </nav>
   </div>
 </header>
