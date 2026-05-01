@@ -399,7 +399,7 @@
 @media (max-width: 720px) {
   .case-study-shots { grid-template-columns: 1fr; }
 }
-.case-study-prose { margin-bottom: 56px; }
+.case-study-prose { max-width: 880px; margin: 0 0 56px; }
 .case-study-next {
   border-top: 1px solid var(--border);
   padding-top: 32px;
