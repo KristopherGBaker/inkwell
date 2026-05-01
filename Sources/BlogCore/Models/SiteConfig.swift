@@ -16,6 +16,10 @@ public struct SiteConfig: Codable, Equatable {
     public var nav: [NavItem]?
     public var collections: [CollectionConfig]?
     public var home: HomeConfig?
+    /// Optional homepage hero headline. Use `*word*` to mark italic-accent
+    /// segments (rendered with the theme's accent color). Falls back to the
+    /// site title when not set.
+    public var heroHeadline: String?
 
     public init(
         title: String,
@@ -29,7 +33,8 @@ public struct SiteConfig: Codable, Equatable {
         author: AuthorConfig? = nil,
         nav: [NavItem]? = nil,
         collections: [CollectionConfig]? = nil,
-        home: HomeConfig? = nil
+        home: HomeConfig? = nil,
+        heroHeadline: String? = nil
     ) {
         self.title = title
         self.baseURL = baseURL
@@ -43,6 +48,7 @@ public struct SiteConfig: Codable, Equatable {
         self.nav = nav
         self.collections = collections
         self.home = home
+        self.heroHeadline = heroHeadline
     }
 
     public init(from decoder: Decoder) throws {
@@ -59,5 +65,6 @@ public struct SiteConfig: Codable, Equatable {
         self.nav = try container.decodeIfPresent([NavItem].self, forKey: .nav)
         self.collections = try container.decodeIfPresent([CollectionConfig].self, forKey: .collections)
         self.home = try container.decodeIfPresent(HomeConfig.self, forKey: .home)
+        self.heroHeadline = try container.decodeIfPresent(String.self, forKey: .heroHeadline)
     }
 }

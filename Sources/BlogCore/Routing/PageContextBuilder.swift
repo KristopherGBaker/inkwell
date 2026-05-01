@@ -67,8 +67,14 @@ public struct PageContextBuilder {
             "description": escapeHTML(siteDescription),
             "tagline": escapeHTML(siteTagline),
             "searchEnabled": searchEnabled,
-            "baseURL": siteConfig.baseURL
+            "baseURL": siteConfig.baseURL,
+            "brandInitial": brandInitial(for: siteConfig),
+            "copyrightLine": copyrightLine(for: siteConfig),
+            "heroHeadline": heroHeadline(for: siteConfig)
         ]
+        if let brandSubtitle = siteConfig.author?.tagline {
+            siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
+        }
         if let author = siteConfig.author {
             siteContext["author"] = authorContext(author, urlBuilder: urlBuilder)
         }
@@ -388,14 +394,34 @@ private extension PageContextBuilder {
     }
 
     func postCardContext(_ post: RenderablePost, urlBuilder: SiteURLBuilder) -> [String: Any] {
-        return [
+        var ctx: [String: Any] = [
             "slug": post.slug,
             "title": escapeHTML(post.title),
             "summary": escapeHTML(post.summary),
             "date": escapeHTML(post.date),
+            "displayDate": escapeHTML(formatDisplayDate(post.date)),
             "link": urlBuilder.link(for: "/posts/\(post.slug)/"),
             "chips": makeTaxonomyChips(tags: post.tags, categories: post.categories, urlBuilder: urlBuilder)
         ]
+        if let primary = post.tags.first {
+            ctx["primaryTag"] = escapeHTML(primary)
+        }
+        if let primaryCategory = post.categories.first {
+            ctx["primaryCategory"] = escapeHTML(primaryCategory)
+        }
+        return ctx
+    }
+
+    /// Convert an ISO 8601 / YAML date string into a display-friendly form
+    /// matching the prototype ("2026.04.20"). Falls back to the raw value.
+    func formatDisplayDate(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else { return "" }
+        let prefix = String(trimmed.prefix(10))
+        if prefix.count == 10, prefix[prefix.index(prefix.startIndex, offsetBy: 4)] == "-" {
+            return prefix.replacingOccurrences(of: "-", with: ".")
+        }
+        return trimmed
     }
 
     func makeTaxonomyChips(tags: [String], categories: [String], urlBuilder: SiteURLBuilder) -> [[String: Any]] {
@@ -466,6 +492,61 @@ private extension PageContextBuilder {
         return PagePlan(route: route, template: "layouts/\(home.template)", context: context)
     }
 
+    /// Hero headline with `*word*` → `<em class="accent-em">word</em>` transform.
+    /// Falls back to the site title (escaped) when no headline is configured.
+    func heroHeadline(for siteConfig: SiteConfig) -> String {
+        let raw = siteConfig.heroHeadline ?? siteConfig.title
+        return renderAccentItalics(raw)
+    }
+
+    /// Splits `text` on `*…*` markers; returns escaped HTML with the inner
+    /// segments wrapped in `<em class="accent-em">`. Unbalanced asterisks
+    /// degrade gracefully — a stray `*` is rendered as a literal asterisk.
+    func renderAccentItalics(_ text: String) -> String {
+        var result = ""
+        var inAccent = false
+        var buffer = ""
+        for character in text {
+            if character == "*" {
+                let escaped = escapeHTML(buffer)
+                if inAccent {
+                    result += "<em class=\"accent-em\">\(escaped)</em>"
+                } else {
+                    result += escaped
+                }
+                buffer = ""
+                inAccent.toggle()
+                continue
+            }
+            buffer.append(character)
+        }
+        if buffer.isEmpty == false {
+            // Trailing buffer — if we ended mid-accent, keep the literal asterisk + content.
+            let escaped = escapeHTML(buffer)
+            result += inAccent ? "*\(escaped)" : escaped
+        } else if inAccent {
+            // Open marker with no closing one and no content; emit the asterisk literally.
+            result += "*"
+        }
+        return result
+    }
+
+    /// First letter of the author's name (or site title), uppercased. Used by
+    /// the quiet theme's brand mark.
+    func brandInitial(for siteConfig: SiteConfig) -> String {
+        let source = siteConfig.author?.name ?? siteConfig.title
+        guard let first = source.trimmingCharacters(in: .whitespacesAndNewlines).first else { return "·" }
+        return String(first).uppercased()
+    }
+
+    /// Default footer copyright line: "© <year> · <author or title>". Themes
+    /// can override via the `head:` HTML fragment if they want something else.
+    func copyrightLine(for siteConfig: SiteConfig) -> String {
+        let year = Calendar(identifier: .gregorian).component(.year, from: Date())
+        let owner = siteConfig.author?.name ?? siteConfig.title
+        return escapeHTML("© \(year) · \(owner)")
+    }
+
     func authorContext(_ author: AuthorConfig, urlBuilder: SiteURLBuilder) -> [String: Any] {
         var context: [String: Any] = [
             "name": escapeHTML(author.name)
@@ -473,6 +554,13 @@ private extension PageContextBuilder {
         if let role = author.role { context["role"] = escapeHTML(role) }
         if let location = author.location { context["location"] = escapeHTML(location) }
         if let email = author.email { context["email"] = escapeHTML(email) }
+        if let tagline = author.tagline { context["tagline"] = escapeHTML(tagline) }
+        if let timezone = author.timezone { context["timezone"] = escapeHTML(timezone) }
+        if let heroSummary = author.heroSummary { context["heroSummary"] = escapeHTML(heroSummary) }
+        if let aboutTeaser = author.aboutTeaser { context["aboutTeaser"] = escapeHTML(aboutTeaser) }
+        if let portrait = author.portrait?.trimmingCharacters(in: .whitespacesAndNewlines), portrait.isEmpty == false {
+            context["portrait"] = escapeHTML(portrait.hasPrefix("/") ? urlBuilder.link(for: portrait) : portrait)
+        }
         if let social = author.social, social.isEmpty == false {
             context["social"] = social.map { link -> [String: String] in
                 [
@@ -537,13 +625,21 @@ private extension PageContextBuilder {
             collectionItemCardContext($0, route: route, urlBuilder: urlBuilder)
         }
 
-        let listPageContext: [String: Any] = [
+        let listTitle = collection.config.headline ?? collection.config.id.capitalized
+        var listPageContext: [String: Any] = [
             "type": "collection-list",
-            "title": escapeHTML(collection.config.id.capitalized),
-            "description": escapeHTML("\(collection.config.id.capitalized) listing"),
+            "title": escapeHTML(listTitle),
+            "headline": renderAccentItalics(listTitle),
+            "description": escapeHTML(collection.config.lede ?? "\(collection.config.id.capitalized) listing"),
             "canonicalURL": escapeHTML(urlBuilder.compose(route: route)),
             "twitterCard": "summary"
         ]
+        if let eyebrow = collection.config.eyebrow {
+            listPageContext["eyebrow"] = escapeHTML(eyebrow)
+        }
+        if let lede = collection.config.lede {
+            listPageContext["lede"] = escapeHTML(lede)
+        }
         let listContext: [String: Any] = [
             "site": site,
             "page": listPageContext,
@@ -557,7 +653,7 @@ private extension PageContextBuilder {
         ]
         plans.append(PagePlan(route: route, template: listTemplate, context: listContext))
 
-        for item in collection.items {
+        for (index, item) in collection.items.enumerated() {
             let detailRoute = "\(route)\(item.slug)/"
             let chips = makeCollectionTaxonomyChips(
                 item: item,
@@ -570,13 +666,31 @@ private extension PageContextBuilder {
                 "type": "collection-detail",
                 "title": escapeHTML(item.title),
                 "description": escapeHTML(item.summary ?? item.title),
+                "summary": escapeHTML(item.summary ?? ""),
                 "date": escapeHTML(item.date ?? ""),
+                "displayDate": escapeHTML(formatDisplayDate(item.date ?? "")),
+                "readMin": estimatedReadingTime(forBody: item.body),
                 "canonicalURL": escapeHTML(item.normalizedCanonicalURL ?? urlBuilder.compose(route: detailRoute)),
                 "twitterCard": (trimmedCoverImage?.isEmpty == false) ? "summary_large_image" : "summary",
                 "chips": chips,
                 "content": rendered[item.slug] ?? "",
                 "frontMatter": item.frontMatter
             ]
+            if let primary = item.tags?.first {
+                pageContext["primaryTag"] = escapeHTML(primary)
+            }
+            if let year = item.frontMatter["year"] {
+                pageContext["year"] = String(describing: year)
+            }
+            if let org = item.frontMatter["org"] as? String {
+                pageContext["org"] = escapeHTML(org)
+            }
+            if let role = item.frontMatter["role"] as? String {
+                pageContext["role"] = escapeHTML(role)
+            }
+            if let brand = item.frontMatter["brand"] as? String {
+                pageContext["brand"] = brand
+            }
             if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
                 let resolved = trimmed.hasPrefix("/") ? urlBuilder.link(for: trimmed) : trimmed
                 pageContext["coverImage"] = [
@@ -585,14 +699,33 @@ private extension PageContextBuilder {
                 ]
             }
 
+            // Wrap-around "next" sibling — used by the case-study layout's
+            // bottom navigation. Skipped when the collection has only one item.
+            var collectionContext: [String: Any] = [
+                "id": collection.config.id,
+                "route": urlBuilder.link(for: route)
+            ]
+            if collection.items.count > 1 {
+                let nextItem = collection.items[(index + 1) % collection.items.count]
+                let nextDetailRoute = "\(route)\(nextItem.slug)/"
+                var next: [String: Any] = [
+                    "title": escapeHTML(nextItem.title),
+                    "link": urlBuilder.link(for: nextDetailRoute)
+                ]
+                if let nextOrg = nextItem.frontMatter["org"] as? String {
+                    next["org"] = escapeHTML(nextOrg)
+                }
+                if let nextYear = nextItem.frontMatter["year"] {
+                    next["year"] = String(describing: nextYear)
+                }
+                collectionContext["next"] = next
+            }
+
             let context: [String: Any] = [
                 "site": site,
                 "page": pageContext,
                 "links": ["home": urlBuilder.link(for: "/")],
-                "collection": [
-                    "id": collection.config.id,
-                    "route": urlBuilder.link(for: route)
-                ]
+                "collection": collectionContext
             ]
             plans.append(PagePlan(route: detailRoute, template: detailTemplate, context: context))
         }
@@ -656,15 +789,60 @@ private extension PageContextBuilder {
 
     func collectionItemCardContext(_ item: CollectionItem, route: String, urlBuilder: SiteURLBuilder) -> [String: Any] {
         let detailRoute = "\(route)\(item.slug)/"
-        return [
+        var ctx: [String: Any] = [
             "slug": item.slug,
             "title": escapeHTML(item.title),
             "summary": escapeHTML(item.summary ?? ""),
+            "blurb": escapeHTML(item.summary ?? ""),
             "date": escapeHTML(item.date ?? ""),
+            "displayDate": escapeHTML(formatDisplayDate(item.date ?? "")),
             "link": urlBuilder.link(for: detailRoute),
-            "chips": [], // chips are typed-only here; keep callers using card partial happy
-            "frontMatter": item.frontMatter
+            "chips": [],
+            "frontMatter": item.frontMatter,
+            "readMin": estimatedReadingTime(forBody: item.body)
         ]
+        if let primary = item.tags?.first {
+            ctx["primaryTag"] = escapeHTML(primary)
+        }
+        if let year = item.frontMatter["year"] {
+            ctx["year"] = String(describing: year)
+        }
+        if let org = item.frontMatter["org"] as? String {
+            ctx["org"] = escapeHTML(org)
+        }
+        if let role = item.frontMatter["role"] as? String {
+            ctx["role"] = escapeHTML(role)
+        }
+        if let brand = item.frontMatter["brand"] as? String {
+            ctx["brand"] = brand
+        }
+        if let coverPath = resolvedCoverImage(for: item, urlBuilder: urlBuilder) {
+            ctx["coverImage"] = coverPath
+        }
+        return ctx
+    }
+
+    /// Resolve the card's cover image: prefer explicit `coverImage`, otherwise fall back
+    /// to the first `shots` entry. Always returns a renderable URL string.
+    private func resolvedCoverImage(for item: CollectionItem, urlBuilder: SiteURLBuilder) -> String? {
+        if let cover = item.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines), cover.isEmpty == false {
+            return escapeHTML(cover.hasPrefix("/") ? urlBuilder.link(for: cover) : cover)
+        }
+        if let shots = item.frontMatter["shots"] as? [Any], let first = shots.first as? String {
+            let trimmed = first.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty == false {
+                return escapeHTML(trimmed.hasPrefix("/") ? urlBuilder.link(for: trimmed) : trimmed)
+            }
+        }
+        return nil
+    }
+
+    /// Coarse word-count-based reading-time estimate (200 wpm).
+    /// Returns at least 1 for non-empty bodies.
+    private func estimatedReadingTime(forBody body: String) -> Int {
+        let words = body.split { $0.isWhitespace || $0.isNewline }.count
+        guard words > 0 else { return 0 }
+        return max(1, Int((Double(words) / 200.0).rounded()))
     }
 
     func makeCollectionTaxonomyChips(
@@ -688,7 +866,7 @@ private extension PageContextBuilder {
                     values = []
                 }
             }
-            for value in values.prefix(3) {
+            for value in values {
                 chips.append([
                     "label": escapeHTML(value),
                     "href": urlBuilder.link(for: "\(collectionRoute)\(taxonomy)/\(taxonomySlug(value))/")

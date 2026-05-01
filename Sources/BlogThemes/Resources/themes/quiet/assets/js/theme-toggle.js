@@ -10,3 +10,28 @@ function toggleTheme() {
   document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem("theme", next);
 }
+
+// Scroll progress indicator — fills horizontally as the page scrolls.
+(function() {
+  function updateScrollProgress() {
+    var bar = document.getElementById("scroll-progress");
+    if (!bar) return;
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = max > 0 ? window.scrollY / max : 0;
+    if (progress < 0) progress = 0;
+    if (progress > 1) progress = 1;
+    bar.style.transform = "scaleX(" + progress + ")";
+  }
+
+  function init() {
+    updateScrollProgress();
+    window.addEventListener("scroll", updateScrollProgress, { passive: true });
+    window.addEventListener("resize", updateScrollProgress, { passive: true });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

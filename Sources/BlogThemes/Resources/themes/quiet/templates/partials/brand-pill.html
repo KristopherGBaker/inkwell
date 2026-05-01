@@ -1,0 +1,4 @@
+{% if pill.label %}<span class="brand-pill">
+  {% if pill.brand %}<span class="brand-pill-mark {{ pill.brand }}">{% if pill.markLabel %}{{ pill.markLabel }}{% endif %}</span>{% else %}<span class="brand-pill-mark placeholder">·</span>{% endif %}
+  {{ pill.label }}
+</span>{% endif %}

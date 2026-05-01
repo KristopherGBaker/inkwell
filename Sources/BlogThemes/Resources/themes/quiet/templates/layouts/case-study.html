@@ -1,18 +1,41 @@
 {% extends "base.html" %}
-{% block main %}    <main class="container page-shell">
-      <article class="reading case-study">
-        <header>
-          {% if page.frontMatter.year or page.frontMatter.org %}<p class="eyebrow">{% if page.frontMatter.year %}{{ page.frontMatter.year }}{% endif %}{% if page.frontMatter.org %} · {{ page.frontMatter.org }}{% endif %}</p>{% endif %}
-          <h1 class="h1">{{ page.title }}</h1>
-          {% if page.description %}<p class="body-lg">{{ page.description }}</p>{% endif %}
-        </header>
-        {% if page.frontMatter.metrics %}<section class="metrics">
-          {% for metric in page.frontMatter.metrics %}<div class="metric"><p class="metric-value">{{ metric.value }}</p><p class="metric-label">{{ metric.label }}</p></div>{% endfor %}
-        </section>{% endif %}
-        <div class="prose">{{ page.content }}</div>
-        {% if page.frontMatter.shots %}<section class="shots">
-          {% for shot in page.frontMatter.shots %}<figure class="shot-frame"><img src="{{ shot }}" alt=""></figure>{% endfor %}
-        </section>{% endif %}
-      </article>
-    </main>
+{% block main %}<main class="container case-study page-shell">
+  <a href="{{ collection.route }}" class="case-study-back">← All work</a>
+
+  <div class="case-study-brand">
+    <span class="brand-pill">
+      {% if page.brand %}<span class="brand-pill-mark {{ page.brand }}"></span>{% else %}<span class="brand-pill-mark placeholder">·</span>{% endif %}
+      {% if page.org %}{{ page.org }}{% endif %}{% if page.role %}{% if page.org %} · {% endif %}{{ page.role }}{% endif %}{% if page.year %}{% if page.org or page.role %} · {% endif %}{{ page.year }}{% endif %}
+    </span>
+  </div>
+
+  <h1 class="h1 case-study-title">{{ page.title }}</h1>
+  {% if page.summary %}<p class="body-lg case-study-blurb">{{ page.summary }}</p>{% endif %}
+
+  {% if page.chips %}<div class="case-study-tags">{% for chip in page.chips %}<a href="{{ chip.href }}" class="tag-chip">{{ chip.label }}</a>{% endfor %}</div>{% endif %}
+
+  {% if page.frontMatter.metrics %}<section class="case-study-metrics" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+    {% for metric in page.frontMatter.metrics %}<div>
+      <p class="case-study-metric-value">{{ metric.value }}</p>
+      <p class="case-study-metric-label">{{ metric.label }}</p>
+    </div>{% endfor %}
+  </section>{% endif %}
+
+  {% if page.coverImage %}<figure class="shot-frame case-study-hero"><img src="{{ page.coverImage.src }}" alt="{{ page.coverImage.alt }}"></figure>{% endif %}
+
+  <article class="reading prose case-study-prose">{{ page.content }}</article>
+
+  {% if page.frontMatter.shots %}<section class="case-study-shots">
+    {% for shot in page.frontMatter.shots %}<figure class="shot-frame"><img src="{{ shot }}" alt=""></figure>{% endfor %}
+  </section>{% endif %}
+
+  {% if collection.next %}<div class="case-study-next">
+    <p class="case-study-next-label">Next</p>
+    <a href="{{ collection.next.link }}" class="case-study-next-row">
+      <span class="case-study-next-title">{{ collection.next.title }}</span>
+      <span class="read-link">{% if collection.next.org %}{{ collection.next.org }}{% else %}Read case study{% endif %} <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
+  </div>{% endif %}
+</main>
 {% endblock %}
+
