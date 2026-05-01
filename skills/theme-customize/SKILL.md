@@ -141,6 +141,20 @@ Avoid:
 - **Test with `inkwell serve --watch`.** It reloads when you edit theme files, so you see breakage immediately.
 - **Mind context shapes.** Each layout has a known context (see `PageContextBuilder` for the canonical shape). Adding a field to a template that isn't in the context will silently render empty.
 
+## Translatable theme strings (v0.5+)
+
+If a theme template has a hardcoded user-facing string (a label, a button, an aria-label, an empty-state message), it should usually be configurable via `ThemeCopyConfig` so sites can override it globally and translate it per language.
+
+To add a new translatable theme string:
+
+1. Add the field to `Sources/BlogCore/Models/ThemeCopyConfig.swift` (optional `String?`, plus the init parameter).
+2. Expose it from `themeCopyContext(for:overlay:)` in `PageContextBuilder.swift` with a sensible default — `escapeHTML(over?.<field> ?? base?.<field> ?? "Default text")`.
+3. Reference it in the template: `{{ site.themeCopy.<field> }}`.
+
+In the project's `blog.config.json`, sites override globally via `themeCopy.<field>` and per-language via `translations.<lang>.themeCopy.<field>`. Anything not overridden falls back to the default English string baked into the helper.
+
+For per-page strings driven by content (e.g., section labels on the résumé page), prefer Stencil's `default` filter against `data.<file>.labels.<key>` — `{{ data.resume.labels.summary | default:"Summary" }}` — so translations live in `data/<file>.<lang>.yml` and don't need a Swift schema change.
+
 ## Hand-Offs
 
 - For initial site config: `site-setup`.

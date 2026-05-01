@@ -66,6 +66,15 @@ Ask the user to scan for:
 - Bullets that softened a number.
 - Competency groupings they'd reorganize.
 
+## Multi-language data (v0.5+)
+
+If the site has `i18n` configured and the user wants a translated résumé:
+
+- Add a sibling YAML file with `<base>.<lang>.yml` — `data/experience.yml` (default) plus `data/experience.ja.yml` (Japanese). Same for `competencies.yml`, `education.yml`, `projects.yml`, and `resume.yml`.
+- Inkwell prefers the `<lang>` variant when present and falls back to the unsuffixed file when missing — so the user can translate one file at a time.
+- The résumé layout's section labels (Summary, Core Competencies, Experience, Projects, Education) and toolbar (← About, Print / Save as PDF) come from `data/resume.yml`'s `labels:` block. Override per language by setting the same `labels:` block in `data/resume.ja.yml`.
+- For Japanese, prefer the user's actual `職務経歴書` phrasing if they have one — it's a different register from English résumé style. Don't blindly translate verb-by-verb.
+
 ## Multi-Agent Notes
 
 This skill is intended to be portable across agents (Claude Code, Codex, etc.). The body of each subskill is plain markdown describing a workflow — agents read the schema, extraction rules, and pitfalls, then use their own file/read tools to do the work. Frontmatter in this `SKILL.md` and subskills is for Claude Code's skill discovery.
