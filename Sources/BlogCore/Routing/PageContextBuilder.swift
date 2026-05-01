@@ -47,19 +47,62 @@ public struct PageContextBuilder {
         renderedContent: [String: String],
         baseURL: String = "/",
         siteConfig: SiteConfig = SiteConfig(title: "Field Notes"),
-        data: [String: Any] = [:],
+        dataByLanguage: [String: [String: Any]] = [:],
         collections: [String: Collection] = [:],
-        collectionRenderedContent: [String: [String: String]] = [:],
+        collectionRenderedContent: [String: [String: [String: String]]] = [:],
         pages: [Page] = [],
-        pageRenderedContent: [String: String] = [:]
+        pageRenderedContent: [String: [String: String]] = [:]
     ) -> [PagePlan] {
-        let urlBuilder = SiteURLBuilder(baseURL: baseURL)
+        let defaultLang = siteConfig.i18n?.resolvedDefaultLanguage ?? "en"
+        let configuredLangs = siteConfig.i18n?.resolvedLanguages ?? [defaultLang]
 
-        let normalizedSiteTitle = siteConfig.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "Field Notes"
-            : siteConfig.title
-        let siteDescription = siteConfig.description ?? normalizedSiteTitle
-        let siteTagline = siteConfig.tagline ?? siteDescription
+        var plans: [PagePlan] = []
+        for lang in configuredLangs {
+            let perLang = buildPlansForLanguage(
+                lang: lang,
+                defaultLanguage: defaultLang,
+                allLanguages: configuredLangs,
+                posts: posts,
+                renderedContent: renderedContent,
+                baseURL: baseURL,
+                siteConfig: siteConfig,
+                data: dataByLanguage[lang] ?? [:],
+                collections: collections,
+                collectionRenderedContent: collectionRenderedContent.mapValues { $0[lang] ?? [:] },
+                pages: pages,
+                pageRenderedContent: pageRenderedContent[lang] ?? [:]
+            )
+            plans.append(contentsOf: perLang)
+        }
+        return plans
+    }
+
+    // swiftlint:disable function_body_length
+    private func buildPlansForLanguage(
+        lang: String,
+        defaultLanguage: String,
+        allLanguages: [String],
+        posts: [PostDocument],
+        renderedContent: [String: String],
+        baseURL: String,
+        siteConfig: SiteConfig,
+        data: [String: Any],
+        collections: [String: Collection],
+        collectionRenderedContent: [String: [String: String]],
+        pages: [Page],
+        pageRenderedContent: [String: String]
+    ) -> [PagePlan] {
+        let langPrefix = (lang == defaultLanguage) ? "" : lang
+        let urlBuilder = SiteURLBuilder(baseURL: baseURL, langPrefix: langPrefix)
+        let overlay = siteConfig.translations?[lang]
+
+        let normalizedSiteTitle: String = {
+            if let title = overlay?.title, title.isEmpty == false { return title }
+            let trimmed = siteConfig.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "Field Notes" : siteConfig.title
+        }()
+        let siteDescription = overlay?.description ?? siteConfig.description ?? normalizedSiteTitle
+        let siteTagline = overlay?.tagline ?? siteConfig.tagline ?? siteDescription
         let searchEnabled = siteConfig.searchEnabled ?? true
 
         var siteContext: [String: Any] = [
@@ -68,19 +111,24 @@ public struct PageContextBuilder {
             "tagline": escapeHTML(siteTagline),
             "searchEnabled": searchEnabled,
             "baseURL": siteConfig.baseURL,
+            "lang": lang,
+            "languages": allLanguages,
+            "defaultLanguage": defaultLanguage,
             "brandInitial": brandInitial(for: siteConfig),
             "copyrightLine": copyrightLine(for: siteConfig),
-            "heroHeadline": heroHeadline(for: siteConfig),
-            "footerCta": footerCtaContext(for: siteConfig),
-            "themeCopy": themeCopyContext(for: siteConfig)
+            "heroHeadline": heroHeadline(for: siteConfig, overlay: overlay),
+            "footerCta": footerCtaContext(for: siteConfig, overlay: overlay),
+            "themeCopy": themeCopyContext(for: siteConfig, overlay: overlay)
         ]
-        if let brandSubtitle = siteConfig.author?.tagline {
+        let brandSubtitle = overlay?.author?.tagline ?? siteConfig.author?.tagline
+        if let brandSubtitle {
             siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
         }
         if let author = siteConfig.author {
-            siteContext["author"] = authorContext(author, urlBuilder: urlBuilder)
+            siteContext["author"] = authorContext(author, overlay: overlay?.author, urlBuilder: urlBuilder)
         }
-        if let nav = siteConfig.nav, nav.isEmpty == false {
+        let resolvedNav = overlay?.nav ?? siteConfig.nav
+        if let nav = resolvedNav, nav.isEmpty == false {
             siteContext["nav"] = nav.map { item -> [String: String] in
                 [
                     "label": escapeHTML(item.label),
@@ -95,28 +143,42 @@ public struct PageContextBuilder {
             for config in configs {
                 guard let collection = collections[config.id] else { continue }
                 let rendered = collectionRenderedContent[config.id] ?? [:]
+                let resolvedConfig = applyOverlay(to: config, overlay: overlay)
+                let langCollection = Collection(
+                    config: resolvedConfig,
+                    items: collection.items.filter { $0.lang == lang }
+                )
                 plans.append(contentsOf: makeCollectionPlans(
-                    collection: collection,
+                    collection: langCollection,
                     rendered: rendered,
                     site: siteContext,
-                    urlBuilder: urlBuilder
+                    urlBuilder: urlBuilder,
+                    lang: lang,
+                    defaultLanguage: defaultLanguage,
+                    baseURL: baseURL
                 ))
             }
-            for page in pages {
+            for page in pages where page.lang == lang {
                 plans.append(makeStandalonePagePlan(
                     page: page,
                     rendered: pageRenderedContent[page.route] ?? "",
                     site: siteContext,
-                    urlBuilder: urlBuilder
+                    urlBuilder: urlBuilder,
+                    lang: lang,
+                    defaultLanguage: defaultLanguage,
+                    baseURL: baseURL
                 ))
             }
             if let home = siteConfig.home {
-                plans = plans.filter { $0.route != "/" }
+                let homeRoute = (lang == defaultLanguage) ? "/" : "/\(lang)/"
+                plans = plans.filter { $0.route != homeRoute }
                 plans.append(makeHomePlan(
                     home: home,
                     site: siteContext,
                     collections: collections,
-                    urlBuilder: urlBuilder
+                    urlBuilder: urlBuilder,
+                    lang: lang,
+                    defaultLanguage: defaultLanguage
                 ))
             }
             if data.isEmpty == false {
@@ -128,6 +190,10 @@ public struct PageContextBuilder {
             }
             return plans
         }
+
+        // Legacy posts path runs only for the default language; non-default
+        // languages without collections produce no plans.
+        guard lang == defaultLanguage else { return [] }
 
         let mapped = posts.compactMap(mapPost).sorted { $0.date > $1.date }
 
@@ -446,9 +512,12 @@ private extension PageContextBuilder {
         home: HomeConfig,
         site: [String: Any],
         collections: [String: Collection],
-        urlBuilder: SiteURLBuilder
+        urlBuilder: SiteURLBuilder,
+        lang: String = "en",
+        defaultLanguage: String = "en"
     ) -> PagePlan {
         let route = "/"
+        let langPrefix = (lang == defaultLanguage) ? "" : "/\(lang)"
         let title = (site["title"] as? String) ?? "Home"
         let description = (site["description"] as? String) ?? title
 
@@ -456,7 +525,8 @@ private extension PageContextBuilder {
             .flatMap { collections[$0] }
             .map { collection in
                 let count = home.featuredCount ?? 4
-                return Array(collection.items.prefix(count)).map {
+                let langItems = collection.items.filter { $0.lang == lang }
+                return Array(langItems.prefix(count)).map {
                     collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
                 }
             } ?? []
@@ -464,7 +534,8 @@ private extension PageContextBuilder {
             .flatMap { collections[$0] }
             .map { collection in
                 let count = home.recentCount ?? 3
-                return Array(collection.items.prefix(count)).map {
+                let langItems = collection.items.filter { $0.lang == lang }
+                return Array(langItems.prefix(count)).map {
                     collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
                 }
             } ?? []
@@ -509,13 +580,13 @@ private extension PageContextBuilder {
             "posts": [],
             "pagination": ["currentPage": 1, "totalPages": 1, "items": []]
         ]
-        return PagePlan(route: route, template: "layouts/\(home.template)", context: context)
+        return PagePlan(route: langPrefix + route, template: "layouts/\(home.template)", context: context)
     }
 
     /// Hero headline with `*word*` → `<em class="accent-em">word</em>` transform.
     /// Falls back to the site title (escaped) when no headline is configured.
-    func heroHeadline(for siteConfig: SiteConfig) -> String {
-        let raw = siteConfig.heroHeadline ?? siteConfig.title
+    func heroHeadline(for siteConfig: SiteConfig, overlay: TranslationOverlay? = nil) -> String {
+        let raw = overlay?.heroHeadline ?? siteConfig.heroHeadline ?? siteConfig.title
         return renderAccentItalics(raw)
     }
 
@@ -552,10 +623,14 @@ private extension PageContextBuilder {
     }
 
     /// Footer call-to-action strings — escaped, with theme defaults when
-    /// `siteConfig.footerCta` is unset or only partially specified.
-    func footerCtaContext(for siteConfig: SiteConfig) -> [String: String] {
-        let eyebrow = siteConfig.footerCta?.eyebrow ?? "Get in touch"
-        let headline = siteConfig.footerCta?.headline ?? "Quietly open to good work."
+    /// `siteConfig.footerCta` is unset or only partially specified. The
+    /// `overlay` (per-language translation) wins over `siteConfig` field-by-
+    /// field — set fields override; nil fields fall back.
+    func footerCtaContext(for siteConfig: SiteConfig, overlay: TranslationOverlay? = nil) -> [String: String] {
+        let base = siteConfig.footerCta
+        let over = overlay?.footerCta
+        let eyebrow = over?.eyebrow ?? base?.eyebrow ?? "Get in touch"
+        let headline = over?.headline ?? base?.headline ?? "Quietly open to good work."
         return [
             "eyebrow": escapeHTML(eyebrow),
             "headline": escapeHTML(headline)
@@ -563,22 +638,24 @@ private extension PageContextBuilder {
     }
 
     /// Theme-level chrome strings — escaped, with the quiet-theme English
-    /// defaults filled in for any field the site config omits.
-    func themeCopyContext(for siteConfig: SiteConfig) -> [String: String] {
-        let copy = siteConfig.themeCopy
+    /// defaults filled in for any field the site config omits. Overlay
+    /// fields (per-language) win over base fields.
+    func themeCopyContext(for siteConfig: SiteConfig, overlay: TranslationOverlay? = nil) -> [String: String] {
+        let base = siteConfig.themeCopy
+        let over = overlay?.themeCopy
         return [
-            "workCardCta": escapeHTML(copy?.workCardCta ?? "Read case study"),
-            "caseStudyBack": escapeHTML(copy?.caseStudyBack ?? "← All work"),
-            "caseStudyNextLabel": escapeHTML(copy?.caseStudyNextLabel ?? "Next"),
-            "caseStudyNextFallbackCta": escapeHTML(copy?.caseStudyNextFallbackCta ?? "Read case study"),
-            "aboutEyebrow": escapeHTML(copy?.aboutEyebrow ?? "04 · About"),
-            "aboutResumeCta": escapeHTML(copy?.aboutResumeCta ?? "Read the résumé"),
-            "aboutEmailCta": escapeHTML(copy?.aboutEmailCta ?? "Email me"),
-            "notFoundEyebrow": escapeHTML(copy?.notFoundEyebrow ?? "404 · NOT FOUND"),
-            "notFoundHeadline": escapeHTML(copy?.notFoundHeadline ?? "This page is in another castle."),
-            "notFoundBody": escapeHTML(copy?.notFoundBody ?? "Or it never existed. Or it's still drafted in a markdown file on my laptop. Try the home page."),
-            "notFoundCta": escapeHTML(copy?.notFoundCta ?? "Back home"),
-            "themeToggleLabel": escapeHTML(copy?.themeToggleLabel ?? "Toggle theme")
+            "workCardCta": escapeHTML(over?.workCardCta ?? base?.workCardCta ?? "Read case study"),
+            "caseStudyBack": escapeHTML(over?.caseStudyBack ?? base?.caseStudyBack ?? "← All work"),
+            "caseStudyNextLabel": escapeHTML(over?.caseStudyNextLabel ?? base?.caseStudyNextLabel ?? "Next"),
+            "caseStudyNextFallbackCta": escapeHTML(over?.caseStudyNextFallbackCta ?? base?.caseStudyNextFallbackCta ?? "Read case study"),
+            "aboutEyebrow": escapeHTML(over?.aboutEyebrow ?? base?.aboutEyebrow ?? "04 · About"),
+            "aboutResumeCta": escapeHTML(over?.aboutResumeCta ?? base?.aboutResumeCta ?? "Read the résumé"),
+            "aboutEmailCta": escapeHTML(over?.aboutEmailCta ?? base?.aboutEmailCta ?? "Email me"),
+            "notFoundEyebrow": escapeHTML(over?.notFoundEyebrow ?? base?.notFoundEyebrow ?? "404 · NOT FOUND"),
+            "notFoundHeadline": escapeHTML(over?.notFoundHeadline ?? base?.notFoundHeadline ?? "This page is in another castle."),
+            "notFoundBody": escapeHTML(over?.notFoundBody ?? base?.notFoundBody ?? "Or it never existed. Or it's still drafted in a markdown file on my laptop. Try the home page."),
+            "notFoundCta": escapeHTML(over?.notFoundCta ?? base?.notFoundCta ?? "Back home"),
+            "themeToggleLabel": escapeHTML(over?.themeToggleLabel ?? base?.themeToggleLabel ?? "Toggle theme")
         ]
     }
 
@@ -603,17 +680,23 @@ private extension PageContextBuilder {
         return escapeHTML("© \(year) · \(owner)")
     }
 
-    func authorContext(_ author: AuthorConfig, urlBuilder: SiteURLBuilder) -> [String: Any] {
+    func authorContext(_ author: AuthorConfig, overlay: AuthorOverlay? = nil, urlBuilder: SiteURLBuilder) -> [String: Any] {
         var context: [String: Any] = [
             "name": escapeHTML(author.name)
         ]
-        if let role = author.role { context["role"] = escapeHTML(role) }
-        if let location = author.location { context["location"] = escapeHTML(location) }
+        let role = overlay?.role ?? author.role
+        let location = overlay?.location ?? author.location
+        let tagline = overlay?.tagline ?? author.tagline
+        let timezone = overlay?.timezone ?? author.timezone
+        let heroSummary = overlay?.heroSummary ?? author.heroSummary
+        let aboutTeaser = overlay?.aboutTeaser ?? author.aboutTeaser
+        if let role { context["role"] = escapeHTML(role) }
+        if let location { context["location"] = escapeHTML(location) }
         if let email = author.email { context["email"] = escapeHTML(email) }
-        if let tagline = author.tagline { context["tagline"] = escapeHTML(tagline) }
-        if let timezone = author.timezone { context["timezone"] = escapeHTML(timezone) }
-        if let heroSummary = author.heroSummary { context["heroSummary"] = escapeHTML(heroSummary) }
-        if let aboutTeaser = author.aboutTeaser { context["aboutTeaser"] = escapeHTML(aboutTeaser) }
+        if let tagline { context["tagline"] = escapeHTML(tagline) }
+        if let timezone { context["timezone"] = escapeHTML(timezone) }
+        if let heroSummary { context["heroSummary"] = escapeHTML(heroSummary) }
+        if let aboutTeaser { context["aboutTeaser"] = escapeHTML(aboutTeaser) }
         if let portrait = author.portrait?.trimmingCharacters(in: .whitespacesAndNewlines), portrait.isEmpty == false {
             context["portrait"] = escapeHTML(portrait.hasPrefix("/") ? urlBuilder.link(for: portrait) : portrait)
         }
@@ -628,15 +711,31 @@ private extension PageContextBuilder {
         return context
     }
 
+    /// Returns the collection config with translatable fields (eyebrow,
+    /// headline, lede) overridden from the overlay when present.
+    func applyOverlay(to config: CollectionConfig, overlay: TranslationOverlay?) -> CollectionConfig {
+        guard let collectionOverlay = overlay?.collections?.first(where: { $0.id == config.id }) else {
+            return config
+        }
+        var copy = config
+        if let eyebrow = collectionOverlay.eyebrow { copy.eyebrow = eyebrow }
+        if let headline = collectionOverlay.headline { copy.headline = headline }
+        if let lede = collectionOverlay.lede { copy.lede = lede }
+        return copy
+    }
+
     func makeStandalonePagePlan(
         page: Page,
         rendered: String,
         site: [String: Any],
-        urlBuilder: SiteURLBuilder
+        urlBuilder: SiteURLBuilder,
+        lang: String = "en",
+        defaultLanguage: String = "en",
+        baseURL: String = "/"
     ) -> PagePlan {
         let title = page.title ?? humanize(routeAsTitle: page.route)
         let description = page.summary ?? title
-        let pageContext: [String: Any] = [
+        var pageContext: [String: Any] = [
             "type": "page",
             "title": escapeHTML(title),
             "description": escapeHTML(description),
@@ -644,14 +743,45 @@ private extension PageContextBuilder {
             "twitterCard": "summary",
             "layout": page.layout,
             "content": rendered,
-            "frontMatter": page.frontMatter
+            "frontMatter": page.frontMatter,
+            "lang": lang,
+            "translations": translationLinks(
+                availableLanguages: page.availableLanguages,
+                currentLang: lang,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: page.route
+            )
         ]
+        _ = pageContext  // silence unused-var warning if any
+        let prefixedRoute = (lang == defaultLanguage ? "" : "/\(lang)") + page.route
         let context: [String: Any] = [
             "site": site,
             "page": pageContext,
             "links": ["home": urlBuilder.link(for: "/")]
         ]
-        return PagePlan(route: page.route, template: "layouts/\(page.layout)", context: context)
+        return PagePlan(route: prefixedRoute, template: "layouts/\(page.layout)", context: context)
+    }
+
+    /// Returns an array of `{lang, label, href}` dicts pointing to the same
+    /// canonical content in every OTHER language available.
+    func translationLinks(
+        availableLanguages: [String],
+        currentLang: String,
+        defaultLanguage: String,
+        baseURL: String,
+        canonicalRoute: String
+    ) -> [[String: String]] {
+        availableLanguages
+            .filter { $0 != currentLang }
+            .map { otherLang -> [String: String] in
+                let prefix = (otherLang == defaultLanguage) ? "" : otherLang
+                let urlBuilder = SiteURLBuilder(baseURL: baseURL, langPrefix: prefix)
+                return [
+                    "lang": otherLang,
+                    "href": urlBuilder.link(for: canonicalRoute)
+                ]
+            }
     }
 
     /// Best-effort title from a route ("/about/" → "About"). Used only when
@@ -669,11 +799,15 @@ private extension PageContextBuilder {
         collection: Collection,
         rendered: [String: String],
         site: [String: Any],
-        urlBuilder: SiteURLBuilder
+        urlBuilder: SiteURLBuilder,
+        lang: String = "en",
+        defaultLanguage: String = "en",
+        baseURL: String = "/"
     ) -> [PagePlan] {
         let route = normalizedCollectionRoute(collection.config.route)
         let listTemplate = collection.config.listTemplate ?? "layouts/post-list"
         let detailTemplate = collection.config.detailTemplate ?? "layouts/post"
+        let langPrefix = (lang == defaultLanguage) ? "" : "/\(lang)"
 
         var plans: [PagePlan] = []
 
@@ -707,7 +841,7 @@ private extension PageContextBuilder {
             "posts": itemContexts,
             "items": itemContexts
         ]
-        plans.append(PagePlan(route: route, template: listTemplate, context: listContext))
+        plans.append(PagePlan(route: langPrefix + route, template: listTemplate, context: listContext))
 
         for (index, item) in collection.items.enumerated() {
             let detailRoute = "\(route)\(item.slug)/"
@@ -783,7 +917,7 @@ private extension PageContextBuilder {
                 "links": ["home": urlBuilder.link(for: "/")],
                 "collection": collectionContext
             ]
-            plans.append(PagePlan(route: detailRoute, template: detailTemplate, context: context))
+            plans.append(PagePlan(route: langPrefix + detailRoute, template: detailTemplate, context: context))
         }
 
         for taxonomy in collection.config.resolvedTaxonomies {
@@ -836,7 +970,7 @@ private extension PageContextBuilder {
                     "posts": cards,
                     "items": cards
                 ]
-                plans.append(PagePlan(route: taxRoute, template: "layouts/taxonomy", context: taxContext))
+                plans.append(PagePlan(route: langPrefix + taxRoute, template: "layouts/taxonomy", context: taxContext))
             }
         }
 

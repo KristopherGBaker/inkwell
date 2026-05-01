@@ -8,6 +8,8 @@ public struct Page {
     public var frontMatter: [String: Any]
     public var body: String
     public var sourcePath: URL
+    public var lang: String
+    public var availableLanguages: [String]
 
     public init(
         route: String,
@@ -16,7 +18,9 @@ public struct Page {
         summary: String? = nil,
         frontMatter: [String: Any] = [:],
         body: String = "",
-        sourcePath: URL = URL(fileURLWithPath: "/dev/null")
+        sourcePath: URL = URL(fileURLWithPath: "/dev/null"),
+        lang: String = "en",
+        availableLanguages: [String] = ["en"]
     ) {
         self.route = route
         self.layout = layout
@@ -25,5 +29,7 @@ public struct Page {
         self.frontMatter = frontMatter
         self.body = body
         self.sourcePath = sourcePath
+        self.lang = lang
+        self.availableLanguages = availableLanguages
     }
 }

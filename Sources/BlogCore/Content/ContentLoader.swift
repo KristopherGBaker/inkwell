@@ -47,14 +47,34 @@ public struct ContentLoader {
     /// Loads each declared collection from disk. The returned dictionary is
     /// keyed by `CollectionConfig.id`, with items pre-sorted per the
     /// collection's `sortBy` / `sortOrder` and drafts dropped.
-    public func loadCollections(_ configs: [CollectionConfig], in projectRoot: URL) throws -> [String: Collection] {
+    ///
+    /// `defaultLanguage` is the site's default language tag (used for files
+    /// without a `.<lang>.md` suffix). `configuredLanguages` lists every
+    /// language the site supports — files with a recognized suffix that
+    /// isn't in this list are skipped.
+    public func loadCollections(
+        _ configs: [CollectionConfig],
+        in projectRoot: URL,
+        defaultLanguage: String = "en",
+        configuredLanguages: [String]? = nil
+    ) throws -> [String: Collection] {
+        let langs = configuredLanguages ?? [defaultLanguage]
         var result: [String: Collection] = [:]
         for config in configs {
             let dir = projectRoot.appendingPathComponent(config.dir)
             let urls = collectionFileURLs(at: dir)
-            let items = try urls.compactMap { try loadCollectionItem(from: $0) }
+            var items: [CollectionItem] = []
+            for url in urls {
+                let suffix = Self.parseLanguageSuffix(from: url.lastPathComponent)
+                let lang = suffix ?? defaultLanguage
+                if let suffix, langs.contains(suffix) == false { continue }
+                if let item = try loadCollectionItem(from: url, lang: lang) {
+                    items.append(item)
+                }
+            }
             let visible = items.filter { $0.draft != true }
-            let sorted = sortItems(visible, sortBy: config.resolvedSortBy, order: config.resolvedSortOrder)
+            let paired = pairTranslations(visible)
+            let sorted = sortItems(paired, sortBy: config.resolvedSortBy, order: config.resolvedSortOrder)
             result[config.id] = Collection(config: config, items: sorted)
         }
         return result
@@ -69,7 +89,62 @@ public struct ContentLoader {
             .sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
     }
 
-    private func loadCollectionItem(from url: URL) throws -> CollectionItem? {
+    /// Pairs items sharing the same `slug` and stamps each with the full set
+    /// of available languages.
+    private func pairTranslations(_ items: [CollectionItem]) -> [CollectionItem] {
+        var bySlug: [String: [String]] = [:]
+        for item in items {
+            bySlug[item.slug, default: []].append(item.lang)
+        }
+        return items.map { item in
+            var copy = item
+            copy.availableLanguages = (bySlug[item.slug] ?? [item.lang]).sorted()
+            return copy
+        }
+    }
+
+    /// Returns the BCP-47 language tag if `filename` ends in
+    /// `.<lang>.md`, otherwise nil. Recognizes 2-3 letter primary tags
+    /// optionally followed by a region (e.g. `en`, `ja`, `en-US`).
+    public static func parseLanguageSuffix(from filename: String) -> String? {
+        guard filename.hasSuffix(".md") else { return nil }
+        let withoutExt = String(filename.dropLast(3))
+        guard let dot = withoutExt.lastIndex(of: ".") else { return nil }
+        let candidate = String(withoutExt[withoutExt.index(after: dot)...])
+        return isLanguageTag(candidate) ? candidate : nil
+    }
+
+    /// Returns the basename (everything before the optional `.<lang>` and
+    /// before the `.md` extension).
+    public static func basename(stripping filename: String) -> String {
+        guard filename.hasSuffix(".md") else { return filename }
+        let withoutExt = String(filename.dropLast(3))
+        if let dot = withoutExt.lastIndex(of: ".") {
+            let candidate = String(withoutExt[withoutExt.index(after: dot)...])
+            if isLanguageTag(candidate) {
+                return String(withoutExt[..<dot])
+            }
+        }
+        return withoutExt
+    }
+
+    private static func isLanguageTag(_ value: String) -> Bool {
+        // Primary tag: 2 or 3 lowercase letters. Optional region: hyphen + 2 uppercase letters.
+        let parts = value.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: false)
+        let primary = parts[0]
+        guard (2...3).contains(primary.count), primary.allSatisfy({ $0.isLetter && $0.isLowercase }) else {
+            return false
+        }
+        if parts.count == 2 {
+            let region = parts[1]
+            guard region.count == 2, region.allSatisfy({ $0.isLetter && $0.isUppercase }) else {
+                return false
+            }
+        }
+        return true
+    }
+
+    private func loadCollectionItem(from url: URL, lang: String = "en") throws -> CollectionItem? {
         let raw = try String(contentsOf: url)
         let parsed = try Self.splitFrontMatter(raw, source: url)
         let frontMatterBlock = parsed.frontMatter
@@ -103,7 +178,9 @@ public struct ContentLoader {
             coverImage: dict["coverImage"] as? String,
             frontMatter: dict,
             body: body,
-            sourcePath: url
+            sourcePath: url,
+            lang: lang,
+            availableLanguages: [lang]
         )
     }
 
@@ -158,7 +235,14 @@ public struct ContentLoader {
     /// Walks `content/pages/` and returns one `Page` per Markdown file.
     /// Routes are derived from the relative path: `about.md` → `/about/`,
     /// `now/index.md` → `/now/`, `projects/wolt.md` → `/projects/wolt/`.
-    public func loadPages(in projectRoot: URL) throws -> [Page] {
+    /// Pages with a `<basename>.<lang>.md` suffix translate the equivalent
+    /// non-suffixed page; their canonical `route` strips the suffix.
+    public func loadPages(
+        in projectRoot: URL,
+        defaultLanguage: String = "en",
+        configuredLanguages: [String]? = nil
+    ) throws -> [Page] {
+        let langs = configuredLanguages ?? [defaultLanguage]
         let pagesDir = projectRoot.appendingPathComponent("content/pages")
         guard FileManager.default.fileExists(atPath: pagesDir.path) else { return [] }
 
@@ -179,7 +263,22 @@ public struct ContentLoader {
             var relative = String(standardized.dropFirst(pagesPath.count))
             if relative.hasPrefix("/") { relative = String(relative.dropFirst()) }
 
-            let route = Self.pageRoute(fromRelativePath: relative)
+            let suffix = Self.parseLanguageSuffix(from: url.lastPathComponent)
+            let lang = suffix ?? defaultLanguage
+            if let suffix, langs.contains(suffix) == false { continue }
+
+            // Strip the language suffix from the filename so the canonical
+            // route matches the default-language equivalent.
+            let canonicalRelative: String
+            if suffix != nil {
+                let dir = (relative as NSString).deletingLastPathComponent
+                let stripped = Self.basename(stripping: url.lastPathComponent) + ".md"
+                canonicalRelative = dir.isEmpty ? stripped : "\(dir)/\(stripped)"
+            } else {
+                canonicalRelative = relative
+            }
+
+            let route = Self.pageRoute(fromRelativePath: canonicalRelative)
 
             let raw = try String(contentsOf: url)
             let parsed = try Self.splitFrontMatter(raw, source: url)
@@ -201,11 +300,24 @@ public struct ContentLoader {
                 summary: dict["summary"] as? String,
                 frontMatter: dict,
                 body: body,
-                sourcePath: url
+                sourcePath: url,
+                lang: lang,
+                availableLanguages: [lang]
             ))
         }
 
-        return pages.sorted { $0.route < $1.route }
+        // Pair pages with the same canonical route across languages.
+        var langsByRoute: [String: [String]] = [:]
+        for page in pages {
+            langsByRoute[page.route, default: []].append(page.lang)
+        }
+        let paired = pages.map { page -> Page in
+            var copy = page
+            copy.availableLanguages = (langsByRoute[page.route] ?? [page.lang]).sorted()
+            return copy
+        }
+
+        return paired.sorted { ($0.route, $0.lang) < ($1.route, $1.lang) }
     }
 
     /// Splits a Markdown file's `---\n…\n---\n?` front matter block from its
