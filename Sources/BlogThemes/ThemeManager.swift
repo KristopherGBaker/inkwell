@@ -106,6 +106,13 @@ public struct ThemeManager {
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/tokens.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/components.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/print.css" media="print">
+        <script type="module">
+          import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+          mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+          window.addEventListener("DOMContentLoaded", function() {
+            mermaid.run({ querySelector: ".mermaid" }).catch(function() {});
+          });
+        </script>
         <script defer src="\(assetPrefix)/assets/js/theme-toggle.js"></script>
         """
     }
