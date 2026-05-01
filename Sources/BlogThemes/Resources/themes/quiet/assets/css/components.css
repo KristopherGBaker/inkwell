@@ -278,7 +278,7 @@
   overflow: hidden;
   width: 180px;
   border: 1px solid var(--border);
-  background: var(--bg-3);
+  background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 4%, var(--bg-3)));
 }
 .about-teaser-portrait img {
   width: 100%;
@@ -446,7 +446,7 @@
 }
 
 .post-page {
-  max-width: 720px;
+  max-width: 880px;
   margin: 0 auto;
   padding-top: var(--space-7);
 }
@@ -504,7 +504,7 @@
   aspect-ratio: 4 / 5;
   overflow: hidden;
   margin-bottom: 16px;
-  background: var(--bg-3);
+  background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 4%, var(--bg-3)));
   border: 1px solid var(--border);
 }
 .about-page-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
