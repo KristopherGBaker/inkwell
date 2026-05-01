@@ -23,7 +23,7 @@
 
   {% if page.coverImage %}<figure class="shot-frame case-study-hero"><img src="{{ page.coverImage.src }}" alt="{{ page.coverImage.alt }}"></figure>{% endif %}
 
-  <article class="reading prose case-study-prose">{{ page.content }}</article>
+  <article class="prose case-study-prose">{{ page.content }}</article>
 
   {% if page.frontMatter.shots %}<section class="case-study-shots">
     {% for shot in page.frontMatter.shots %}<figure class="shot-frame"><img src="{{ shot }}" alt=""></figure>{% endfor %}
