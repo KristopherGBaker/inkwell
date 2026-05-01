@@ -1,13 +1,18 @@
 {% extends "base.html" %}
-{% block main %}    <main class="container page-shell">
-      <article class="reading post-detail">
-        <header>
-          <p class="eyebrow">{{ page.date }}</p>
-          <h1 class="h1">{{ page.title }}</h1>
-          {% if page.chips %}<div class="chip-row">{% for chip in page.chips %}<a href="{{ chip.href }}" class="tag-chip">{{ chip.label }}</a>{% endfor %}</div>{% endif %}
-        </header>
-        {% if page.coverImage %}<figure class="shot-frame post-cover"><img src="{{ page.coverImage.src }}" alt="Cover image for {{ page.coverImage.alt }}"></figure>{% endif %}
-        <div class="prose">{{ page.content }}</div>
-      </article>
-    </main>
+{% block main %}<main class="container post-page page-shell">
+  <a href="{{ collection.route }}" class="post-back">← All entries</a>
+  <p class="post-meta">
+    <span>{{ page.displayDate }}</span>
+    {% if page.primaryTag %} · <span>{{ page.primaryTag }}</span>{% endif %}
+    {% if page.readMin %} · <span>{{ page.readMin }} min read</span>{% endif %}
+  </p>
+  <h1 class="h1 post-title">{{ page.title }}</h1>
+  {% if page.summary %}<p class="post-blurb">{{ page.summary }}</p>{% endif %}
+  {% if page.coverImage %}<figure class="shot-frame post-cover"><img src="{{ page.coverImage.src }}" alt="Cover image for {{ page.coverImage.alt }}"></figure>{% endif %}
+  <article class="prose">{{ page.content }}</article>
+  <div class="post-footer">
+    <a href="{{ collection.route }}" class="read-link">More writing <span class="arrow" aria-hidden="true">→</span></a>
+    {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="read-link">Reply by email <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
+  </div>
+</main>
 {% endblock %}

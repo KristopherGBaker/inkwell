@@ -1,23 +1,44 @@
 {% extends "base.html" %}
-{% block main %}    <main class="container page-shell">
-      <section class="hero">
-        <p class="eyebrow eyebrow-dot">{% if site.author.location %}{{ site.author.location }} · {% endif %}{{ site.tagline }}</p>
-        <h1 class="h-display">{{ site.title }}</h1>
-        {% if site.description %}<p class="body-lg hero-summary">{{ site.description }}</p>{% endif %}
-      </section>
-      <hr class="hairline-soft">
-      {% if home.featured %}<section class="featured-work">
-        <div class="section-head">
-          <h2 class="h2">Selected work</h2>
-        </div>
-        <div class="featured-grid">{% for item in home.featured %}{% include "work-card.html" %}{% endfor %}</div>
-      </section>
-      <hr class="hairline-soft">{% endif %}
-      {% if home.recent %}<section class="recent-writing">
-        <div class="section-head">
-          <h2 class="h2">Recent writing</h2>
-        </div>
-        <div class="reading">{% for post in home.recent %}{% include "post-list-item.html" %}{% endfor %}</div>
-      </section>{% endif %}
-    </main>
+{% block main %}<main class="container page-shell" style="padding-top: 0;">
+  <section class="home-hero">
+    {% if site.tagline %}<p class="eyebrow eyebrow-dot">{{ site.tagline }}</p>{% endif %}
+    <h1 class="h-display">{{ site.heroHeadline }}</h1>
+    {% if site.author.heroSummary %}<p class="home-hero-summary">{{ site.author.heroSummary }}</p>{% else %}{% if site.description %}<p class="home-hero-summary">{{ site.description }}</p>{% endif %}{% endif %}
+    {% if site.nav %}<div class="home-hero-ctas">
+      <a href="/work/" class="btn-primary">See selected work →</a>
+      <a href="/about/" class="btn-ghost">About me</a>
+    </div>{% endif %}
+  </section>
+
+  {% if home.featured %}<hr class="hairline-soft">
+  <section class="scroll-section">
+    <div class="section-head">
+      <h2 class="h2">Selected work</h2>
+      <a href="/work/" class="read-link">All projects <span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+    <div class="featured-grid">{% for item in home.featured %}{% include "work-card.html" %}{% endfor %}</div>
+  </section>{% endif %}
+
+  {% if home.recent %}<hr class="hairline-soft">
+  <section class="scroll-section">
+    <div class="section-head">
+      <h2 class="h2">Recent writing</h2>
+      <a href="/posts/" class="read-link">Archive <span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+    <div class="reading">{% for post in home.recent %}{% include "post-list-item.html" %}{% endfor %}</div>
+  </section>{% endif %}
+
+  {% if site.author.aboutTeaser %}<hr class="hairline-soft">
+  <section class="about-teaser">
+    {% if site.author.portrait %}<div class="about-teaser-portrait"><img src="{{ site.author.portrait }}" alt="{{ site.author.name }}"></div>{% else %}<div class="about-teaser-portrait" aria-hidden="true"></div>{% endif %}
+    <div>
+      <p class="eyebrow" style="margin-bottom: 16px;">About</p>
+      <p class="about-teaser-quote">{{ site.author.aboutTeaser }}</p>
+      <div class="about-teaser-actions">
+        <a href="/about/" class="read-link">More about me <span class="arrow" aria-hidden="true">→</span></a>
+        <a href="/resume/" class="read-link">Résumé <span class="arrow" aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </section>{% endif %}
+</main>
 {% endblock %}

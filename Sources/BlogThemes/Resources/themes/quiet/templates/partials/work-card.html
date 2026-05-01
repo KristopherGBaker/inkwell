@@ -1,6 +1,9 @@
-<article class="card work-card">
-  <p class="eyebrow">{% if item.frontMatter.year %}{{ item.frontMatter.year }}{% endif %}{% if item.frontMatter.org %} · {{ item.frontMatter.org }}{% endif %}</p>
-  <h3 class="h-card"><a href="{{ item.link }}">{{ item.title }}</a></h3>
-  {% if item.summary %}<p class="body">{{ item.summary }}</p>{% endif %}
-  <a href="{{ item.link }}" class="read-link">Case study <span class="arrow">→</span></a>
-</article>
+<a href="{{ item.link }}" class="card work-card">
+  {% if item.coverImage %}<div class="work-card-cover"><img src="{{ item.coverImage }}" alt=""></div>{% else %}<div class="work-card-cover-empty"><span>NO COVER YET</span></div>{% endif %}
+  <div class="work-card-body">
+    {% if item.org or item.year %}<span class="brand-pill">{% if item.brand %}<span class="brand-pill-mark {{ item.brand }}"></span>{% else %}<span class="brand-pill-mark placeholder">·</span>{% endif %}{% if item.org %}{{ item.org }}{% if item.year %} · {{ item.year }}{% endif %}{% else %}{{ item.year }}{% endif %}</span>{% endif %}
+    <h3 class="h-card">{{ item.title }}</h3>
+    {% if item.blurb %}<p>{{ item.blurb }}</p>{% endif %}
+    <span class="read-link">Read case study <span class="arrow" aria-hidden="true">→</span></span>
+  </div>
+</a>

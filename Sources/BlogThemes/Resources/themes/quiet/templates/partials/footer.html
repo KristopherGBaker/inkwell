@@ -1,7 +1,14 @@
-<footer class="site-footer container no-print">
-  <hr class="hairline-soft">
-  <div class="footer-row">
-    <p class="caption">{{ site.title }}{% if site.author %} · {{ site.author.name }}{% endif %}</p>
-    {% if site.author.social %}<ul class="footer-social">{% for link in site.author.social %}<li><a href="{{ link.url }}" class="nav-link">{{ link.label }}</a></li>{% endfor %}</ul>{% endif %}
+<footer class="site-footer no-print">
+  <div class="container site-footer-grid">
+    <div>
+      <p class="eyebrow site-footer-cta-eyebrow">Get in touch</p>
+      <h2 class="h2 site-footer-cta-h2">Quietly open to good work.</h2>
+      {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="btn-primary">{{ site.author.email }} →</a>{% endif %}
+    </div>
+    <div class="site-footer-meta">
+      {% if site.author.location %}<p class="site-footer-meta-line">{{ site.author.location }}{% if site.author.timezoneLabel %} · {{ site.author.timezoneLabel }}{% endif %}</p>{% endif %}
+      {% if site.author.social %}<ul class="site-footer-meta-links">{% for link in site.author.social %}<li><a href="{{ link.url }}" class="nav-link">{{ link.label }}</a></li>{% endfor %}</ul>{% endif %}
+      {% if site.copyrightLine %}<p class="site-footer-meta-copy">{{ site.copyrightLine }}</p>{% endif %}
+    </div>
   </div>
 </footer>
