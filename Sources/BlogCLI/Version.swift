@@ -1,3 +1,3 @@
 enum BlogVersion {
-    static let version = "0.3.3"
+    static let version = "0.4.0"
 }
