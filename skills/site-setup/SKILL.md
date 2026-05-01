@@ -155,3 +155,37 @@ Same as combined, but drop the `posts` entry from `collections` and the `recentC
 - For **drafting prose** (case study or post body), hand off to `blog-writing`.
 - For **customizing a theme template/asset** (e.g. tweaking the top-bar layout), hand off to `theme-customize`.
 - For **deploying** to GitHub Pages, run `inkwell deploy setup github-pages` then commit + push.
+
+## Multi-language sites (v0.5+)
+
+If the user wants the site available in more than one language, add an `i18n` block to `blog.config.json`:
+
+```jsonc
+{
+  "i18n": { "defaultLanguage": "en", "languages": ["en", "ja"] },
+  // ...site-level fields in the default language...
+  "translations": {
+    "ja": {
+      "tagline": "...",
+      "heroHeadline": "...",
+      "footerCta": { "headline": "..." },
+      "themeCopy": { "workCardCta": "..." },   // partial overlay — unset fields fall back to defaults
+      "nav":   [{ "label": "...", "route": "/work/" }],
+      "home":  { "featuredLabel": "...", "recentLabel": "..." },
+      "author": { "tagline": "...", "heroSummary": "..." },
+      "collections": [{ "id": "posts", "headline": "..." }]
+    }
+  }
+}
+```
+
+URL shape: default language at canonical root (`/posts/foo/`), other languages prefixed (`/ja/posts/foo/`). `/<defaultLang>/...` aliases redirect to canonical. Don't change existing routes for the default language.
+
+Authoring conventions:
+
+- Translate a post: add `foo.ja.md` next to `foo.md`. Same `slug` in front matter pairs them.
+- Translate a page: add `about.ja.md` next to `about.md`.
+- Translate a data file: add `resume.ja.yml` next to `resume.yml`.
+- Untranslated items still appear on the JA listing pages (with default-language content as fallback) — you don't have to translate everything up front.
+
+Hand off to `portfolio-data` for translated `data/<file>.<lang>.yml`, to `blog-writing` for translated post/project bodies, and to `theme-customize` for adding new translatable theme strings.
