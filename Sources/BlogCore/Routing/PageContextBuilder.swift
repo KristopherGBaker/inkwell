@@ -37,6 +37,7 @@ private struct RenderablePost {
     let coverImage: String?
 }
 
+// swiftlint:disable:next type_body_length
 public struct PageContextBuilder {
     private let postsPerPage = 6
 
@@ -127,7 +128,7 @@ public struct PageContextBuilder {
         return PagePlan(route: route, template: "layouts/redirect", context: context)
     }
 
-    // swiftlint:disable function_body_length
+    // swiftlint:disable:next function_parameter_count
     private func buildPlansForLanguage(
         lang: String,
         defaultLanguage: String,

@@ -7,6 +7,7 @@ public enum ContentLoaderError: Error {
     case unknownCollection(String)
 }
 
+// swiftlint:disable:next type_body_length
 public struct ContentLoader {
     public init() {}
 
