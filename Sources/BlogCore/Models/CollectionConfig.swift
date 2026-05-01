@@ -11,6 +11,13 @@ public struct CollectionConfig: Codable, Equatable {
     public var listTemplate: String?
     public var detailTemplate: String?
     public var scaffold: String?
+    /// Optional copy overrides used by list pages (e.g. work-list, post-list).
+    /// `eyebrow` sets the small label above the heading; `headline` is the
+    /// page H1; `lede` is the body paragraph that follows. All optional —
+    /// templates fall back to defaults derived from `id`.
+    public var eyebrow: String?
+    public var headline: String?
+    public var lede: String?
 
     public init(
         id: String,
@@ -22,7 +29,10 @@ public struct CollectionConfig: Codable, Equatable {
         paginate: Int? = nil,
         listTemplate: String? = nil,
         detailTemplate: String? = nil,
-        scaffold: String? = nil
+        scaffold: String? = nil,
+        eyebrow: String? = nil,
+        headline: String? = nil,
+        lede: String? = nil
     ) {
         self.id = id
         self.dir = dir
@@ -34,6 +44,9 @@ public struct CollectionConfig: Codable, Equatable {
         self.listTemplate = listTemplate
         self.detailTemplate = detailTemplate
         self.scaffold = scaffold
+        self.eyebrow = eyebrow
+        self.headline = headline
+        self.lede = lede
     }
 
     public var resolvedSortBy: String { sortBy ?? "date" }

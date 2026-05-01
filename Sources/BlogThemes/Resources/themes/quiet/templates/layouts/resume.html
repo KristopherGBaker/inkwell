@@ -1,30 +1,59 @@
 {% extends "base.html" %}
-{% block main %}    <main class="container resume-page page-shell">
-      <header class="resume-header">
-        <h1 class="h1">{{ site.author.name }}</h1>
-        {% if site.author.role %}<p class="body-lg">{{ site.author.role }}{% if site.author.location %} · {{ site.author.location }}{% endif %}</p>{% endif %}
-        {% if site.author.email %}<p class="caption">{{ site.author.email }}</p>{% endif %}
-        <button type="button" onclick="window.print()" class="btn-ghost no-print">Print / Save as PDF</button>
-      </header>
+{% block main %}<main class="resume-page page-shell">
+  <div class="no-print resume-toolbar">
+    <a href="/about/" class="resume-toolbar-back">← About</a>
+    <button type="button" onclick="window.print()" class="btn-ghost">Print / Save as PDF →</button>
+  </div>
 
-      {% if data.competencies %}<section class="resume-section">
-        <h2 class="h3">Core competencies</h2>
-        <dl class="competencies">{% for area in data.competencies %}<div class="competency"><dt class="h6">{{ area.area }}</dt><dd>{{ area.description }}</dd></div>{% endfor %}</dl>
-      </section>{% endif %}
+  <header class="resume-header">
+    <h1>{{ site.author.name }}</h1>
+    {% if site.author.role %}<p class="resume-header-role">{{ site.author.role }}{% if data.resume.subtitle %} · {{ data.resume.subtitle }}{% endif %}</p>{% endif %}
+    <div class="resume-header-meta">
+      {% if site.author.location %}<span>{{ site.author.location }}</span>{% endif %}
+      {% if site.author.email %}<span>{{ site.author.email }}</span>{% endif %}
+      {% if site.author.social %}{% for link in site.author.social %}<span>{{ link.label }}</span>{% endfor %}{% endif %}
+      {% if data.resume.status %}<span>{{ data.resume.status }}</span>{% endif %}
+    </div>
+  </header>
 
-      {% if data.experience %}<section class="resume-section">
-        <h2 class="h3">Experience</h2>
-        <ol class="experience">{% for role in data.experience %}<li class="experience-item">
-          <p class="eyebrow">{{ role.years }}</p>
-          <h3 class="h-card">{{ role.role }} — {{ role.org }}</h3>
-          {% if role.bullets %}<ul class="role-bullets">{% for line in role.bullets %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
-        </li>{% endfor %}</ol>
-      </section>{% endif %}
+  {% if data.resume.summary %}<section class="resume-section">
+    <h2 class="resume-label">Summary</h2>
+    <p class="resume-summary">{{ data.resume.summary }}</p>
+  </section>{% endif %}
 
-      {% if data.education %}<section class="resume-section">
-        <h2 class="h3">Education</h2>
-        <p class="eyebrow">{{ data.education.school }}</p>
-        <p class="body">{{ data.education.degree }}{% if data.education.honors %} — {{ data.education.honors }}{% endif %}</p>
-      </section>{% endif %}
-    </main>
+  {% if data.competencies %}<section class="resume-section">
+    <h2 class="resume-label">Core Competencies</h2>
+    <div class="resume-competencies">{% for area in data.competencies %}<div class="resume-competency-key">{{ area.area }}</div><div class="resume-competency-val">{{ area.description }}</div>{% endfor %}</div>
+  </section>{% endif %}
+
+  {% if data.experience %}<section class="resume-section">
+    <h2 class="resume-label">Experience</h2>
+    {% for role in data.experience %}<div class="resume-job">
+      <div class="resume-job-head">
+        <div>
+          <div class="resume-job-org">{{ role.org }}</div>
+          <p class="resume-job-role">{{ role.role }}</p>
+        </div>
+        <div class="resume-job-meta">{{ role.years }}{% if role.location %} · {{ role.location }}{% endif %}</div>
+      </div>
+      {% if role.description %}<p class="role-description">{{ role.description }}</p>{% endif %}
+      {% if role.bullets %}<ul class="resume-job-bullets">{% for line in role.bullets %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+    </div>{% endfor %}
+  </section>{% endif %}
+
+  {% if data.projects %}<section class="resume-section">
+    <h2 class="resume-label">Projects</h2>
+    {% for project in data.projects %}<div class="resume-job">
+      <div class="resume-project-name">{{ project.name }}</div>
+      {% if project.meta %}<p class="resume-project-meta">{{ project.meta }}</p>{% endif %}
+      {% if project.bullets %}<ul class="resume-project-bullets">{% for line in project.bullets %}<li>{{ line }}</li>{% endfor %}</ul>{% endif %}
+    </div>{% endfor %}
+  </section>{% endif %}
+
+  {% if data.education %}<section class="resume-section">
+    <h2 class="resume-label">Education</h2>
+    <p class="resume-education-school">{{ data.education.school }}</p>
+    <p class="resume-education-degree">{{ data.education.degree }}{% if data.education.honors %} · {{ data.education.honors }}{% endif %}</p>
+  </section>{% endif %}
+</main>
 {% endblock %}

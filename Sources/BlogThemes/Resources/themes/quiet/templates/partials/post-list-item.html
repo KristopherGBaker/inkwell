@@ -1,5 +1,9 @@
-<article class="post-list-item">
-  <p class="eyebrow">{{ post.date }}</p>
-  <h3 class="h-card"><a href="{{ post.link }}">{{ post.title }}</a></h3>
-  {% if post.summary %}<p class="body">{{ post.summary }}</p>{% endif %}
-</article>
+<a href="{{ post.link }}" class="post-list-item">
+  <p class="post-list-meta">
+    <span>{{ post.displayDate }}</span>
+    {% if post.primaryTag %}<span class="post-list-meta-sep">·</span><span>{{ post.primaryTag }}</span>{% endif %}
+    {% if post.readMin %}<span class="post-list-meta-sep">·</span><span>{{ post.readMin }} min read</span>{% endif %}
+  </p>
+  <h3 class="post-list-title">{{ post.title }}</h3>
+  {% if post.blurb or post.summary %}<p class="post-list-blurb">{% if post.blurb %}{{ post.blurb }}{% else %}{{ post.summary }}{% endif %}</p>{% endif %}
+</a>
