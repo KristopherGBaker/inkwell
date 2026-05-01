@@ -88,10 +88,10 @@ public struct BuildPipeline {
                 var perLang: [String: [String: String]] = [:]
                 let raw = collection.config.route
                 let collectionRoute: String = {
-                    var r = raw
-                    if r.hasPrefix("/") == false { r = "/" + r }
-                    if r.hasSuffix("/") == false { r += "/" }
-                    return r
+                    var route = raw
+                    if route.hasPrefix("/") == false { route = "/" + route }
+                    if route.hasSuffix("/") == false { route += "/" }
+                    return route
                 }()
                 for item in collection.items {
                     let html = try renderer.render(item.body)
