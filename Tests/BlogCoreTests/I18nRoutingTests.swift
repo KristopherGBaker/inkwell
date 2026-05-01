@@ -74,6 +74,40 @@ final class I18nRoutingTests: XCTestCase {
         XCTAssertTrue(fileExists(root, "docs/ja/about/index.html"))
     }
 
+    func testEmitsDefaultLangAliasRedirects() throws {
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "https://krisbaker.com/",
+          "i18n": { "defaultLanguage": "en", "languages": ["en", "ja"] },
+          "collections": [
+            { "id": "posts", "dir": "content/posts", "route": "/posts" }
+          ]
+        }
+        """)
+        try writeFile(root, "content/posts/hello.md", """
+        ---
+        title: Hello
+        slug: hello
+        date: 2026-01-01T00:00:00Z
+        ---
+        Body
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+
+        // Canonical URL still at root
+        XCTAssertTrue(fileExists(root, "docs/posts/hello/index.html"))
+        // /en/ alias also emitted
+        XCTAssertTrue(fileExists(root, "docs/en/posts/hello/index.html"))
+
+        let alias = try String(contentsOfFile: root.appendingPathComponent("docs/en/posts/hello/index.html").path)
+        XCTAssertTrue(alias.contains("http-equiv=\"refresh\""), "should be a meta-refresh redirect")
+        XCTAssertTrue(alias.contains("/posts/hello/"), "should reference the canonical URL")
+        XCTAssertTrue(alias.contains("rel=\"canonical\""), "should include canonical link")
+    }
+
     func testMonolingualSiteUnchanged() throws {
         // Without an i18n block, no /ja/ prefix should be generated.
         let root = try makeTempBlogProject()
