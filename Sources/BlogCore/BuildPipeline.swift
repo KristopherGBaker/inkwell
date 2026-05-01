@@ -86,8 +86,18 @@ public struct BuildPipeline {
             )
             for (id, collection) in collections {
                 var perLang: [String: [String: String]] = [:]
+                let raw = collection.config.route
+                let collectionRoute: String = {
+                    var r = raw
+                    if r.hasPrefix("/") == false { r = "/" + r }
+                    if r.hasSuffix("/") == false { r += "/" }
+                    return r
+                }()
                 for item in collection.items {
-                    perLang[item.lang, default: [:]][item.slug] = try renderer.render(item.body)
+                    let html = try renderer.render(item.body)
+                    let canonicalBase = "\(collectionRoute)\(item.slug)/"
+                    perLang[item.lang, default: [:]][item.slug] =
+                        AssetURLRewriter.rewriteRelativeURLs(in: html, base: canonicalBase)
                 }
                 collectionRendered[id] = perLang
             }
@@ -100,7 +110,9 @@ public struct BuildPipeline {
         )
         var pageRendered: [String: [String: String]] = [:]
         for page in pages {
-            pageRendered[page.lang, default: [:]][page.route] = try renderer.render(page.body)
+            let html = try renderer.render(page.body)
+            pageRendered[page.lang, default: [:]][page.route] =
+                AssetURLRewriter.rewriteRelativeURLs(in: html, base: page.route)
         }
 
         let plans = pageContextBuilder.buildPlans(
