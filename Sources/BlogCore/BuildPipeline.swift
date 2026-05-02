@@ -335,6 +335,17 @@ struct SiteURLBuilder {
         }
         return basePath + langPrefix + route
     }
+
+    /// Builds a URL for a static asset (image, video, font, JS). Asset paths
+    /// are language-agnostic — they live at canonical locations served from
+    /// every language URL, so they get the basePath (for sub-path deploys)
+    /// but NOT the language prefix.
+    func assetLink(for path: String) -> String {
+        if basePath.isEmpty {
+            return path
+        }
+        return basePath + path
+    }
 }
 
 private struct SearchIndexPayload: Codable {
