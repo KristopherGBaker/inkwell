@@ -108,6 +108,55 @@ final class I18nRoutingTests: XCTestCase {
         XCTAssertTrue(alias.contains("rel=\"canonical\""), "should include canonical link")
     }
 
+    func testAssetURLsAreNotLanguagePrefixed() throws {
+        // Asset paths under /assets/... live at canonical locations and serve
+        // every language. The lang prefix is for routes, not assets.
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "https://krisbaker.com/",
+          "theme": "quiet",
+          "i18n": { "defaultLanguage": "en", "languages": ["en", "ja"] },
+          "collections": [
+            {
+              "id": "projects",
+              "dir": "content/projects",
+              "route": "/work",
+              "detailTemplate": "layouts/case-study"
+            }
+          ]
+        }
+        """)
+        try writeFile(root, "content/projects/wolt.md", """
+        ---
+        title: Wolt
+        slug: wolt
+        year: 2025
+        coverImage: /assets/work/wolt/cover.png
+        ---
+        body
+        """)
+        try writeFile(root, "content/projects/wolt.ja.md", """
+        ---
+        title: Wolt（JA）
+        slug: wolt
+        year: 2025
+        coverImage: /assets/work/wolt/cover.png
+        ---
+        body
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+
+        let enPage = try String(contentsOfFile: root.appendingPathComponent("docs/work/wolt/index.html").path)
+        let jaPage = try String(contentsOfFile: root.appendingPathComponent("docs/ja/work/wolt/index.html").path)
+
+        XCTAssertTrue(enPage.contains("/assets/work/wolt/cover.png"), "en cover URL")
+        XCTAssertTrue(jaPage.contains("/assets/work/wolt/cover.png"), "ja cover URL canonical")
+        XCTAssertFalse(jaPage.contains("/ja/assets/work/wolt/cover.png"), "ja page must not lang-prefix asset URL")
+    }
+
     func testMonolingualSiteUnchanged() throws {
         // Without an i18n block, no /ja/ prefix should be generated.
         let root = try makeTempBlogProject()

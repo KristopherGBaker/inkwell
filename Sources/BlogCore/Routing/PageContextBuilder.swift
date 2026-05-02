@@ -442,7 +442,7 @@ private extension PageContextBuilder {
         let trimmedCoverImage = post.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
         let coverImageContext: [String: String]?
         if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
-            let resolved = trimmed.hasPrefix("/") ? urlBuilder.link(for: trimmed) : trimmed
+            let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
             coverImageContext = [
                 "src": escapeHTML(resolved),
                 "alt": escapeHTML(post.title)
@@ -765,7 +765,7 @@ private extension PageContextBuilder {
         if let heroSummary { context["heroSummary"] = escapeHTML(heroSummary) }
         if let aboutTeaser { context["aboutTeaser"] = escapeHTML(aboutTeaser) }
         if let portrait = author.portrait?.trimmingCharacters(in: .whitespacesAndNewlines), portrait.isEmpty == false {
-            context["portrait"] = escapeHTML(portrait.hasPrefix("/") ? urlBuilder.link(for: portrait) : portrait)
+            context["portrait"] = escapeHTML(portrait.hasPrefix("/") ? urlBuilder.assetLink(for: portrait) : portrait)
         }
         if let social = author.social, social.isEmpty == false {
             context["social"] = social.map { link -> [String: String] in
@@ -1021,7 +1021,7 @@ private extension PageContextBuilder {
                 pageContext["brand"] = brand
             }
             if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
-                let resolved = trimmed.hasPrefix("/") ? urlBuilder.link(for: trimmed) : trimmed
+                let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
                 pageContext["coverImage"] = [
                     "src": escapeHTML(resolved),
                     "alt": escapeHTML(item.title)
@@ -1155,12 +1155,12 @@ private extension PageContextBuilder {
     /// to the first `shots` entry. Always returns a renderable URL string.
     private func resolvedCoverImage(for item: CollectionItem, urlBuilder: SiteURLBuilder) -> String? {
         if let cover = item.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines), cover.isEmpty == false {
-            return escapeHTML(cover.hasPrefix("/") ? urlBuilder.link(for: cover) : cover)
+            return escapeHTML(cover.hasPrefix("/") ? urlBuilder.assetLink(for: cover) : cover)
         }
         if let shots = item.frontMatter["shots"] as? [Any], let first = shots.first as? String {
             let trimmed = first.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty == false {
-                return escapeHTML(trimmed.hasPrefix("/") ? urlBuilder.link(for: trimmed) : trimmed)
+                return escapeHTML(trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed)
             }
         }
         return nil
