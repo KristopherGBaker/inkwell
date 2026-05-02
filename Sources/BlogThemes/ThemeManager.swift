@@ -153,11 +153,13 @@ public struct ThemeManager {
     public func copyThemeAssets(theme: String, projectRoot: URL, outputRoot: URL) throws {
         let fm = FileManager.default
         let destinationRoot = outputRoot.appendingPathComponent("assets")
-        if fm.fileExists(atPath: destinationRoot.path) {
-            try fm.removeItem(at: destinationRoot)
-        }
         try fm.createDirectory(at: destinationRoot, withIntermediateDirectories: true)
 
+        // Don't wipe destinationRoot — `copyTreeIfPresent` overwrites
+        // file-by-file, and the project's `static/assets/` may have already
+        // populated this directory with project-owned assets (e.g.
+        // `/assets/work/<slug>/cover.png`) that shouldn't be cleared by the
+        // theme copy step.
         if let bundleURL = BundleResources.bundleURL?
             .appendingPathComponent("themes")
             .appendingPathComponent(theme)
