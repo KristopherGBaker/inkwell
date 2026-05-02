@@ -390,11 +390,27 @@
 .case-study-hero {
   margin-bottom: 56px;
 }
+.case-study-hero img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .case-study-shots {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin-bottom: 56px;
+}
+.case-study-shots .shot-frame {
+  margin: 0;
+  text-align: center;
+}
+.case-study-shots img {
+  display: block;
+  max-width: 440px;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 @media (max-width: 720px) {
   .case-study-shots { grid-template-columns: 1fr; }
