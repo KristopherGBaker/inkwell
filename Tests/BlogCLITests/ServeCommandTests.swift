@@ -29,4 +29,16 @@ final class ServeCommandTests: XCTestCase {
 
         XCTAssertEqual(ServeCommand.watchedExclusions(root: root, outputDirectory: outputDirectory), [outputDirectory])
     }
+
+    func testWatchedPathsIncludeContentDataAndThemes() {
+        let root = URL(fileURLWithPath: "/tmp/project")
+        let paths = ServeCommand.watchedPaths(root: root).map(\.lastPathComponent)
+
+        XCTAssertTrue(paths.contains("content"))
+        XCTAssertTrue(paths.contains("data"), "data/ should be watched so editing data/<file>.yml triggers rebuild")
+        XCTAssertTrue(paths.contains("themes"))
+        XCTAssertTrue(paths.contains("blog.config.json"))
+        XCTAssertTrue(paths.contains("public"))
+        XCTAssertTrue(paths.contains("static"))
+    }
 }
