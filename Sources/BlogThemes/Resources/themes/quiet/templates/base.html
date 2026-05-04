@@ -9,7 +9,7 @@
     <meta property="og:description" content="{{ page.description }}">
     <meta property="og:url" content="{{ page.canonicalURL }}">
     <meta name="twitter:card" content="{{ page.twitterCard }}">
-    {% if page.translations %}{% for alt in page.translations %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
+    {% if page.hreflangs %}{% for alt in page.hreflangs %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
     {% endfor %}{% endif %}
   </head>
   <body class="grain-bg">

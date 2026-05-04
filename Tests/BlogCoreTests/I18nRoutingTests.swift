@@ -108,6 +108,54 @@ final class I18nRoutingTests: XCTestCase {
         XCTAssertTrue(alias.contains("rel=\"canonical\""), "should include canonical link")
     }
 
+    func testHreflangIncludesSelfAndXDefault() throws {
+        // SEO best practice: each language version should reference every
+        // available language (including itself) plus an x-default pointing
+        // to the default-language URL.
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "https://krisbaker.com/",
+          "i18n": { "defaultLanguage": "en", "languages": ["en", "ja"] },
+          "collections": [
+            { "id": "posts", "dir": "content/posts", "route": "/posts" }
+          ]
+        }
+        """)
+        try writeFile(root, "content/posts/hello.md", """
+        ---
+        title: Hello
+        slug: hello
+        date: 2026-01-01T00:00:00Z
+        ---
+        en
+        """)
+        try writeFile(root, "content/posts/hello.ja.md", """
+        ---
+        title: こんにちは
+        slug: hello
+        date: 2026-01-01T00:00:00Z
+        ---
+        ja
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+
+        let enPage = try String(contentsOfFile: root.appendingPathComponent("docs/posts/hello/index.html").path)
+        let jaPage = try String(contentsOfFile: root.appendingPathComponent("docs/ja/posts/hello/index.html").path)
+
+        // EN page hreflangs: self (en), other (ja), x-default
+        XCTAssertTrue(enPage.contains(#"hreflang="en" href="/posts/hello/""#))
+        XCTAssertTrue(enPage.contains(#"hreflang="ja" href="/ja/posts/hello/""#))
+        XCTAssertTrue(enPage.contains(#"hreflang="x-default" href="/posts/hello/""#))
+
+        // JA page hreflangs: same set, regardless of which language we're rendering
+        XCTAssertTrue(jaPage.contains(#"hreflang="en" href="/posts/hello/""#))
+        XCTAssertTrue(jaPage.contains(#"hreflang="ja" href="/ja/posts/hello/""#))
+        XCTAssertTrue(jaPage.contains(#"hreflang="x-default" href="/posts/hello/""#))
+    }
+
     func testAssetURLsAreNotLanguagePrefixed() throws {
         // Asset paths under /assets/... live at canonical locations and serve
         // every language. The lang prefix is for routes, not assets.
