@@ -56,14 +56,19 @@ struct ServeCommand: ParsableCommand {
         try server.start()
     }
 
-    private func watchedPaths(root: URL) -> [URL] {
+    static func watchedPaths(root: URL) -> [URL] {
         [
             root.appendingPathComponent("content"),
+            root.appendingPathComponent("data"),
             root.appendingPathComponent("themes"),
             root.appendingPathComponent("blog.config.json"),
             root.appendingPathComponent("public"),
             root.appendingPathComponent("static")
         ]
+    }
+
+    private func watchedPaths(root: URL) -> [URL] {
+        Self.watchedPaths(root: root)
     }
 
     static func watchedExclusions(root: URL, outputDirectory: URL) -> [URL] {
