@@ -608,6 +608,12 @@ private extension PageContextBuilder {
                 defaultLanguage: defaultLanguage,
                 baseURL: baseURL,
                 canonicalRoute: route
+            ),
+            "hreflangs": hreflangLinks(
+                availableLanguages: allLanguages,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: route
             )
         ]
         var homeContext: [String: Any] = [
@@ -872,6 +878,12 @@ private extension PageContextBuilder {
                 defaultLanguage: defaultLanguage,
                 baseURL: baseURL,
                 canonicalRoute: page.route
+            ),
+            "hreflangs": hreflangLinks(
+                availableLanguages: page.availableLanguages,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: page.route
             )
         ]
         _ = pageContext  // silence unused-var warning if any
@@ -884,8 +896,10 @@ private extension PageContextBuilder {
         return PagePlan(route: prefixedRoute, template: "layouts/\(page.layout)", context: context)
     }
 
-    /// Returns an array of `{lang, label, href}` dicts pointing to the same
-    /// canonical content in every OTHER language available.
+    /// Returns an array of `{lang, href}` dicts pointing to the same
+    /// canonical content in every OTHER language available. Used by the
+    /// language switcher in the top bar — does NOT include the current
+    /// language (the user is already on it).
     func translationLinks(
         availableLanguages: [String],
         currentLang: String,
@@ -896,13 +910,53 @@ private extension PageContextBuilder {
         availableLanguages
             .filter { $0 != currentLang }
             .map { otherLang -> [String: String] in
-                let prefix = (otherLang == defaultLanguage) ? "" : otherLang
-                let urlBuilder = SiteURLBuilder(baseURL: baseURL, langPrefix: prefix)
-                return [
-                    "lang": otherLang,
-                    "href": urlBuilder.link(for: canonicalRoute)
-                ]
+                hreflangEntry(
+                    lang: otherLang,
+                    defaultLanguage: defaultLanguage,
+                    baseURL: baseURL,
+                    canonicalRoute: canonicalRoute
+                )
             }
+    }
+
+    /// Returns hreflang entries for SEO: self-reference + every other
+    /// available language + an `x-default` entry pointing to the
+    /// default-language URL. Search engines use this to map readers to
+    /// the right localized version.
+    func hreflangLinks(
+        availableLanguages: [String],
+        defaultLanguage: String,
+        baseURL: String,
+        canonicalRoute: String
+    ) -> [[String: String]] {
+        var links: [[String: String]] = availableLanguages.map { lang in
+            hreflangEntry(
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: canonicalRoute
+            )
+        }
+        let defaultBuilder = SiteURLBuilder(baseURL: baseURL, langPrefix: "")
+        links.append([
+            "lang": "x-default",
+            "href": defaultBuilder.link(for: canonicalRoute)
+        ])
+        return links
+    }
+
+    private func hreflangEntry(
+        lang: String,
+        defaultLanguage: String,
+        baseURL: String,
+        canonicalRoute: String
+    ) -> [String: String] {
+        let prefix = (lang == defaultLanguage) ? "" : lang
+        let urlBuilder = SiteURLBuilder(baseURL: baseURL, langPrefix: prefix)
+        return [
+            "lang": lang,
+            "href": urlBuilder.link(for: canonicalRoute)
+        ]
     }
 
     /// Best-effort title from a route ("/about/" → "About"). Used only when
@@ -953,6 +1007,12 @@ private extension PageContextBuilder {
                 defaultLanguage: defaultLanguage,
                 baseURL: baseURL,
                 canonicalRoute: route
+            ),
+            "hreflangs": hreflangLinks(
+                availableLanguages: listLanguages,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: route
             )
         ]
         if let eyebrow = collection.config.eyebrow {
@@ -1000,6 +1060,12 @@ private extension PageContextBuilder {
                 "translations": translationLinks(
                     availableLanguages: item.availableLanguages,
                     currentLang: lang,
+                    defaultLanguage: defaultLanguage,
+                    baseURL: baseURL,
+                    canonicalRoute: detailRoute
+                ),
+                "hreflangs": hreflangLinks(
+                    availableLanguages: item.availableLanguages,
                     defaultLanguage: defaultLanguage,
                     baseURL: baseURL,
                     canonicalRoute: detailRoute
