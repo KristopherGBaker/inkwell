@@ -88,7 +88,16 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 
 ## Mid-Term Roadmap
 
-### v0.4 - Better Presentation and Discovery
+### v0.4 - Quiet Theme Polish (Shipped)
+
+**Status:** shipped in v0.4.0–v0.4.3.
+
+#### Shipped
+- Quiet theme: ported the prototype's Direction A wholesale (landing, work-list, case-study, post, page, post-list, taxonomy, 404, resume layouts)
+- Tokens-based CSS (`tokens.css` + `components.css`) with print stylesheet and theme-toggle JS
+- Polish passes for spacing, typography, and dark-mode tuning across all quiet-theme layouts
+
+### v0.4.x / v0.5.x - Continuing Authoring Polish
 
 **Objective:** make generated sites feel more polished without overcomplicating content authoring.
 
@@ -111,9 +120,25 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 - Add scaffolds for more hosts over time, such as Netlify or Cloudflare Pages
 - Avoid hard-coding host assumptions into `init`
 
+### v0.5 - Internationalization (Shipped)
+
+**Status:** shipped in v0.5.0–v0.5.2. See `docs/rfcs/2026-04-01-multi-language-support.md` and `docs/plans/2026-05-01-i18n-implementation-plan.md`.
+
+#### Shipped
+- Per-file translations: `<base>.<lang>.md` paired with `<base>.md` by slug; each item carries `lang` + `availableLanguages`
+- Per-language data files: `data/<file>.<lang>.yml` falls back to the unsuffixed base
+- URL shape: default language at canonical root, non-default at `/<lang>/...`; `/<defaultLang>/...` aliases redirect via meta-refresh
+- `translations.<lang>` overlay in `blog.config.json` for site/home/footer/themeCopy/nav/collections/author surfaces
+- `<html lang>`, `<link rel="alternate" hreflang>` (self + others + x-default), browser-language redirect script, top-bar language switcher in the quiet theme
+- Asset URLs at canonical paths (no language prefix) so a single `static/...` asset serves every language
+
+#### Deferred
+- Localized RSS / Atom feeds per language
+- Localized sitemap (per-language sitemap or `xhtml:link` alternates in unified sitemap)
+
 ## Long-Term Roadmap
 
-### v0.5+ - Platform Capabilities
+### v0.6+ - Platform Capabilities
 
 **Objective:** grow carefully into a broader publishing platform only after the core experience is strong.
 
@@ -132,31 +157,24 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 - Rebuild only affected pages when possible
 - Improve feedback loop for larger sites
 
-#### 16. Internationalization
-- Add multilingual support only if the content model stays understandable
-- Support language-specific routes, feeds, and metadata
-
-#### 17. CMS or Editor Integrations
+#### 16. CMS or Editor Integrations
 - Explore lightweight editorial workflows after the file-based workflow is mature
 - Keep this optional rather than redefining the product around hosted editing
 
-## Priority Order
+## Priority Order (Remaining)
 
-1. Watch mode and live reload
-2. Archive page
-3. SEO metadata
-4. Validation improvements
-5. Scheduled publishing
-6. Series support
-7. Redirects
-8. Shortcodes and embeds
-9. Image pipeline
-10. Theme extensibility
-11. Stable plugin architecture
+1. Localized RSS / sitemap (i18n follow-up)
+2. Scheduled publishing
+3. Series support (user-facing)
+4. Redirects and permalink stability
+5. Shortcodes and embeds
+6. Image pipeline
+7. Theme extensibility (manifest schema, third-party themes)
+8. Stable plugin architecture
 
 ## Why This Order
 
-- The first group improves the daily author experience immediately
+- The first group rounds out i18n and supports more realistic long-term blogging workflows
 - The middle group helps sites age well as content grows
 - The last group expands platform capability once the fundamentals are dependable
 
@@ -167,7 +185,6 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 - Multiple feed formats beyond RSS
 - Social/comment/newsletter integrations
 - Better theme/starter discovery and sharing
-- Content collections beyond standard blog posts
 
 ## Success Criteria
 
