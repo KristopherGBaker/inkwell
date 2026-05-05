@@ -52,6 +52,7 @@ public struct BuildPipeline {
         let outputRoot = projectRoot.appendingPathComponent(siteConfig.outputDir)
         let urlBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
         let pictureRewriter = PictureRewriter(projectRoot: projectRoot)
+        let coverImageResolver = ResponsiveImageResolver(projectRoot: projectRoot)
         var pictureVariantsUsed: Set<String> = []
         let posts = try loader.loadPosts(in: projectRoot)
         var rendered: [String: String] = [:]
@@ -123,7 +124,11 @@ public struct BuildPipeline {
             pageRendered[page.lang, default: [:]][page.route] = rewriteResult.html
         }
 
-        let plans = pageContextBuilder.buildPlans(
+        let coverImageClosure: FrontMatterImageResolver = { path, alt in
+            coverImageResolver.resolve(path: path, alt: alt)?.contextDict()
+        }
+        let resolvingBuilder = PageContextBuilder(imageResolver: coverImageClosure)
+        let plans = resolvingBuilder.buildPlans(
             posts: posts,
             renderedContent: rendered,
             baseURL: urlBuilder.baseURL,
@@ -134,6 +139,7 @@ public struct BuildPipeline {
             pages: pages,
             pageRenderedContent: pageRendered
         )
+        pictureVariantsUsed.formUnion(coverImageResolver.usedVariantFilenames)
         let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
         var builtPages = try plans.map { plan in
             BuiltPage(route: plan.route, html: try templateRenderer.render(template: plan.template, context: plan.context))
