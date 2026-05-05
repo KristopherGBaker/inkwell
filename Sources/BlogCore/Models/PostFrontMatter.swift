@@ -12,6 +12,7 @@ public struct PostFrontMatter: Codable, Equatable {
     public var canonicalUrl: String?
     public var coverImage: String?
     public var ogImage: String?
+    public var toc: Bool?
 
     public init(
         title: String?,
@@ -24,7 +25,8 @@ public struct PostFrontMatter: Codable, Equatable {
         series: String? = nil,
         canonicalUrl: String? = nil,
         coverImage: String? = nil,
-        ogImage: String? = nil
+        ogImage: String? = nil,
+        toc: Bool? = nil
     ) {
         self.title = title
         self.date = date
@@ -37,6 +39,7 @@ public struct PostFrontMatter: Codable, Equatable {
         self.canonicalUrl = canonicalUrl
         self.coverImage = coverImage
         self.ogImage = ogImage
+        self.toc = toc
     }
 
     public var normalizedCanonicalURL: String? {

@@ -36,6 +36,7 @@ private struct RenderablePost {
     let canonicalURL: String?
     let coverImage: String?
     let ogImage: String?
+    let tocOptIn: Bool?
 }
 
 // swiftlint:disable:next type_body_length
@@ -370,7 +371,8 @@ public struct PageContextBuilder {
             categories: post.frontMatter.categories ?? [],
             canonicalURL: post.frontMatter.normalizedCanonicalURL,
             coverImage: post.frontMatter.coverImage,
-            ogImage: post.frontMatter.ogImage
+            ogImage: post.frontMatter.ogImage,
+            tocOptIn: post.frontMatter.toc
         )
     }
 }
@@ -451,6 +453,7 @@ private extension PageContextBuilder {
     ) -> PagePlan {
         let route = "/posts/\(post.slug)/"
         let chips = makeTaxonomyChips(tags: post.tags, categories: post.categories, urlBuilder: urlBuilder)
+        let annotated = annotateHeadings(html: content, tocOptIn: post.tocOptIn)
         let trimmedCoverImage = post.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
         let coverImageContext: [String: Any]? = resolveCoverImage(
             path: trimmedCoverImage,
@@ -468,8 +471,11 @@ private extension PageContextBuilder {
             "canonicalURL": escapeHTML(canonicalURL),
             "twitterCard": twitterCard,
             "chips": chips,
-            "content": content
+            "content": annotated.html
         ]
+        if let toc = annotated.toc {
+            pageContext["toc"] = toc
+        }
         if let coverImageContext {
             pageContext["coverImage"] = coverImageContext
         }
@@ -496,6 +502,43 @@ private extension PageContextBuilder {
             "links": ["home": urlBuilder.link(for: "/")]
         ]
         return PagePlan(route: route, template: "layouts/post", context: context)
+    }
+
+    /// Run HeadingExtractor on the rendered body to attach `id` attributes to
+    /// every h2/h3 (so anchor links work even without TOC), and return a
+    /// nested TOC structure when the page should expose one. TOC shows
+    /// when front-matter sets `toc: true` or when the body has at least
+    /// three h2s.
+    func annotateHeadings(html: String, tocOptIn: Bool?) -> (html: String, toc: [[String: Any]]?) {
+        let extracted = HeadingExtractor.extract(html: html)
+        let h2Count = extracted.headings.filter { $0.level == 2 }.count
+        let shouldExpose = tocOptIn == true || h2Count >= 3
+        guard shouldExpose else {
+            return (extracted.html, nil)
+        }
+        return (extracted.html, nestedTOC(from: extracted.headings))
+    }
+
+    private func nestedTOC(from headings: [HeadingExtractor.Heading]) -> [[String: Any]] {
+        var result: [[String: Any]] = []
+        for heading in headings {
+            let entry: [String: Any] = [
+                "level": heading.level,
+                "text": escapeHTML(heading.text),
+                "anchor": heading.anchor,
+                "children": [[String: Any]]()
+            ]
+            if heading.level == 2 || result.isEmpty {
+                result.append(entry)
+            } else {
+                var parent = result.removeLast()
+                var children = parent["children"] as? [[String: Any]] ?? []
+                children.append(entry)
+                parent["children"] = children
+                result.append(parent)
+            }
+        }
+        return result
     }
 
     /// Resolve a front-matter `ogImage` override (absolute URL passes
@@ -1111,13 +1154,15 @@ private extension PageContextBuilder {
                 urlBuilder: urlBuilder
             )
             let trimmedCoverImage = item.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let detailHTML = rendered[item.slug] ?? ""
-            let detailReadingMinutes = ReadingTime.compute(html: detailHTML.isEmpty ? item.body : detailHTML)
+            let rawDetailHTML = rendered[item.slug] ?? ""
+            let detailReadingMinutes = ReadingTime.compute(html: rawDetailHTML.isEmpty ? item.body : rawDetailHTML)
             let detailLabel: String? = {
                 guard detailReadingMinutes > 0 else { return nil }
                 let format = (site["themeCopy"] as? [String: String])?["readingTimeLabel"] ?? "%d min read"
                 return escapeHTML(String(format: format, detailReadingMinutes))
             }()
+            let detailTOCOptIn = item.frontMatter["toc"] as? Bool
+            let annotatedDetail = annotateHeadings(html: rawDetailHTML, tocOptIn: detailTOCOptIn)
             var pageContext: [String: Any] = [
                 "type": "collection-detail",
                 "title": escapeHTML(item.title),
@@ -1130,7 +1175,7 @@ private extension PageContextBuilder {
                 "canonicalURL": escapeHTML(item.normalizedCanonicalURL ?? urlBuilder.compose(route: detailRoute)),
                 "twitterCard": (trimmedCoverImage?.isEmpty == false) ? "summary_large_image" : "summary",
                 "chips": chips,
-                "content": detailHTML,
+                "content": annotatedDetail.html,
                 "frontMatter": item.frontMatter,
                 "lang": lang,
                 "translations": translationLinks(
@@ -1149,6 +1194,9 @@ private extension PageContextBuilder {
             ]
             if let detailLabel {
                 pageContext["readingTimeLabel"] = detailLabel
+            }
+            if let detailTOC = annotatedDetail.toc {
+                pageContext["toc"] = detailTOC
             }
             if let primary = item.tags?.first {
                 pageContext["primaryTag"] = escapeHTML(primary)

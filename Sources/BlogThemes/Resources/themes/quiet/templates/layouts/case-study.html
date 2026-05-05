@@ -24,6 +24,8 @@
 
   {% if page.coverImage %}<figure class="shot-frame case-study-hero"><img src="{{ page.coverImage.src }}" alt="{{ page.coverImage.alt }}"></figure>{% endif %}
 
+  {% if page.toc %}{% include "partials/toc.html" %}{% endif %}
+
   <article class="prose case-study-prose">{{ page.content }}</article>
 
   {% if page.frontMatter.shots %}<section class="case-study-shots">
