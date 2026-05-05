@@ -35,6 +35,23 @@ final class BlogCLISmokeTests: XCTestCase {
         XCTAssertFalse(searchRuntime.contains("href=\"/posts/${post.slug}/\""))
     }
 
+    func testInitScaffoldsGitignoreWithInkwellCache() throws {
+        let fm = FileManager.default
+        let temp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        try fm.createDirectory(at: temp, withIntermediateDirectories: true)
+        let old = fm.currentDirectoryPath
+        _ = fm.changeCurrentDirectoryPath(temp.path)
+        defer { _ = fm.changeCurrentDirectoryPath(old) }
+
+        var command = InitCommand()
+        try command.run()
+
+        let gitignorePath = temp.appendingPathComponent(".gitignore")
+        XCTAssertTrue(fm.fileExists(atPath: gitignorePath.path))
+        let contents = try String(contentsOf: gitignorePath)
+        XCTAssertTrue(contents.contains(".inkwell-cache/"), ".gitignore should include the build cache directory")
+    }
+
     func testPostPublishFlipsDraftToFalseBySlug() throws {
         let fm = FileManager.default
         let temp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
