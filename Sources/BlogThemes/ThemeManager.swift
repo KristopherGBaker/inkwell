@@ -88,6 +88,7 @@ public struct ThemeManager {
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/tailwind.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/prism.css">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/code-copy.css">
         <script type="module">
           import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
           mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
@@ -97,6 +98,7 @@ public struct ThemeManager {
         </script>
         <script defer src="\(assetPrefix)/assets/js/search.js"></script>
         <script defer src="\(assetPrefix)/assets/js/prism.js"></script>
+        <script defer src="\(assetPrefix)/assets/js/code-copy.js"></script>
         """
     }
 
@@ -114,6 +116,7 @@ public struct ThemeManager {
           });
         </script>
         <script defer src="\(assetPrefix)/assets/js/theme-toggle.js"></script>
+        <script defer src="\(assetPrefix)/assets/js/code-copy.js"></script>
         """
     }
 
