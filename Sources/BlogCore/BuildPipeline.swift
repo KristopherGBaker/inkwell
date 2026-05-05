@@ -143,7 +143,14 @@ public struct BuildPipeline {
             try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }
         try themes.copyThemeAssets(theme: siteConfig.theme, projectRoot: projectRoot, outputRoot: outputRoot)
-        try writeSEOArtifacts(posts: posts, routes: builtPages.map(\.route), outputRoot: outputRoot, siteConfig: siteConfig, urlBuilder: urlBuilder)
+        try writeSEOArtifacts(
+            posts: posts,
+            collections: collections,
+            routes: builtPages.map(\.route),
+            outputRoot: outputRoot,
+            siteConfig: siteConfig,
+            urlBuilder: urlBuilder
+        )
         try writeSearchIndex(posts: posts, outputRoot: outputRoot)
 
         let report = BuildReport(outputDirectory: outputRoot, routes: builtPages.map(\.route), errors: [])
@@ -177,60 +184,23 @@ public struct BuildPipeline {
         return contents
     }
 
-    private func writeSEOArtifacts(posts: [PostDocument], routes: [String], outputRoot: URL, siteConfig: SiteConfig, urlBuilder: SiteURLBuilder) throws {
-        let sitemapEntries = routes.map { route in
-            "  <url><loc>\(xmlEscape(urlBuilder.compose(route: route)))</loc></url>"
-        }.joined(separator: "\n")
-
-        let sitemap = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-        \(sitemapEntries)
-        </urlset>
-        """
-
-        let robots = """
-        User-agent: *
-        Allow: /
-        Sitemap: \(urlBuilder.compose(route: "/sitemap.xml"))
-        """
-
-        let feedPosts = posts
-            .filter { $0.frontMatter.draft != true }
-            .sorted { ($0.frontMatter.date ?? "") > ($1.frontMatter.date ?? "") }
-            .prefix(20)
-            .compactMap { post -> String? in
-                guard let slug = post.frontMatter.slug, let title = post.frontMatter.title else { return nil }
-                let link = urlBuilder.compose(route: "/posts/\(slug)/")
-                let date = post.frontMatter.date ?? ""
-                let summary = xmlEscape(post.frontMatter.summary ?? "")
-                return """
-                  <item>
-                    <title>\(xmlEscape(title))</title>
-                    <link>\(xmlEscape(link))</link>
-                    <guid>\(xmlEscape(link))</guid>
-                    <pubDate>\(xmlEscape(date))</pubDate>
-                    <description>\(summary)</description>
-                  </item>
-                """
-            }
-            .joined(separator: "\n")
-
-        let rss = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
-          <channel>
-            <title>\(xmlEscape(siteConfig.title))</title>
-            <link>\(xmlEscape(urlBuilder.baseURL))</link>
-            <description>Recent posts from \(xmlEscape(siteConfig.title))</description>
-        \(feedPosts)
-          </channel>
-        </rss>
-        """
-
-        try writer.writeFile(relativePath: "sitemap.xml", content: sitemap, to: outputRoot)
-        try writer.writeFile(relativePath: "robots.txt", content: robots, to: outputRoot)
-        try writer.writeFile(relativePath: "rss.xml", content: rss, to: outputRoot)
+    // swiftlint:disable:next function_parameter_count
+    private func writeSEOArtifacts(
+        posts: [PostDocument],
+        collections: [String: Collection],
+        routes: [String],
+        outputRoot: URL,
+        siteConfig: SiteConfig,
+        urlBuilder: SiteURLBuilder
+    ) throws {
+        try SEOArtifactsWriter(writer: writer).writeAll(
+            posts: posts,
+            collections: collections,
+            routes: routes,
+            outputRoot: outputRoot,
+            siteConfig: siteConfig,
+            urlBuilder: urlBuilder
+        )
     }
 
     private func writeSearchIndex(posts: [PostDocument], outputRoot: URL) throws {
@@ -280,14 +250,6 @@ public struct BuildPipeline {
         return compactWhitespace.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func xmlEscape(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&apos;")
-    }
 }
 
 struct SiteURLBuilder {
