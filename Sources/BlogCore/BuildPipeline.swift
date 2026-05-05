@@ -20,6 +20,7 @@ public enum BuildPipelineError: Error, Equatable {
     case taxonomySlugCollision(kind: String, slug: String, labels: [String])
 }
 
+// swiftlint:disable:next type_body_length
 public struct BuildPipeline {
     private let loader: ContentLoader
     private let dataLoader: DataLoader
@@ -51,6 +52,10 @@ public struct BuildPipeline {
         let siteConfig = loadSiteConfig(projectRoot: projectRoot)
         let outputRoot = projectRoot.appendingPathComponent(siteConfig.outputDir)
         let urlBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
+        let pictureRewriter = PictureRewriter(projectRoot: projectRoot)
+        let coverImageResolver = ResponsiveImageResolver(projectRoot: projectRoot)
+        let ogCardGenerator = OGCardGenerator(projectRoot: projectRoot)
+        var pictureVariantsUsed: Set<String> = []
         let posts = try loader.loadPosts(in: projectRoot)
         var rendered: [String: String] = [:]
 
@@ -60,7 +65,9 @@ public struct BuildPipeline {
             guard let slug = post.frontMatter.slug else { continue }
             let html = try renderer.render(post.body)
             try plugins.runAfterParse(contentDocument: PluginDocument(slug: slug, content: post.body))
-            rendered[slug] = html
+            let rewriteResult = pictureRewriter.rewrite(html: html)
+            pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
+            rendered[slug] = rewriteResult.html
         }
 
         try validateTaxonomySlugUniqueness(posts: posts)
@@ -96,8 +103,10 @@ public struct BuildPipeline {
                 for item in collection.items {
                     let html = try renderer.render(item.body)
                     let canonicalBase = "\(collectionRoute)\(item.slug)/"
-                    perLang[item.lang, default: [:]][item.slug] =
-                        AssetURLRewriter.rewriteRelativeURLs(in: html, base: canonicalBase)
+                    let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: html, base: canonicalBase)
+                    let rewriteResult = pictureRewriter.rewrite(html: withAssets)
+                    pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
+                    perLang[item.lang, default: [:]][item.slug] = rewriteResult.html
                 }
                 collectionRendered[id] = perLang
             }
@@ -111,11 +120,34 @@ public struct BuildPipeline {
         var pageRendered: [String: [String: String]] = [:]
         for page in pages {
             let html = try renderer.render(page.body)
-            pageRendered[page.lang, default: [:]][page.route] =
-                AssetURLRewriter.rewriteRelativeURLs(in: html, base: page.route)
+            let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: html, base: page.route)
+            let rewriteResult = pictureRewriter.rewrite(html: withAssets)
+            pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
+            pageRendered[page.lang, default: [:]][page.route] = rewriteResult.html
         }
 
-        let plans = pageContextBuilder.buildPlans(
+        let coverImageClosure: FrontMatterImageResolver = { path, alt in
+            coverImageResolver.resolve(path: path, alt: alt)?.contextDict()
+        }
+        let siteAuthor = siteConfig.author?.name ?? siteConfig.title
+        let siteTheme = siteConfig.theme ?? "default"
+        let ogCardClosure: OGCardURLResolver = { title, subtitle, lang in
+            let spec = OGCardSpec(
+                title: title,
+                subtitle: subtitle,
+                author: siteAuthor,
+                lang: lang,
+                theme: siteTheme,
+                accent: "#fbbf24"
+            )
+            guard let filename = ogCardGenerator.ensureCard(spec: spec) else { return nil }
+            return urlBuilder.assetLink(for: "/og/\(filename)")
+        }
+        let resolvingBuilder = PageContextBuilder(
+            imageResolver: coverImageClosure,
+            ogCardResolver: ogCardClosure
+        )
+        let plans = resolvingBuilder.buildPlans(
             posts: posts,
             renderedContent: rendered,
             baseURL: urlBuilder.baseURL,
@@ -126,6 +158,7 @@ public struct BuildPipeline {
             pages: pages,
             pageRenderedContent: pageRendered
         )
+        pictureVariantsUsed.formUnion(coverImageResolver.usedVariantFilenames)
         let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
         var builtPages = try plans.map { plan in
             BuiltPage(route: plan.route, html: try templateRenderer.render(template: plan.template, context: plan.context))
@@ -143,6 +176,8 @@ public struct BuildPipeline {
             try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }
         try themes.copyThemeAssets(theme: siteConfig.theme, projectRoot: projectRoot, outputRoot: outputRoot)
+        try copyPictureVariants(filenames: pictureVariantsUsed, projectRoot: projectRoot, outputRoot: outputRoot)
+        try copyOGCards(filenames: ogCardGenerator.generatedFilenames, projectRoot: projectRoot, outputRoot: outputRoot)
         try writeSEOArtifacts(
             posts: posts,
             collections: collections,
@@ -201,6 +236,38 @@ public struct BuildPipeline {
             siteConfig: siteConfig,
             urlBuilder: urlBuilder
         )
+    }
+
+    private func copyOGCards(filenames: Set<String>, projectRoot: URL, outputRoot: URL) throws {
+        guard filenames.isEmpty == false else { return }
+        let cacheDir = projectRoot.appendingPathComponent(".inkwell-cache/og", isDirectory: true)
+        let outDir = outputRoot.appendingPathComponent("og", isDirectory: true)
+        try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+        for filename in filenames {
+            let source = cacheDir.appendingPathComponent(filename)
+            guard FileManager.default.fileExists(atPath: source.path) else { continue }
+            let destination = outDir.appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: source, to: destination)
+        }
+    }
+
+    private func copyPictureVariants(filenames: Set<String>, projectRoot: URL, outputRoot: URL) throws {
+        guard filenames.isEmpty == false else { return }
+        let cacheDir = projectRoot.appendingPathComponent(".inkwell-cache/images", isDirectory: true)
+        let outDir = outputRoot.appendingPathComponent("_processed", isDirectory: true)
+        try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+        for filename in filenames {
+            let source = cacheDir.appendingPathComponent(filename)
+            guard FileManager.default.fileExists(atPath: source.path) else { continue }
+            let destination = outDir.appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: source, to: destination)
+        }
     }
 
     private func writeSearchIndex(posts: [PostDocument], outputRoot: URL) throws {

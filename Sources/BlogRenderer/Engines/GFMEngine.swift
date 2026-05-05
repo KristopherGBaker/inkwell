@@ -176,32 +176,15 @@ public struct GFMEngine: MarkdownEngine {
     }
 
     private func highlightWithShiki(code: String, language: String) -> String? {
-        let repoRoot = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        let scriptPath = repoRoot.appendingPathComponent("scripts/highlight-code.mjs").path
-        guard FileManager.default.fileExists(atPath: scriptPath) else {
-            return nil
-        }
-
+        let script = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/highlight-code.mjs")
         let encoded = Data(code.utf8).base64EncodedString()
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["node", scriptPath, language.isEmpty ? "text" : language, encoded]
-
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = Pipe()
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-            guard process.terminationStatus == 0 else { return nil }
-            let data = output.fileHandleForReading.readDataToEndOfFile()
-            guard let html = String(data: data, encoding: .utf8), !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                return nil
-            }
-            return html
-        } catch {
+        let args = [language.isEmpty ? "text" : language, encoded]
+        guard let data = NodeRunner().run(script: script, args: args),
+              let html = String(data: data, encoding: .utf8),
+              !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
+        return html
     }
 }
