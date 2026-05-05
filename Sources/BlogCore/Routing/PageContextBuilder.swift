@@ -40,8 +40,11 @@ private struct RenderablePost {
 // swiftlint:disable:next type_body_length
 public struct PageContextBuilder {
     private let postsPerPage = 6
+    private let imageResolver: FrontMatterImageResolver?
 
-    public init() {}
+    public init(imageResolver: FrontMatterImageResolver? = nil) {
+        self.imageResolver = imageResolver
+    }
 
     public func buildPlans(
         posts: [PostDocument],
@@ -440,16 +443,11 @@ private extension PageContextBuilder {
         let route = "/posts/\(post.slug)/"
         let chips = makeTaxonomyChips(tags: post.tags, categories: post.categories, urlBuilder: urlBuilder)
         let trimmedCoverImage = post.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let coverImageContext: [String: String]?
-        if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
-            let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
-            coverImageContext = [
-                "src": escapeHTML(resolved),
-                "alt": escapeHTML(post.title)
-            ]
-        } else {
-            coverImageContext = nil
-        }
+        let coverImageContext: [String: Any]? = resolveCoverImage(
+            path: trimmedCoverImage,
+            alt: post.title,
+            urlBuilder: urlBuilder
+        )
         let canonicalURL = post.canonicalURL ?? urlBuilder.compose(route: route)
         let twitterCard = coverImageContext == nil ? "summary" : "summary_large_image"
 
@@ -473,6 +471,27 @@ private extension PageContextBuilder {
             "links": ["home": urlBuilder.link(for: "/")]
         ]
         return PagePlan(route: route, template: "layouts/post", context: context)
+    }
+
+    /// Resolve a front-matter image path into a coverImage context dict.
+    /// Tries the responsive resolver first (returns srcset/srcsetAvif/width
+    /// /height/etc when the image lives under static/ or public/); otherwise
+    /// falls back to the basic `{src, alt}` shape so external URLs and
+    /// projects without an image pipeline still work.
+    private func resolveCoverImage(
+        path trimmed: String?,
+        alt: String,
+        urlBuilder: SiteURLBuilder
+    ) -> [String: Any]? {
+        guard let trimmed, trimmed.isEmpty == false else { return nil }
+        if let dict = imageResolver?(trimmed, alt) {
+            return dict
+        }
+        let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
+        return [
+            "src": escapeHTML(resolved),
+            "alt": escapeHTML(alt)
+        ]
     }
 
     func makeTaxonomyPlans(
@@ -1086,12 +1105,12 @@ private extension PageContextBuilder {
             if let brand = item.frontMatter["brand"] as? String {
                 pageContext["brand"] = brand
             }
-            if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
-                let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
-                pageContext["coverImage"] = [
-                    "src": escapeHTML(resolved),
-                    "alt": escapeHTML(item.title)
-                ]
+            if let coverContext = resolveCoverImage(
+                path: trimmedCoverImage,
+                alt: item.title,
+                urlBuilder: urlBuilder
+            ) {
+                pageContext["coverImage"] = coverContext
             }
 
             // Wrap-around "next" sibling — used by the case-study layout's
