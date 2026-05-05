@@ -100,16 +100,21 @@ public struct ImageVariantGenerator {
     }
 
     private func readManifest(key: String) -> ImageVariantResult? {
-        guard cache.exists(for: "images", key: key, ext: "json") else { return nil }
         let url = cache.path(for: "images", key: key, ext: "json")
-        guard let data = try? Data(contentsOf: url) else { return nil }
+        guard let data = try? Data(contentsOf: url), data.isEmpty == false else { return nil }
         return try? JSONDecoder().decode(ImageVariantResult.self, from: data)
     }
 
     static func computeKey(sourceBytes: Data, spec: ImageVariantSpec) -> String {
         var hasher = SHA256()
         hasher.update(data: sourceBytes)
-        if let specData = try? JSONEncoder().encode(spec) {
+        let encoder = JSONEncoder()
+        // Sorted keys give a stable encoding; without it Foundation's
+        // JSONEncoder may emit struct properties in different orders on
+        // different calls in Swift 6, which would produce a different
+        // hash for identical inputs and break the cache short-circuit.
+        encoder.outputFormatting = [.sortedKeys]
+        if let specData = try? encoder.encode(spec) {
             hasher.update(data: specData)
         }
         hasher.update(data: Data(toolVersion.utf8))
