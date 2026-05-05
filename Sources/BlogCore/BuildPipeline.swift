@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import BlogPlugins
 import BlogRenderer
@@ -55,6 +56,14 @@ public struct BuildPipeline {
         let pictureRewriter = PictureRewriter(projectRoot: projectRoot)
         let coverImageResolver = ResponsiveImageResolver(projectRoot: projectRoot)
         let ogCardGenerator = OGCardGenerator(projectRoot: projectRoot)
+        let mathEngine = MathEngine()
+        let scriptsDir = projectRoot.appendingPathComponent("scripts")
+        let renderBody: (String) throws -> String = { body in
+            let extract = mathEngine.extract(markdown: body)
+            let html = try self.renderer.render(extract.markdown)
+            let mathHTML = mathEngine.renderViaNode(runs: extract.runs, scriptDirectory: scriptsDir)
+            return mathEngine.restitch(html: html, runs: extract.runs, renderedHTML: mathHTML)
+        }
         var pictureVariantsUsed: Set<String> = []
         let posts = try loader.loadPosts(in: projectRoot)
         var rendered: [String: String] = [:]
@@ -63,9 +72,9 @@ public struct BuildPipeline {
             try SchemaValidator.validate(frontMatter: post.frontMatter)
             try plugins.runBeforeParse(contentPath: post.sourcePath.path)
             guard let slug = post.frontMatter.slug else { continue }
-            let html = try renderer.render(post.body)
+            let withMath = try renderBody(post.body)
             try plugins.runAfterParse(contentDocument: PluginDocument(slug: slug, content: post.body))
-            let rewriteResult = pictureRewriter.rewrite(html: html)
+            let rewriteResult = pictureRewriter.rewrite(html: withMath)
             pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
             rendered[slug] = rewriteResult.html
         }
@@ -101,9 +110,9 @@ public struct BuildPipeline {
                     return route
                 }()
                 for item in collection.items {
-                    let html = try renderer.render(item.body)
+                    let withMath = try renderBody(item.body)
                     let canonicalBase = "\(collectionRoute)\(item.slug)/"
-                    let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: html, base: canonicalBase)
+                    let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: withMath, base: canonicalBase)
                     let rewriteResult = pictureRewriter.rewrite(html: withAssets)
                     pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
                     perLang[item.lang, default: [:]][item.slug] = rewriteResult.html
@@ -119,8 +128,8 @@ public struct BuildPipeline {
         )
         var pageRendered: [String: [String: String]] = [:]
         for page in pages {
-            let html = try renderer.render(page.body)
-            let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: html, base: page.route)
+            let withMath = try renderBody(page.body)
+            let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: withMath, base: page.route)
             let rewriteResult = pictureRewriter.rewrite(html: withAssets)
             pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
             pageRendered[page.lang, default: [:]][page.route] = rewriteResult.html
@@ -164,7 +173,10 @@ public struct BuildPipeline {
             BuiltPage(route: plan.route, html: try templateRenderer.render(template: plan.template, context: plan.context))
         }
         let extraHead = loadExtraHead(projectRoot: projectRoot, siteConfig: siteConfig)
-        builtPages = builtPages.map { BuiltPage(route: $0.route, html: themes.injectHeadAssets(into: $0.html, baseURL: siteConfig.baseURL, extraHead: extraHead, theme: siteConfig.theme)) }
+        builtPages = builtPages.map { page in
+            let hasMath = page.html.contains("class=\"math math-inline\"") || page.html.contains("class=\"math math-block\"")
+            return BuiltPage(route: page.route, html: themes.injectHeadAssets(into: page.html, baseURL: siteConfig.baseURL, extraHead: extraHead, theme: siteConfig.theme, hasMath: hasMath))
+        }
 
         for page in builtPages {
             try plugins.runBeforeRender(routeContext: PluginRouteContext(route: page.route))

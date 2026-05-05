@@ -52,6 +52,29 @@ final class ThemeManagerTests: XCTestCase {
         XCTAssertTrue(quietOutput.contains("/assets/js/code-copy.js"), "quiet theme should include code-copy.js")
     }
 
+    func testInjectHeadAssetsSkipsKatexCSSWhenNoMath() {
+        let input = "<html><head></head><body></body></html>"
+        let output = ThemeManager().injectHeadAssets(into: input)
+
+        XCTAssertFalse(output.contains("katex.min.css"))
+    }
+
+    func testInjectHeadAssetsIncludesKatexCSSWhenHasMath() {
+        let input = "<html><head></head><body></body></html>"
+        let defaultOutput = ThemeManager().injectHeadAssets(into: input, hasMath: true)
+        let quietOutput = ThemeManager().injectHeadAssets(into: input, theme: "quiet", hasMath: true)
+
+        XCTAssertTrue(defaultOutput.contains("/assets/css/katex.min.css"))
+        XCTAssertTrue(quietOutput.contains("/assets/css/katex.min.css"))
+    }
+
+    func testInjectHeadAssetsKatexCSSRespectsBaseURLPrefix() {
+        let input = "<html><head></head><body></body></html>"
+        let output = ThemeManager().injectHeadAssets(into: input, baseURL: "https://example.com/blog/", hasMath: true)
+
+        XCTAssertTrue(output.contains("href=\"/blog/assets/css/katex.min.css\""))
+    }
+
     func testInjectHeadAssetsAppendsExtraHeadBeforeClosingHead() {
         let input = "<html><head></head><body></body></html>"
         let extra = "<link rel=\"icon\" href=\"/favicon.ico\">"
