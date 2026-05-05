@@ -20,6 +20,7 @@ public enum BuildPipelineError: Error, Equatable {
     case taxonomySlugCollision(kind: String, slug: String, labels: [String])
 }
 
+// swiftlint:disable:next type_body_length
 public struct BuildPipeline {
     private let loader: ContentLoader
     private let dataLoader: DataLoader
@@ -53,6 +54,7 @@ public struct BuildPipeline {
         let urlBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
         let pictureRewriter = PictureRewriter(projectRoot: projectRoot)
         let coverImageResolver = ResponsiveImageResolver(projectRoot: projectRoot)
+        let ogCardGenerator = OGCardGenerator(projectRoot: projectRoot)
         var pictureVariantsUsed: Set<String> = []
         let posts = try loader.loadPosts(in: projectRoot)
         var rendered: [String: String] = [:]
@@ -127,7 +129,24 @@ public struct BuildPipeline {
         let coverImageClosure: FrontMatterImageResolver = { path, alt in
             coverImageResolver.resolve(path: path, alt: alt)?.contextDict()
         }
-        let resolvingBuilder = PageContextBuilder(imageResolver: coverImageClosure)
+        let siteAuthor = siteConfig.author?.name ?? siteConfig.title
+        let siteTheme = siteConfig.theme ?? "default"
+        let ogCardClosure: OGCardURLResolver = { title, subtitle, lang in
+            let spec = OGCardSpec(
+                title: title,
+                subtitle: subtitle,
+                author: siteAuthor,
+                lang: lang,
+                theme: siteTheme,
+                accent: "#fbbf24"
+            )
+            guard let filename = ogCardGenerator.ensureCard(spec: spec) else { return nil }
+            return urlBuilder.assetLink(for: "/og/\(filename)")
+        }
+        let resolvingBuilder = PageContextBuilder(
+            imageResolver: coverImageClosure,
+            ogCardResolver: ogCardClosure
+        )
         let plans = resolvingBuilder.buildPlans(
             posts: posts,
             renderedContent: rendered,
@@ -158,6 +177,7 @@ public struct BuildPipeline {
         }
         try themes.copyThemeAssets(theme: siteConfig.theme, projectRoot: projectRoot, outputRoot: outputRoot)
         try copyPictureVariants(filenames: pictureVariantsUsed, projectRoot: projectRoot, outputRoot: outputRoot)
+        try copyOGCards(filenames: ogCardGenerator.generatedFilenames, projectRoot: projectRoot, outputRoot: outputRoot)
         try writeSEOArtifacts(
             posts: posts,
             collections: collections,
@@ -216,6 +236,22 @@ public struct BuildPipeline {
             siteConfig: siteConfig,
             urlBuilder: urlBuilder
         )
+    }
+
+    private func copyOGCards(filenames: Set<String>, projectRoot: URL, outputRoot: URL) throws {
+        guard filenames.isEmpty == false else { return }
+        let cacheDir = projectRoot.appendingPathComponent(".inkwell-cache/og", isDirectory: true)
+        let outDir = outputRoot.appendingPathComponent("og", isDirectory: true)
+        try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+        for filename in filenames {
+            let source = cacheDir.appendingPathComponent(filename)
+            guard FileManager.default.fileExists(atPath: source.path) else { continue }
+            let destination = outDir.appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: source, to: destination)
+        }
     }
 
     private func copyPictureVariants(filenames: Set<String>, projectRoot: URL, outputRoot: URL) throws {

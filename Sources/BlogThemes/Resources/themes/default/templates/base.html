@@ -7,7 +7,9 @@
     <meta property="og:title" content="{{ page.title }}">
     <meta property="og:description" content="{{ page.description }}">
     <meta property="og:url" content="{{ page.canonicalURL }}">
-    <meta name="twitter:card" content="{{ page.twitterCard }}">
+    {% if page.ogImage %}<meta property="og:image" content="{{ page.ogImage }}">
+    <meta name="twitter:image" content="{{ page.ogImage }}">
+    {% endif %}<meta name="twitter:card" content="{{ page.twitterCard }}">
     {% if page.hreflangs %}{% for alt in page.hreflangs %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
     {% endfor %}{% endif %}
   </head>

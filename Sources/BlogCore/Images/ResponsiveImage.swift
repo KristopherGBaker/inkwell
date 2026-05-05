@@ -6,6 +6,12 @@ import Foundation
 /// Returns `nil` to fall through to the basic `{src, alt}` shape.
 public typealias FrontMatterImageResolver = (_ path: String, _ alt: String) -> [String: Any]?
 
+/// Closure handed to `PageContextBuilder` so it can request a generated OG
+/// card URL for a page. Receives the page's translated title, subtitle, and
+/// language tag. Returns the absolute or basePath-relative URL of the card
+/// (e.g. `/og/abc123.png`), or `nil` if generation is unavailable.
+public typealias OGCardURLResolver = (_ title: String, _ subtitle: String, _ lang: String) -> String?
+
 /// Resolved variant set for a single image — what templates need to render
 /// a `<picture>` block from front-matter (e.g. `coverImage: /static/foo.png`).
 ///

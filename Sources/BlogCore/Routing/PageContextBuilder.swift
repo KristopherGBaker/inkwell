@@ -35,15 +35,21 @@ private struct RenderablePost {
     let categories: [String]
     let canonicalURL: String?
     let coverImage: String?
+    let ogImage: String?
 }
 
 // swiftlint:disable:next type_body_length
 public struct PageContextBuilder {
     private let postsPerPage = 6
     private let imageResolver: FrontMatterImageResolver?
+    private let ogCardResolver: OGCardURLResolver?
 
-    public init(imageResolver: FrontMatterImageResolver? = nil) {
+    public init(
+        imageResolver: FrontMatterImageResolver? = nil,
+        ogCardResolver: OGCardURLResolver? = nil
+    ) {
         self.imageResolver = imageResolver
+        self.ogCardResolver = ogCardResolver
     }
 
     public func buildPlans(
@@ -296,7 +302,8 @@ public struct PageContextBuilder {
                 post: post,
                 content: content,
                 site: siteContext,
-                urlBuilder: urlBuilder
+                urlBuilder: urlBuilder,
+                lang: lang
             ))
         }
 
@@ -362,7 +369,8 @@ public struct PageContextBuilder {
             tags: post.frontMatter.tags ?? [],
             categories: post.frontMatter.categories ?? [],
             canonicalURL: post.frontMatter.normalizedCanonicalURL,
-            coverImage: post.frontMatter.coverImage
+            coverImage: post.frontMatter.coverImage,
+            ogImage: post.frontMatter.ogImage
         )
     }
 }
@@ -438,7 +446,8 @@ private extension PageContextBuilder {
         post: RenderablePost,
         content: String,
         site: [String: Any],
-        urlBuilder: SiteURLBuilder
+        urlBuilder: SiteURLBuilder,
+        lang: String = "en"
     ) -> PagePlan {
         let route = "/posts/\(post.slug)/"
         let chips = makeTaxonomyChips(tags: post.tags, categories: post.categories, urlBuilder: urlBuilder)
@@ -464,6 +473,15 @@ private extension PageContextBuilder {
         if let coverImageContext {
             pageContext["coverImage"] = coverImageContext
         }
+        if let ogImageURL = resolveOGImage(
+            override: post.ogImage,
+            title: post.title,
+            subtitle: post.summary,
+            lang: lang,
+            urlBuilder: urlBuilder
+        ) {
+            pageContext["ogImage"] = escapeHTML(ogImageURL)
+        }
 
         let context: [String: Any] = [
             "site": site,
@@ -471,6 +489,29 @@ private extension PageContextBuilder {
             "links": ["home": urlBuilder.link(for: "/")]
         ]
         return PagePlan(route: route, template: "layouts/post", context: context)
+    }
+
+    /// Resolve a front-matter `ogImage` override (absolute URL passes
+    /// through, project path gets basePath prefixing) or fall back to the
+    /// configured OG card resolver. Returns nil when neither yields a URL.
+    private func resolveOGImage(
+        override: String?,
+        title: String,
+        subtitle: String,
+        lang: String,
+        urlBuilder: SiteURLBuilder
+    ) -> String? {
+        if let override, override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+            let trimmed = override.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.contains("://") || trimmed.hasPrefix("//") {
+                return trimmed
+            }
+            if trimmed.hasPrefix("/") {
+                return urlBuilder.assetLink(for: trimmed)
+            }
+            return trimmed
+        }
+        return ogCardResolver?(title, subtitle, lang)
     }
 
     /// Resolve a front-matter image path into a coverImage context dict.
