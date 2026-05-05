@@ -692,7 +692,7 @@ private extension PageContextBuilder {
                 let count = home.featuredCount ?? 4
                 let resolved = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
                 return Array(resolved.prefix(count)).map {
-                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
+                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder, site: site)
                 }
             } ?? []
         let recent: [[String: Any]] = home.recentCollection
@@ -701,7 +701,7 @@ private extension PageContextBuilder {
                 let count = home.recentCount ?? 3
                 let resolved = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
                 return Array(resolved.prefix(count)).map {
-                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder)
+                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder, site: site)
                 }
             } ?? []
 
@@ -1100,7 +1100,7 @@ private extension PageContextBuilder {
         var plans: [PagePlan] = []
 
         let itemContexts = collection.items.map {
-            collectionItemCardContext($0, route: route, urlBuilder: urlBuilder)
+            collectionItemCardContext($0, route: route, urlBuilder: urlBuilder, site: site)
         }
 
         let listTitle = collection.config.headline ?? collection.config.id.capitalized
@@ -1280,7 +1280,7 @@ private extension PageContextBuilder {
                 let title = "\(taxonomy.capitalized): \(key)"
                 let description = "Archive page for \(taxonomy) \(key)."
                 let cards = (grouped[key] ?? []).map {
-                    collectionItemCardContext($0, route: route, urlBuilder: urlBuilder)
+                    collectionItemCardContext($0, route: route, urlBuilder: urlBuilder, site: site)
                 }
                 let pageContext: [String: Any] = [
                     "type": "collection-taxonomy",
@@ -1309,8 +1309,14 @@ private extension PageContextBuilder {
         return plans
     }
 
-    func collectionItemCardContext(_ item: CollectionItem, route: String, urlBuilder: SiteURLBuilder) -> [String: Any] {
+    func collectionItemCardContext(
+        _ item: CollectionItem,
+        route: String,
+        urlBuilder: SiteURLBuilder,
+        site: [String: Any] = [:]
+    ) -> [String: Any] {
         let detailRoute = "\(route)\(item.slug)/"
+        let minutes = estimatedReadingTime(forBody: item.body)
         var ctx: [String: Any] = [
             "slug": item.slug,
             "title": escapeHTML(item.title),
@@ -1321,8 +1327,12 @@ private extension PageContextBuilder {
             "link": urlBuilder.link(for: detailRoute),
             "chips": [],
             "frontMatter": item.frontMatter,
-            "readMin": estimatedReadingTime(forBody: item.body)
+            "readMin": minutes
         ]
+        if minutes > 0 {
+            let format = (site["themeCopy"] as? [String: String])?["readingTimeLabel"] ?? "%d min read"
+            ctx["readingTimeLabel"] = escapeHTML(String(format: format, minutes))
+        }
         if let primary = item.tags?.first {
             ctx["primaryTag"] = escapeHTML(primary)
         }
