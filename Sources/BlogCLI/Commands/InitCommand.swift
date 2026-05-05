@@ -183,6 +183,14 @@ struct InitCommand: ParsableCommand {
         try "window.Prism = window.Prism || {};\n".write(to: cwd.appendingPathComponent("themes/default/assets/js/prism.js"), atomically: true, encoding: .utf8)
         try "pre[class*=\"language-\"]{background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:8px;overflow-x:auto;}\n".write(to: cwd.appendingPathComponent("themes/default/assets/css/prism.css"), atomically: true, encoding: .utf8)
         try defaultTailwindCSSData.write(to: cwd.appendingPathComponent("themes/default/assets/css/tailwind.css"))
+
+        let gitignore = """
+        .DS_Store
+        node_modules/
+        .inkwell-cache/
+        """
+        try gitignore.write(to: cwd.appendingPathComponent(".gitignore"), atomically: true, encoding: .utf8)
+
         print("Initialized blog project")
     }
 }

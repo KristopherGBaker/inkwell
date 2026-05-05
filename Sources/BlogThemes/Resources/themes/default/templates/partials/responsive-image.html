@@ -1,0 +1,5 @@
+{% if image.srcset %}<picture>
+  {% if image.srcsetAvif %}<source type="image/avif" srcset="{{ image.srcsetAvif }}" sizes="{{ image.sizes }}">{% endif %}
+  <source type="image/webp" srcset="{{ image.srcset }}" sizes="{{ image.sizes }}">
+  <img src="{{ image.src }}" alt="{{ image.alt }}" width="{{ image.width }}" height="{{ image.height }}" loading="lazy" decoding="async">
+</picture>{% else %}<img src="{{ image.src }}" alt="{{ image.alt }}"{% if image.width %} width="{{ image.width }}"{% endif %}{% if image.height %} height="{{ image.height }}"{% endif %} loading="lazy" decoding="async">{% endif %}

@@ -35,13 +35,22 @@ private struct RenderablePost {
     let categories: [String]
     let canonicalURL: String?
     let coverImage: String?
+    let ogImage: String?
 }
 
 // swiftlint:disable:next type_body_length
 public struct PageContextBuilder {
     private let postsPerPage = 6
+    private let imageResolver: FrontMatterImageResolver?
+    private let ogCardResolver: OGCardURLResolver?
 
-    public init() {}
+    public init(
+        imageResolver: FrontMatterImageResolver? = nil,
+        ogCardResolver: OGCardURLResolver? = nil
+    ) {
+        self.imageResolver = imageResolver
+        self.ogCardResolver = ogCardResolver
+    }
 
     public func buildPlans(
         posts: [PostDocument],
@@ -293,7 +302,8 @@ public struct PageContextBuilder {
                 post: post,
                 content: content,
                 site: siteContext,
-                urlBuilder: urlBuilder
+                urlBuilder: urlBuilder,
+                lang: lang
             ))
         }
 
@@ -359,7 +369,8 @@ public struct PageContextBuilder {
             tags: post.frontMatter.tags ?? [],
             categories: post.frontMatter.categories ?? [],
             canonicalURL: post.frontMatter.normalizedCanonicalURL,
-            coverImage: post.frontMatter.coverImage
+            coverImage: post.frontMatter.coverImage,
+            ogImage: post.frontMatter.ogImage
         )
     }
 }
@@ -435,21 +446,17 @@ private extension PageContextBuilder {
         post: RenderablePost,
         content: String,
         site: [String: Any],
-        urlBuilder: SiteURLBuilder
+        urlBuilder: SiteURLBuilder,
+        lang: String = "en"
     ) -> PagePlan {
         let route = "/posts/\(post.slug)/"
         let chips = makeTaxonomyChips(tags: post.tags, categories: post.categories, urlBuilder: urlBuilder)
         let trimmedCoverImage = post.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let coverImageContext: [String: String]?
-        if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
-            let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
-            coverImageContext = [
-                "src": escapeHTML(resolved),
-                "alt": escapeHTML(post.title)
-            ]
-        } else {
-            coverImageContext = nil
-        }
+        let coverImageContext: [String: Any]? = resolveCoverImage(
+            path: trimmedCoverImage,
+            alt: post.title,
+            urlBuilder: urlBuilder
+        )
         let canonicalURL = post.canonicalURL ?? urlBuilder.compose(route: route)
         let twitterCard = coverImageContext == nil ? "summary" : "summary_large_image"
 
@@ -466,6 +473,15 @@ private extension PageContextBuilder {
         if let coverImageContext {
             pageContext["coverImage"] = coverImageContext
         }
+        if let ogImageURL = resolveOGImage(
+            override: post.ogImage,
+            title: post.title,
+            subtitle: post.summary,
+            lang: lang,
+            urlBuilder: urlBuilder
+        ) {
+            pageContext["ogImage"] = escapeHTML(ogImageURL)
+        }
 
         let context: [String: Any] = [
             "site": site,
@@ -473,6 +489,50 @@ private extension PageContextBuilder {
             "links": ["home": urlBuilder.link(for: "/")]
         ]
         return PagePlan(route: route, template: "layouts/post", context: context)
+    }
+
+    /// Resolve a front-matter `ogImage` override (absolute URL passes
+    /// through, project path gets basePath prefixing) or fall back to the
+    /// configured OG card resolver. Returns nil when neither yields a URL.
+    private func resolveOGImage(
+        override: String?,
+        title: String,
+        subtitle: String,
+        lang: String,
+        urlBuilder: SiteURLBuilder
+    ) -> String? {
+        if let override, override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+            let trimmed = override.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.contains("://") || trimmed.hasPrefix("//") {
+                return trimmed
+            }
+            if trimmed.hasPrefix("/") {
+                return urlBuilder.assetLink(for: trimmed)
+            }
+            return trimmed
+        }
+        return ogCardResolver?(title, subtitle, lang)
+    }
+
+    /// Resolve a front-matter image path into a coverImage context dict.
+    /// Tries the responsive resolver first (returns srcset/srcsetAvif/width
+    /// /height/etc when the image lives under static/ or public/); otherwise
+    /// falls back to the basic `{src, alt}` shape so external URLs and
+    /// projects without an image pipeline still work.
+    private func resolveCoverImage(
+        path trimmed: String?,
+        alt: String,
+        urlBuilder: SiteURLBuilder
+    ) -> [String: Any]? {
+        guard let trimmed, trimmed.isEmpty == false else { return nil }
+        if let dict = imageResolver?(trimmed, alt) {
+            return dict
+        }
+        let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
+        return [
+            "src": escapeHTML(resolved),
+            "alt": escapeHTML(alt)
+        ]
     }
 
     func makeTaxonomyPlans(
@@ -1086,12 +1146,12 @@ private extension PageContextBuilder {
             if let brand = item.frontMatter["brand"] as? String {
                 pageContext["brand"] = brand
             }
-            if let trimmed = trimmedCoverImage, trimmed.isEmpty == false {
-                let resolved = trimmed.hasPrefix("/") ? urlBuilder.assetLink(for: trimmed) : trimmed
-                pageContext["coverImage"] = [
-                    "src": escapeHTML(resolved),
-                    "alt": escapeHTML(item.title)
-                ]
+            if let coverContext = resolveCoverImage(
+                path: trimmedCoverImage,
+                alt: item.title,
+                urlBuilder: urlBuilder
+            ) {
+                pageContext["coverImage"] = coverContext
             }
 
             // Wrap-around "next" sibling — used by the case-study layout's
