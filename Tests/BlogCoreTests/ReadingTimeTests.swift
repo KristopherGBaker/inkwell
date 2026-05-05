@@ -37,4 +37,28 @@ final class ReadingTimeTests: XCTestCase {
         let html = "<style>.x{color:red}\(noise)</style><p>\(body)</p><script>\(noise)</script>"
         XCTAssertEqual(ReadingTime.compute(html: html), 1, "script/style content should not inflate the count")
     }
+
+    func testCountsCJKCharactersForJapaneseAndChinese() {
+        // 1800 hiragana characters at ~450 cpm = 4 minutes.
+        let body = String(repeating: "あ", count: 1800)
+        XCTAssertEqual(ReadingTime.compute(html: "<p>\(body)</p>"), 4)
+    }
+
+    func testShortJapaneseBodyIsAtLeastOneMinute() {
+        // Below the threshold but non-empty — still rounds up to at least 1.
+        XCTAssertEqual(ReadingTime.compute(html: "<p>こんにちは世界</p>"), 1)
+    }
+
+    func testMixedScriptBlendsLatinAndCJKRates() {
+        // 100 latin words (0.5 min) + 900 CJK chars (2 min) = 2.5 → ceil 3.
+        let latin = Array(repeating: "word", count: 100).joined(separator: " ")
+        let japanese = String(repeating: "日", count: 900)
+        XCTAssertEqual(ReadingTime.compute(html: "<p>\(latin) \(japanese)</p>"), 3)
+    }
+
+    func testCountsHiraganaKatakanaAndIdeographs() {
+        // 450 hiragana + 450 katakana + 450 kanji = 1350 chars at 450 cpm = 3 min.
+        let mixed = String(repeating: "あ", count: 450) + String(repeating: "ア", count: 450) + String(repeating: "字", count: 450)
+        XCTAssertEqual(ReadingTime.compute(html: "<p>\(mixed)</p>"), 3)
+    }
 }
