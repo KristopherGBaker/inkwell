@@ -53,11 +53,14 @@ public struct ThemeManager {
         try out.write(to: configPath)
     }
 
-    public func injectHeadAssets(into html: String, baseURL: String = "/", extraHead: String = "", theme: String = "default") -> String {
+    public func injectHeadAssets(into html: String, baseURL: String = "/", extraHead: String = "", theme: String = "default", hasMath: Bool = false) -> String {
         let assetPrefix = normalizedAssetPrefix(from: baseURL)
         var tags = theme == "quiet"
             ? quietThemeHead(assetPrefix: assetPrefix)
             : defaultThemeHead(assetPrefix: assetPrefix)
+        if hasMath {
+            tags += "\n<link rel=\"stylesheet\" href=\"\(assetPrefix)/assets/css/katex.min.css\">"
+        }
         let extra = extraHead.trimmingCharacters(in: .whitespacesAndNewlines)
         if extra.isEmpty == false {
             tags += "\n" + extra
