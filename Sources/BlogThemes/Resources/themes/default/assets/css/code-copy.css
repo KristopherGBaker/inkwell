@@ -1,0 +1,40 @@
+.code-copy-wrapper {
+  position: relative;
+}
+
+.code-copy-button {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  appearance: none;
+  border: 1px solid rgba(245, 245, 244, 0.18);
+  background: rgba(28, 25, 23, 0.7);
+  color: #f5f5f4;
+  border-radius: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.code-copy-wrapper:hover .code-copy-button,
+.code-copy-button:focus {
+  opacity: 1;
+}
+
+.code-copy-button:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+}
+
+.code-copy-button[data-state="copied"] {
+  border-color: rgba(74, 222, 128, 0.7);
+  color: #4ade80;
+}
+
+.code-copy-button[data-state="error"] {
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #f87171;
+}
