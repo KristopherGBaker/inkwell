@@ -4,7 +4,7 @@
   <p class="post-meta">
     <span>{{ page.displayDate }}</span>
     {% if page.primaryTag %} · <span>{{ page.primaryTag }}</span>{% endif %}
-    {% if page.readMin %} · <span>{{ page.readMin }} {{ site.themeCopy.postMinRead }}</span>{% endif %}
+    {% if page.readingTimeLabel %} · <span>{{ page.readingTimeLabel }}</span>{% elif page.readMin %} · <span>{{ page.readMin }} {{ site.themeCopy.postMinRead }}</span>{% endif %}
   </p>
   <h1 class="h1 post-title">{{ page.title }}</h1>
   {% if page.summary %}<p class="post-blurb">{{ page.summary }}</p>{% endif %}
