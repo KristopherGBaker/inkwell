@@ -9,6 +9,7 @@
   <h1 class="h1 post-title">{{ page.title }}</h1>
   {% if page.summary %}<p class="post-blurb">{{ page.summary }}</p>{% endif %}
   {% if page.coverImage %}<figure class="shot-frame post-cover"><img src="{{ page.coverImage.src }}" alt="Cover image for {{ page.coverImage.alt }}"></figure>{% endif %}
+  {% if page.toc %}{% include "partials/toc.html" %}{% endif %}
   <article class="prose">{{ page.content }}</article>
   <div class="post-footer">
     <a href="{{ collection.route }}" class="read-link">{{ site.themeCopy.postMoreCta }} <span class="arrow" aria-hidden="true">→</span></a>
