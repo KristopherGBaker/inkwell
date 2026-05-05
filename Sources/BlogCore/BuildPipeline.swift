@@ -51,6 +51,8 @@ public struct BuildPipeline {
         let siteConfig = loadSiteConfig(projectRoot: projectRoot)
         let outputRoot = projectRoot.appendingPathComponent(siteConfig.outputDir)
         let urlBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
+        let pictureRewriter = PictureRewriter(projectRoot: projectRoot)
+        var pictureVariantsUsed: Set<String> = []
         let posts = try loader.loadPosts(in: projectRoot)
         var rendered: [String: String] = [:]
 
@@ -60,7 +62,9 @@ public struct BuildPipeline {
             guard let slug = post.frontMatter.slug else { continue }
             let html = try renderer.render(post.body)
             try plugins.runAfterParse(contentDocument: PluginDocument(slug: slug, content: post.body))
-            rendered[slug] = html
+            let rewriteResult = pictureRewriter.rewrite(html: html)
+            pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
+            rendered[slug] = rewriteResult.html
         }
 
         try validateTaxonomySlugUniqueness(posts: posts)
@@ -96,8 +100,10 @@ public struct BuildPipeline {
                 for item in collection.items {
                     let html = try renderer.render(item.body)
                     let canonicalBase = "\(collectionRoute)\(item.slug)/"
-                    perLang[item.lang, default: [:]][item.slug] =
-                        AssetURLRewriter.rewriteRelativeURLs(in: html, base: canonicalBase)
+                    let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: html, base: canonicalBase)
+                    let rewriteResult = pictureRewriter.rewrite(html: withAssets)
+                    pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
+                    perLang[item.lang, default: [:]][item.slug] = rewriteResult.html
                 }
                 collectionRendered[id] = perLang
             }
@@ -111,8 +117,10 @@ public struct BuildPipeline {
         var pageRendered: [String: [String: String]] = [:]
         for page in pages {
             let html = try renderer.render(page.body)
-            pageRendered[page.lang, default: [:]][page.route] =
-                AssetURLRewriter.rewriteRelativeURLs(in: html, base: page.route)
+            let withAssets = AssetURLRewriter.rewriteRelativeURLs(in: html, base: page.route)
+            let rewriteResult = pictureRewriter.rewrite(html: withAssets)
+            pictureVariantsUsed.formUnion(rewriteResult.usedVariantFilenames)
+            pageRendered[page.lang, default: [:]][page.route] = rewriteResult.html
         }
 
         let plans = pageContextBuilder.buildPlans(
@@ -143,6 +151,7 @@ public struct BuildPipeline {
             try plugins.runAfterRender(outputPath: writer.emittedOutputPath(forRoute: page.route, outputRoot: outputRoot, projectRoot: projectRoot))
         }
         try themes.copyThemeAssets(theme: siteConfig.theme, projectRoot: projectRoot, outputRoot: outputRoot)
+        try copyPictureVariants(filenames: pictureVariantsUsed, projectRoot: projectRoot, outputRoot: outputRoot)
         try writeSEOArtifacts(
             posts: posts,
             collections: collections,
@@ -201,6 +210,22 @@ public struct BuildPipeline {
             siteConfig: siteConfig,
             urlBuilder: urlBuilder
         )
+    }
+
+    private func copyPictureVariants(filenames: Set<String>, projectRoot: URL, outputRoot: URL) throws {
+        guard filenames.isEmpty == false else { return }
+        let cacheDir = projectRoot.appendingPathComponent(".inkwell-cache/images", isDirectory: true)
+        let outDir = outputRoot.appendingPathComponent("_processed", isDirectory: true)
+        try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
+        for filename in filenames {
+            let source = cacheDir.appendingPathComponent(filename)
+            guard FileManager.default.fileExists(atPath: source.path) else { continue }
+            let destination = outDir.appendingPathComponent(filename)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: source, to: destination)
+        }
     }
 
     private func writeSearchIndex(posts: [PostDocument], outputRoot: URL) throws {
