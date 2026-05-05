@@ -2,7 +2,7 @@
   <p class="post-list-meta">
     <span>{{ post.displayDate }}</span>
     {% if post.primaryTag %}<span class="post-list-meta-sep">·</span><span>{{ post.primaryTag }}</span>{% endif %}
-    {% if post.readMin %}<span class="post-list-meta-sep">·</span><span>{{ post.readMin }} {{ site.themeCopy.postMinRead }}</span>{% endif %}
+    {% if post.readingTimeLabel %}<span class="post-list-meta-sep">·</span><span>{{ post.readingTimeLabel }}</span>{% elif post.readMin %}<span class="post-list-meta-sep">·</span><span>{{ post.readMin }} {{ site.themeCopy.postMinRead }}</span>{% endif %}
   </p>
   <h3 class="post-list-title">{{ post.title }}</h3>
   {% if post.blurb or post.summary %}<p class="post-list-blurb">{% if post.blurb %}{{ post.blurb }}{% else %}{{ post.summary }}{% endif %}</p>{% endif %}
