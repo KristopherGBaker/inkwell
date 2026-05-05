@@ -11,6 +11,7 @@
 
   <h1 class="h1 case-study-title">{{ page.title }}</h1>
   {% if page.summary %}<p class="body-lg case-study-blurb">{{ page.summary }}</p>{% endif %}
+  {% if page.readingTimeLabel %}<p class="case-study-meta">{{ page.readingTimeLabel }}</p>{% endif %}
 
   {% if page.chips %}<div class="case-study-tags">{% for chip in page.chips %}<a href="{{ chip.href }}" class="tag-chip">{{ chip.label }}</a>{% endfor %}</div>{% endif %}
 

@@ -16,6 +16,10 @@ public struct ThemeCopyConfig: Codable, Equatable {
     public var postMoreCta: String?
     public var postReplyEmailCta: String?
     public var postMinRead: String?
+    /// printf-style format string for reading time. Default `"%d min read"`.
+    /// Translatable per language via the `translations.<lang>.themeCopy`
+    /// overlay.
+    public var readingTimeLabel: String?
     public var notFoundEyebrow: String?
     public var notFoundHeadline: String?
     public var notFoundBody: String?
@@ -34,6 +38,7 @@ public struct ThemeCopyConfig: Codable, Equatable {
         postMoreCta: String? = nil,
         postReplyEmailCta: String? = nil,
         postMinRead: String? = nil,
+        readingTimeLabel: String? = nil,
         notFoundEyebrow: String? = nil,
         notFoundHeadline: String? = nil,
         notFoundBody: String? = nil,
@@ -51,6 +56,7 @@ public struct ThemeCopyConfig: Codable, Equatable {
         self.postMoreCta = postMoreCta
         self.postReplyEmailCta = postReplyEmailCta
         self.postMinRead = postMinRead
+        self.readingTimeLabel = readingTimeLabel
         self.notFoundEyebrow = notFoundEyebrow
         self.notFoundHeadline = notFoundHeadline
         self.notFoundBody = notFoundBody

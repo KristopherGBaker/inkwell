@@ -482,6 +482,13 @@ private extension PageContextBuilder {
         ) {
             pageContext["ogImage"] = escapeHTML(ogImageURL)
         }
+        let readingMinutes = ReadingTime.compute(html: content)
+        if readingMinutes > 0 {
+            pageContext["readingTime"] = readingMinutes
+            pageContext["readMin"] = readingMinutes
+            let format = (site["themeCopy"] as? [String: String])?["readingTimeLabel"] ?? "%d min read"
+            pageContext["readingTimeLabel"] = escapeHTML(String(format: format, readingMinutes))
+        }
 
         let context: [String: Any] = [
             "site": site,
@@ -784,6 +791,7 @@ private extension PageContextBuilder {
             "postMoreCta": escapeHTML(over?.postMoreCta ?? base?.postMoreCta ?? "More writing"),
             "postReplyEmailCta": escapeHTML(over?.postReplyEmailCta ?? base?.postReplyEmailCta ?? "Reply by email"),
             "postMinRead": escapeHTML(over?.postMinRead ?? base?.postMinRead ?? "min read"),
+            "readingTimeLabel": over?.readingTimeLabel ?? base?.readingTimeLabel ?? "%d min read",
             "notFoundEyebrow": escapeHTML(over?.notFoundEyebrow ?? base?.notFoundEyebrow ?? "404 · NOT FOUND"),
             "notFoundHeadline": escapeHTML(over?.notFoundHeadline ?? base?.notFoundHeadline ?? "This page is in another castle."),
             "notFoundBody": escapeHTML(over?.notFoundBody ?? base?.notFoundBody ?? "Or it never existed. Or it's still drafted in a markdown file on my laptop. Try the home page."),
@@ -1103,6 +1111,13 @@ private extension PageContextBuilder {
                 urlBuilder: urlBuilder
             )
             let trimmedCoverImage = item.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let detailHTML = rendered[item.slug] ?? ""
+            let detailReadingMinutes = ReadingTime.compute(html: detailHTML.isEmpty ? item.body : detailHTML)
+            let detailLabel: String? = {
+                guard detailReadingMinutes > 0 else { return nil }
+                let format = (site["themeCopy"] as? [String: String])?["readingTimeLabel"] ?? "%d min read"
+                return escapeHTML(String(format: format, detailReadingMinutes))
+            }()
             var pageContext: [String: Any] = [
                 "type": "collection-detail",
                 "title": escapeHTML(item.title),
@@ -1110,11 +1125,12 @@ private extension PageContextBuilder {
                 "summary": escapeHTML(item.summary ?? ""),
                 "date": escapeHTML(item.date ?? ""),
                 "displayDate": escapeHTML(formatDisplayDate(item.date ?? "")),
-                "readMin": estimatedReadingTime(forBody: item.body),
+                "readMin": detailReadingMinutes,
+                "readingTime": detailReadingMinutes,
                 "canonicalURL": escapeHTML(item.normalizedCanonicalURL ?? urlBuilder.compose(route: detailRoute)),
                 "twitterCard": (trimmedCoverImage?.isEmpty == false) ? "summary_large_image" : "summary",
                 "chips": chips,
-                "content": rendered[item.slug] ?? "",
+                "content": detailHTML,
                 "frontMatter": item.frontMatter,
                 "lang": lang,
                 "translations": translationLinks(
@@ -1131,6 +1147,9 @@ private extension PageContextBuilder {
                     canonicalRoute: detailRoute
                 )
             ]
+            if let detailLabel {
+                pageContext["readingTimeLabel"] = detailLabel
+            }
             if let primary = item.tags?.first {
                 pageContext["primaryTag"] = escapeHTML(primary)
             }
@@ -1295,9 +1314,7 @@ private extension PageContextBuilder {
     /// Coarse word-count-based reading-time estimate (200 wpm).
     /// Returns at least 1 for non-empty bodies.
     private func estimatedReadingTime(forBody body: String) -> Int {
-        let words = body.split { $0.isWhitespace || $0.isNewline }.count
-        guard words > 0 else { return 0 }
-        return max(1, Int((Double(words) / 200.0).rounded()))
+        ReadingTime.compute(html: body)
     }
 
     func makeCollectionTaxonomyChips(
