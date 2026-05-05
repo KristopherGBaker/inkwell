@@ -42,6 +42,16 @@ final class ThemeManagerTests: XCTestCase {
         XCTAssertTrue(output.contains("src=\"/blog/assets/js/prism.js\""))
     }
 
+    func testInjectHeadAssetsIncludesCodeCopyScriptForBothThemes() {
+        let input = "<html><head></head><body></body></html>"
+        let defaultOutput = ThemeManager().injectHeadAssets(into: input)
+        let quietOutput = ThemeManager().injectHeadAssets(into: input, theme: "quiet")
+
+        XCTAssertTrue(defaultOutput.contains("/assets/js/code-copy.js"), "default theme should include code-copy.js")
+        XCTAssertTrue(defaultOutput.contains("/assets/css/code-copy.css"), "default theme should include code-copy.css")
+        XCTAssertTrue(quietOutput.contains("/assets/js/code-copy.js"), "quiet theme should include code-copy.js")
+    }
+
     func testInjectHeadAssetsAppendsExtraHeadBeforeClosingHead() {
         let input = "<html><head></head><body></body></html>"
         let extra = "<link rel=\"icon\" href=\"/favicon.ico\">"
