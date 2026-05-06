@@ -62,7 +62,8 @@ public struct PageContextBuilder {
         collections: [String: Collection] = [:],
         collectionRenderedContent: [String: [String: [String: String]]] = [:],
         pages: [Page] = [],
-        pageRenderedContent: [String: [String: String]] = [:]
+        pageRenderedContent: [String: [String: String]] = [:],
+        mode: BuildMode = .build
     ) -> [PagePlan] {
         let defaultLang = siteConfig.i18n?.resolvedDefaultLanguage ?? "en"
         let configuredLangs = siteConfig.i18n?.resolvedLanguages ?? [defaultLang]
