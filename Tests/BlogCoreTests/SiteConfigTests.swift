@@ -59,4 +59,27 @@ final class SiteConfigTests: XCTestCase {
         XCTAssertEqual(collection.resolvedSortOrder, "desc")
         XCTAssertEqual(collection.resolvedTaxonomies, ["tags", "categories"])
     }
+
+    func testDecodesBrandIconWithLightAndDark() throws {
+        let json = """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "brandIcon": {
+            "light": "/assets/icons/kb.png",
+            "dark": "/assets/icons/kb-dark.png"
+          }
+        }
+        """
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        XCTAssertEqual(config.brandIcon?.light, "/assets/icons/kb.png")
+        XCTAssertEqual(config.brandIcon?.dark, "/assets/icons/kb-dark.png")
+    }
+
+    func testDecodesBrandIconWithLightOnly() throws {
+        let json = #"{"title":"Kris","baseURL":"/","brandIcon":{"light":"/icon.png"}}"#
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        XCTAssertEqual(config.brandIcon?.light, "/icon.png")
+        XCTAssertNil(config.brandIcon?.dark)
+    }
 }

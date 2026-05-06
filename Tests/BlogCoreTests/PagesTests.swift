@@ -65,6 +65,27 @@ final class PagesTests: XCTestCase {
         XCTAssertEqual(ContentLoader.pageRoute(fromRelativePath: "index.md"), "/")
     }
 
+    func testPageEyebrowSurfacesFromFrontMatter() throws {
+        let root = try makeTempBlogProject()
+        try writeFile(root, "content/pages/notes.md", """
+        ---
+        title: Notes
+        layout: notes
+        eyebrow: "X · Notes"
+        ---
+        """)
+        try writeFile(root, "themes/default/templates/layouts/notes.html", """
+        EYE:{{ page.eyebrow }}:END
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+        let html = try String(contentsOf: root.appendingPathComponent("docs/notes/index.html"))
+        XCTAssertTrue(
+            html.contains("EYE:X · Notes:END"),
+            "Expected page.eyebrow to be sourced from front-matter so all layouts can use it uniformly. Got:\n\(html)"
+        )
+    }
+
     private func writeFile(_ root: URL, _ relative: String, _ content: String) throws {
         let url = root.appendingPathComponent(relative)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)

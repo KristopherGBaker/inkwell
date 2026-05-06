@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block main %}<main class="container page-shell" style="padding-top: 64px;">
+{% block main %}<main class="container page-shell" style="padding-top: var(--page-padding-top);">
   <p class="eyebrow" style="margin-bottom: 18px;">{% if page.eyebrow %}{{ page.eyebrow }}{% else %}02 · Work{% endif %}</p>
   <h1 class="h1" style="max-width: 880px; margin: 0 0 24px;">{{ page.headline }}</h1>
   {% if page.lede %}<p class="body-lg" style="max-width: 640px; margin: 0 0 56px;">{{ page.lede }}</p>{% endif %}

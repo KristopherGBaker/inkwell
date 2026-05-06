@@ -134,6 +134,78 @@ final class QuietThemeIntegrationTests: XCTestCase {
         XCTAssertTrue(html.contains("Kristopher Baker"), "Footer should render author name, got:\n\(html)")
     }
 
+    func testQuietThemeRendersBrandIconFromConfig() throws {
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "theme": "quiet",
+          "brandIcon": {
+            "light": "/assets/icons/kb.png",
+            "dark": "/assets/icons/kb-dark.png"
+          }
+        }
+        """)
+        try writeFile(root, "content/posts/2026-03-05-hello.md", """
+        ---
+        title: Hello
+        slug: hello
+        date: 2026-03-05T00:00:00Z
+        ---
+        Body
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+        let html = try String(contentsOf: root.appendingPathComponent("docs/index.html"))
+        XCTAssertTrue(
+            html.contains("--brand-icon-light: url(\"/assets/icons/kb.png\")"),
+            "Expected --brand-icon-light custom property to be injected. Got:\n\(html)"
+        )
+        XCTAssertTrue(
+            html.contains("--brand-icon-dark: url(\"/assets/icons/kb-dark.png\")"),
+            "Expected --brand-icon-dark custom property to be injected. Got:\n\(html)"
+        )
+        XCTAssertTrue(
+            html.contains("top-brand-mark-icon"),
+            "Expected the icon-mode class on .top-brand-mark when brandIcon is configured. Got:\n\(html)"
+        )
+    }
+
+    func testQuietThemeRendersTextInitialWhenBrandIconUnset() throws {
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "theme": "quiet"
+        }
+        """)
+        try writeFile(root, "content/posts/2026-03-05-hello.md", """
+        ---
+        title: Hello
+        slug: hello
+        date: 2026-03-05T00:00:00Z
+        ---
+        Body
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+        let html = try String(contentsOf: root.appendingPathComponent("docs/index.html"))
+        XCTAssertFalse(
+            html.contains("top-brand-mark-icon"),
+            "Should not switch to icon mode when brandIcon is unset. Got:\n\(html)"
+        )
+        XCTAssertFalse(
+            html.contains("--brand-icon-light"),
+            "Should not inject CSS variable when brandIcon is unset. Got:\n\(html)"
+        )
+        XCTAssertTrue(
+            html.contains(">K</span>"),
+            "Should render the text initial pill (derived from site/title) when brandIcon is unset. Got:\n\(html)"
+        )
+    }
+
     private func writeBlogConfig(_ root: URL, _ content: String) throws {
         try content.write(to: root.appendingPathComponent("blog.config.json"), atomically: true, encoding: .utf8)
     }

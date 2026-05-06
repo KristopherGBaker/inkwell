@@ -12,7 +12,7 @@
     <meta name="twitter:image" content="{{ page.ogImage }}">
     {% endif %}<meta name="twitter:card" content="{{ page.twitterCard }}">
     {% if page.hreflangs %}{% for alt in page.hreflangs %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
-    {% endfor %}{% endif %}
+    {% endfor %}{% endif %}{% if site.brandIcon %}<style>:root { --brand-icon-light: url("{{ site.brandIcon.light }}"); {% if site.brandIcon.dark %}--brand-icon-dark: url("{{ site.brandIcon.dark }}");{% endif %} }</style>{% endif %}
   </head>
   <body class="grain-bg">
     <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
