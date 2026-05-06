@@ -109,6 +109,62 @@ final class QuietThemeIntegrationTests: XCTestCase {
         )
     }
 
+    func testQuietResumePicksUpPerLanguagePDFs() throws {
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "theme": "quiet",
+          "author": { "name": "Kristopher Baker" },
+          "collections": [
+            { "id": "posts", "dir": "content/posts", "route": "/posts" }
+          ],
+          "i18n": { "defaultLanguage": "en", "languages": ["en", "ja"] }
+        }
+        """)
+        try writeFile(root, "data/resume.yml", """
+        pdf: /resume-en.pdf
+        """)
+        try writeFile(root, "data/resume.ja.yml", """
+        pdf: /resume-ja.pdf
+        """)
+        try writeFile(root, "data/experience.yml", """
+        - org: Wolt
+          role: Senior Engineer
+          years: "2023 — Now"
+        """)
+        try writeFile(root, "content/pages/resume.md", """
+        ---
+        title: Résumé
+        layout: resume
+        ---
+        """)
+        try writeFile(root, "content/pages/resume.ja.md", """
+        ---
+        title: 履歴書
+        layout: resume
+        ---
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+        let englishHTML = try String(contentsOf: root.appendingPathComponent("docs/resume/index.html"))
+        let japaneseHTML = try String(contentsOf: root.appendingPathComponent("docs/ja/resume/index.html"))
+
+        XCTAssertTrue(
+            englishHTML.contains("href=\"/resume-en.pdf\""),
+            "Default-language resume should link to /resume-en.pdf. Got:\n\(englishHTML)"
+        )
+        XCTAssertTrue(
+            japaneseHTML.contains("href=\"/resume-ja.pdf\""),
+            "Japanese resume should link to /resume-ja.pdf via data/resume.ja.yml. Got:\n\(japaneseHTML)"
+        )
+        XCTAssertFalse(
+            japaneseHTML.contains("/resume-en.pdf"),
+            "Japanese resume should not leak the EN PDF. Got:\n\(japaneseHTML)"
+        )
+    }
+
     func testQuietThemeCaseStudyShowsMetricsFromFrontMatter() throws {
         let root = try makeTempBlogProject()
         try writeBlogConfig(root, """
