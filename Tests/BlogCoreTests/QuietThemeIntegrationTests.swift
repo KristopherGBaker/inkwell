@@ -67,6 +67,48 @@ final class QuietThemeIntegrationTests: XCTestCase {
         XCTAssertTrue(html.contains("Print / Save as PDF"), "Got:\n\(html)")
     }
 
+    func testQuietResumeUsesDownloadLinkWhenPDFConfigured() throws {
+        let root = try makeTempBlogProject()
+        try writeBlogConfig(root, """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "theme": "quiet",
+          "author": { "name": "Kristopher Baker" },
+          "collections": []
+        }
+        """)
+        try writeFile(root, "data/resume.yml", """
+        pdf: /resume.pdf
+        """)
+        try writeFile(root, "data/experience.yml", """
+        - org: Wolt
+          role: Senior Engineer
+          years: "2023 — Now"
+        """)
+        try writeFile(root, "content/pages/resume.md", """
+        ---
+        title: Résumé
+        layout: resume
+        ---
+        """)
+
+        _ = try BuildPipeline().run(in: root)
+        let html = try String(contentsOf: root.appendingPathComponent("docs/resume/index.html"))
+        XCTAssertTrue(
+            html.contains("href=\"/resume.pdf\""),
+            "Expected toolbar to be a download link when data.resume.pdf is set. Got:\n\(html)"
+        )
+        XCTAssertTrue(
+            html.contains("download"),
+            "Expected the link to carry the `download` attribute. Got:\n\(html)"
+        )
+        XCTAssertFalse(
+            html.contains("window.print()"),
+            "Print button should not render when a PDF is configured. Got:\n\(html)"
+        )
+    }
+
     func testQuietThemeCaseStudyShowsMetricsFromFrontMatter() throws {
         let root = try makeTempBlogProject()
         try writeBlogConfig(root, """

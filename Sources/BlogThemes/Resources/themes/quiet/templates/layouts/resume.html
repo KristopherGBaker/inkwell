@@ -2,7 +2,7 @@
 {% block main %}<main class="container page-shell" style="padding-top: var(--page-padding-top);">
   <div class="no-print resume-toolbar">
     <p class="eyebrow" style="margin: 0;">{% if page.eyebrow %}{{ page.eyebrow }}{% else %}Résumé{% endif %}</p>
-    <button type="button" onclick="window.print()" class="btn-ghost">{{ data.resume.labels.print|default:"Print / Save as PDF" }} →</button>
+    {% if data.resume.pdf %}<a href="{{ data.resume.pdf }}" download class="btn-ghost">{{ data.resume.labels.download|default:"Download PDF" }} →</a>{% else %}<button type="button" onclick="window.print()" class="btn-ghost">{{ data.resume.labels.print|default:"Print / Save as PDF" }} →</button>{% endif %}
   </div>
 
   <header class="resume-header">
