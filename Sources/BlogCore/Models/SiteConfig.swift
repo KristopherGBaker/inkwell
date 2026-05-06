@@ -27,6 +27,9 @@ public struct SiteConfig: Codable, Equatable {
     /// next/back, about-page CTAs, 404 copy, theme-toggle aria). Each field
     /// falls back to the theme's English default when unset.
     public var themeCopy: ThemeCopyConfig?
+    /// Optional brand icon for the top-bar mark. When unset, themes fall back
+    /// to the auto-derived text initial pill.
+    public var brandIcon: BrandIconConfig?
     /// Optional multi-language settings. When unset, the site is monolingual.
     public var i18n: I18nConfig?
     /// Optional per-language overlay map keyed by BCP-47 tag (e.g. `"ja"`).
@@ -50,6 +53,7 @@ public struct SiteConfig: Codable, Equatable {
         heroHeadline: String? = nil,
         footerCta: FooterCtaConfig? = nil,
         themeCopy: ThemeCopyConfig? = nil,
+        brandIcon: BrandIconConfig? = nil,
         i18n: I18nConfig? = nil,
         translations: [String: TranslationOverlay]? = nil
     ) {
@@ -68,6 +72,7 @@ public struct SiteConfig: Codable, Equatable {
         self.heroHeadline = heroHeadline
         self.footerCta = footerCta
         self.themeCopy = themeCopy
+        self.brandIcon = brandIcon
         self.i18n = i18n
         self.translations = translations
     }
@@ -89,6 +94,7 @@ public struct SiteConfig: Codable, Equatable {
         self.heroHeadline = try container.decodeIfPresent(String.self, forKey: .heroHeadline)
         self.footerCta = try container.decodeIfPresent(FooterCtaConfig.self, forKey: .footerCta)
         self.themeCopy = try container.decodeIfPresent(ThemeCopyConfig.self, forKey: .themeCopy)
+        self.brandIcon = try container.decodeIfPresent(BrandIconConfig.self, forKey: .brandIcon)
         self.i18n = try container.decodeIfPresent(I18nConfig.self, forKey: .i18n)
         self.translations = try container.decodeIfPresent([String: TranslationOverlay].self, forKey: .translations)
     }

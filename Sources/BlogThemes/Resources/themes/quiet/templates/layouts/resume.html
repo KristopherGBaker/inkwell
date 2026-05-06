@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block main %}<main class="resume-page page-shell">
+{% block main %}<main class="container page-shell" style="padding-top: var(--page-padding-top);">
   <div class="no-print resume-toolbar">
-    <a href="/about/" class="resume-toolbar-back">{{ data.resume.labels.back|default:"← About" }}</a>
+    <p class="eyebrow" style="margin: 0;">{% if page.eyebrow %}{{ page.eyebrow }}{% else %}Résumé{% endif %}</p>
     <button type="button" onclick="window.print()" class="btn-ghost">{{ data.resume.labels.print|default:"Print / Save as PDF" }} →</button>
   </div>
 

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block main %}<main class="container writing-page page-shell">
+{% block main %}<main class="container page-shell" style="padding-top: var(--page-padding-top);">
   <p class="eyebrow" style="margin-bottom: 18px;">{{ page.kind }}</p>
-  <h1 class="h1">{{ page.label }}</h1>
+  <h1 class="h1" style="max-width: 880px; margin: 0 0 24px;">{{ page.label }}</h1>
   <div>{% for post in posts %}{% include "post-list-item.html" %}{% endfor %}</div>
 </main>
 {% endblock %}

@@ -185,6 +185,14 @@ public struct PageContextBuilder {
         if let brandSubtitle {
             siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
         }
+        if let icon = siteConfig.brandIcon {
+            // URLs are written verbatim into a CSS `url("...")` expression by
+            // the bundled base.html, so don't HTML-escape them — the value
+            // would then be CSS-illegal (e.g. `&quot;`).
+            var iconCtx: [String: String] = ["light": icon.light]
+            if let dark = icon.dark { iconCtx["dark"] = dark }
+            siteContext["brandIcon"] = iconCtx
+        }
         if let author = siteConfig.author {
             siteContext["author"] = authorContext(author, overlay: overlay?.author, urlBuilder: urlBuilder)
         }
@@ -997,7 +1005,12 @@ private extension PageContextBuilder {
                 canonicalRoute: page.route
             )
         ]
-        _ = pageContext  // silence unused-var warning if any
+        // Mirror collection-list pages: surface `eyebrow` from front-matter
+        // as a top-level `page.eyebrow` so every layout can use the same
+        // template variable regardless of the page's source.
+        if let eyebrow = page.frontMatter["eyebrow"] as? String {
+            pageContext["eyebrow"] = escapeHTML(eyebrow)
+        }
         let prefixedRoute = (lang == defaultLanguage ? "" : "/\(lang)") + page.route
         let context: [String: Any] = [
             "site": site,
