@@ -18,7 +18,7 @@ struct ServeCommand: ParsableCommand {
         let outputDirectory: URL
 
         if watch {
-            outputDirectory = try pipeline.run(in: root).outputDirectory
+            outputDirectory = try pipeline.run(in: root, mode: .serve).outputDirectory
         } else {
             outputDirectory = pipeline.outputDirectory(in: root)
         }
@@ -33,7 +33,7 @@ struct ServeCommand: ParsableCommand {
                 excludedPaths: Self.watchedExclusions(root: root, outputDirectory: outputDirectory)
             ) {
                 do {
-                    let report = try pipeline.run(in: root)
+                    let report = try pipeline.run(in: root, mode: .serve)
                     watcherRef?.updateExcludedPaths(Self.watchedExclusions(root: root, outputDirectory: report.outputDirectory))
                     server.updateRoot(to: report.outputDirectory)
                     watcherRef?.refreshBaseline()

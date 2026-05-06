@@ -49,7 +49,7 @@ public struct BuildPipeline {
         self.themes = themes
     }
 
-    public func run(in projectRoot: URL) throws -> BuildReport {
+    public func run(in projectRoot: URL, mode: BuildMode = .build) throws -> BuildReport {
         let siteConfig = loadSiteConfig(projectRoot: projectRoot)
         let outputRoot = projectRoot.appendingPathComponent(siteConfig.outputDir)
         let urlBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
@@ -165,7 +165,8 @@ public struct BuildPipeline {
             collections: collections,
             collectionRenderedContent: collectionRendered,
             pages: pages,
-            pageRenderedContent: pageRendered
+            pageRenderedContent: pageRendered,
+            mode: mode
         )
         pictureVariantsUsed.formUnion(coverImageResolver.usedVariantFilenames)
         let templateRenderer = try TemplateRenderer(theme: siteConfig.theme, projectRoot: projectRoot)
