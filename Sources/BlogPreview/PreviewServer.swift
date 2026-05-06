@@ -200,8 +200,14 @@ final class LiveReloadBroker: @unchecked Sendable {
         for client in clients.values {
             var buffer = ByteBufferAllocator().buffer(capacity: 16)
             buffer.writeString("data: reload\n\n")
+            // Always send .end after the data buffer (using whenComplete instead
+            // of flatMap) so a failed buffer write — e.g. the SSE channel has
+            // already been closed by the browser — doesn't skip the end-of-stream
+            // signal, which would trip Vapor's deinit assertion on the writer.
             client.writer.write(.buffer(buffer)).whenComplete { _ in
-                client.completion.succeed(())
+                client.writer.write(.end).whenComplete { _ in
+                    client.completion.succeed(())
+                }
             }
         }
     }
@@ -209,7 +215,19 @@ final class LiveReloadBroker: @unchecked Sendable {
     func shutdown() {
         let clients = takeClients()
 
+        // Block until every writer has processed .end. Without this wait,
+        // app.shutdown() can begin tearing down the eventLoops before the
+        // queued .end writes are processed, causing the writer to deinit with
+        // isComplete=false and trip the debug-build assertion in
+        // HTTPServerResponseEncoder.
         for client in clients.values {
+            do {
+                try client.writer.write(.end).wait()
+            } catch {
+                // Channel may already be closed; isComplete is still set
+                // synchronously inside Vapor's writer, so the deinit assertion
+                // is satisfied either way.
+            }
             client.completion.succeed(())
         }
     }

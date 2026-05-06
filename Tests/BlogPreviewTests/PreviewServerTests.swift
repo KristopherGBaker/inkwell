@@ -91,7 +91,64 @@ final class PreviewServerTests: XCTestCase {
         XCTAssertNoThrow(try future.wait())
     }
 
+    func testTriggerReloadSendsEndToClientWriter() throws {
+        let broker = LiveReloadBroker()
+        let eventLoop = EmbeddedEventLoop()
+        let writer = RecordingBodyStreamWriter(eventLoop: eventLoop)
+
+        let future = broker.addClient(writer: writer, on: eventLoop)
+        broker.triggerReload()
+
+        XCTAssertNoThrow(try future.wait())
+        let writes = writer.writes
+        XCTAssertEqual(writes.count, 2, "Expected one buffer write and one end write, got \(writes.count)")
+        guard case .end = writes.last else {
+            XCTFail("Expected last write to be .end, got \(String(describing: writes.last))")
+            return
+        }
+    }
+
+    func testShutdownSendsEndToClientWriter() throws {
+        let broker = LiveReloadBroker()
+        let eventLoop = EmbeddedEventLoop()
+        let writer = RecordingBodyStreamWriter(eventLoop: eventLoop)
+
+        let future = broker.addClient(writer: writer, on: eventLoop)
+        broker.shutdown()
+
+        XCTAssertNoThrow(try future.wait())
+        let writes = writer.writes
+        XCTAssertFalse(writes.isEmpty, "Expected at least one write (.end) on shutdown")
+        guard case .end = writes.last else {
+            XCTFail("Expected last write to be .end, got \(String(describing: writes.last))")
+            return
+        }
+    }
+
     func testEnvironmentArgumentsIgnoreServeFlags() {
         XCTAssertEqual(PreviewServer.environmentArguments(executablePath: "/usr/bin/inkwell"), ["/usr/bin/inkwell"])
+    }
+}
+
+private final class RecordingBodyStreamWriter: BodyStreamWriter, @unchecked Sendable {
+    let eventLoop: EventLoop
+    private let lock = NSLock()
+    private var captured: [BodyStreamResult] = []
+
+    init(eventLoop: EventLoop) {
+        self.eventLoop = eventLoop
+    }
+
+    func write(_ result: BodyStreamResult, promise: EventLoopPromise<Void>?) {
+        lock.lock()
+        captured.append(result)
+        lock.unlock()
+        promise?.succeed(())
+    }
+
+    var writes: [BodyStreamResult] {
+        lock.lock()
+        defer { lock.unlock() }
+        return captured
     }
 }
