@@ -4,13 +4,17 @@ Populate the site identity fields from the résumé's header (name, role, locati
 
 ## Schema
 
-```json
+```jsonc
 {
   "author": {
     "name": "Full name as user wants it shown",
     "role": "Headline role/title (e.g., 'Senior Software Engineer')",
     "location": "City, Country",
     "email": "contact@example.com",
+    "tagline": "Short subtitle under the brand mark",       // optional — quiet theme top-bar subtitle
+    "heroSummary": "1–2 sentence intro for the home hero",  // optional — quiet theme home page
+    "aboutTeaser": "1–2 sentence quote for the home about teaser", // optional — quiet theme home page
+    "portrait": "/assets/portraits/about.jpg",              // optional — about-page formal portrait + home circular crop
     "social": [
       { "label": "LinkedIn", "url": "https://linkedin.com/in/handle" },
       { "label": "GitHub",   "url": "https://github.com/handle" }
@@ -19,7 +23,9 @@ Populate the site identity fields from the résumé's header (name, role, locati
 }
 ```
 
-This block lives inside `blog.config.json`, alongside `title`, `baseURL`, etc. It is consumed by templates as `site.author.*` (header, footer, résumé header).
+This block lives inside `blog.config.json`, alongside `title`, `baseURL`, etc. It is consumed by templates as `site.author.*` (header, footer, home hero/about-teaser, résumé header, about page).
+
+The optional fields drive the `quiet` theme's home page chrome and about page; they're safe to omit on a blog-only site that uses the `default` theme. `portrait` should be a 4:5 (or close to) image — the about page renders it as a rounded rectangle, the home as a circular crop.
 
 ## Extraction Rules
 
