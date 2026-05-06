@@ -66,14 +66,33 @@ Ask the user to scan for:
 - Bullets that softened a number.
 - Competency groupings they'd reorganize.
 
+## Downloadable PDF résumé (v0.8.1+)
+
+The `quiet` theme's résumé toolbar can either trigger `window.print()` (default) or link to a pre-rendered PDF download. Wire it up via `data/resume.yml`:
+
+```yaml
+pdf: /Kristopher_Baker_Resume.pdf
+labels:
+  download: Download résumé   # button copy when pdf: is set; defaults to "Download PDF"
+  print: Print / Save as PDF  # button copy when pdf: is unset; the toolbar falls back to window.print()
+```
+
+When `pdf:` is set, the toolbar renders `<a href="…" download>…</a>` instead of the print button. Drop the actual PDF in `static/` so it lands at the URL you wrote. Per-language PDFs work naturally: `data/resume.ja.yml` with `pdf: /Kristopher_Baker_職務経歴書.pdf` ships the Japanese résumé to `/ja/resume/`.
+
+## Page eyebrow
+
+The bundled `resume` layout reads `page.eyebrow` from the page's front matter (v0.8.2+ — same surface as collection-list pages). Set `eyebrow: "05 · Résumé"` in `content/pages/resume.md` (and the equivalent in `resume.ja.md`) to match a numbered nav convention. Defaults to plain `"Résumé"` when unset.
+
 ## Multi-language data (v0.5+)
 
 If the site has `i18n` configured and the user wants a translated résumé:
 
 - Add a sibling YAML file with `<base>.<lang>.yml` — `data/experience.yml` (default) plus `data/experience.ja.yml` (Japanese). Same for `competencies.yml`, `education.yml`, `projects.yml`, and `resume.yml`.
 - Inkwell prefers the `<lang>` variant when present and falls back to the unsuffixed file when missing — so the user can translate one file at a time.
-- The résumé layout's section labels (Summary, Core Competencies, Experience, Projects, Education) and toolbar (← About, Print / Save as PDF) come from `data/resume.yml`'s `labels:` block. Override per language by setting the same `labels:` block in `data/resume.ja.yml`.
+- The résumé layout's section labels (Summary, Core Competencies, Experience, Projects, Education) and toolbar (`download` / `print`) come from `data/resume.yml`'s `labels:` block. Override per language by setting the same `labels:` block in `data/resume.ja.yml`.
 - For Japanese, prefer the user's actual `職務経歴書` phrasing if they have one — it's a different register from English résumé style. Don't blindly translate verb-by-verb.
+
+> Toolbar history: in v0.8.0 the bundled `← About` back-link was replaced by the page eyebrow on the left. Sites still using a `back:` label in `data/resume.yml` can drop it.
 
 ## Multi-Agent Notes
 

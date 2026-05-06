@@ -77,6 +77,20 @@ When the user says they need help defining their voice:
 - Draft a project case study: `inkwell content new projects "Title"`.
 - Build preview after editing: `inkwell serve --watch` (live-reloads as you save).
 
+## Authoring features (v0.6+)
+
+These are bundled-theme conveniences that come up while writing — toggle them per-post via front matter or markdown syntax.
+
+| Feature | How to use | Notes |
+|---|---|---|
+| **Reading time** | Automatic | The `quiet` theme renders `N min read` next to the date. Computed from word count (200 wpm Latin, 450 cpm CJK). No knob; appears on post lists and detail pages. |
+| **Table of contents** | Front matter: `toc: true` | Inserts a TOC partial above the article body, populated from `<h2>` / `<h3>` headings. Skip on short posts. |
+| **Math** | `$inline$` for inline, `$$block$$` for display math | Server-rendered via KaTeX. Currency is safe — `$5 and $10` won't trigger. Block math uses lines that contain only `$$`. KaTeX CSS is loaded only on pages that actually use math. |
+| **Cover image** | Front matter: `coverImage: { src: "/posts/<slug>/cover.png", alt: "…" }` | Resolved through the responsive image pipeline (variant generation + `<picture>` srcsets). Drop the source in `static/posts/<slug>/`. |
+| **OG image** | Front matter: `ogImage: "/posts/<slug>/og.png"` (explicit) or omit and inkwell renders one server-side | Auto-generated cards use the post title + author + theme accent. `og:image` and `twitter:image` are wired up automatically. |
+| **Code copy** | Automatic | Fenced code blocks get a copy button in the bundled themes. Just write fences. |
+| **Pull quotes / blockquotes** | `> quote` | Standard markdown; the quiet theme styles with an accent left border. |
+
 ## Translations (v0.5+)
 
 If the site has `i18n` configured and the user wants a translated version of a post, project, or page:
