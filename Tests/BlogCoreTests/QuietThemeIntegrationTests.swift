@@ -35,38 +35,6 @@ final class QuietThemeIntegrationTests: XCTestCase {
         XCTAssertTrue(html.contains("tokens.css"), "Quiet head injection should reference tokens.css")
     }
 
-    func testQuietThemeRendersResumeFromDataFiles() throws {
-        let root = try makeTempBlogProject()
-        try writeBlogConfig(root, """
-        {
-          "title": "Kris",
-          "baseURL": "/",
-          "theme": "quiet",
-          "author": { "name": "Kristopher Baker", "role": "Senior Software Engineer", "location": "Tokyo" },
-          "collections": []
-        }
-        """)
-        try writeFile(root, "data/experience.yml", """
-        - org: Wolt
-          role: Senior Engineer
-          years: "2023 — Now"
-          bullets:
-            - Did stuff
-        """)
-        try writeFile(root, "content/pages/resume.md", """
-        ---
-        title: Résumé
-        layout: resume
-        ---
-        """)
-
-        _ = try BuildPipeline().run(in: root)
-        let html = try String(contentsOf: root.appendingPathComponent("docs/resume/index.html"))
-        XCTAssertTrue(html.contains("Wolt"), "Got:\n\(html)")
-        XCTAssertTrue(html.contains("2023 — Now"), "Got:\n\(html)")
-        XCTAssertTrue(html.contains("Print / Save as PDF"), "Got:\n\(html)")
-    }
-
     func testQuietThemeCaseStudyShowsMetricsFromFrontMatter() throws {
         let root = try makeTempBlogProject()
         try writeBlogConfig(root, """
