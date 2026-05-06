@@ -1,7 +1,7 @@
 <header class="top-bar">
   <div class="container top-bar-row">
     <a href="{{ links.home }}" class="top-brand">
-      <span class="top-brand-mark">{{ site.brandInitial }}</span>
+      {% if site.brandIcon %}<span class="top-brand-mark top-brand-mark-icon" aria-hidden="true"></span>{% else %}<span class="top-brand-mark">{{ site.brandInitial }}</span>{% endif %}
       <span class="top-brand-text">
         <span class="top-brand-name">{{ site.title }}</span>
         {% if site.brandSubtitle %}<span class="top-brand-sub">{{ site.brandSubtitle }}</span>{% endif %}
@@ -9,7 +9,7 @@
     </a>
     <nav class="top-nav">
       {% for item in site.nav %}<a href="{{ item.route }}" class="nav-link">{{ item.label }}</a>{% endfor %}
-      {% if page.translations %}{% for alt in page.translations %}<a href="{{ alt.href }}" class="nav-link lang-switch" hreflang="{{ alt.lang }}" onclick="try{localStorage.setItem('lang','{{ alt.lang }}')}catch(e){}">{{ alt.lang|uppercase }}</a>{% endfor %}{% endif %}
+      {% if page.translations %}<span class="lang-switch-group">{% for lang in site.languages %}{% if not forloop.first %}<span class="lang-switch-sep" aria-hidden="true">·</span>{% endif %}{% if lang == page.lang %}<span class="nav-link lang-switch" aria-current="true">{{ lang|uppercase }}</span>{% else %}{% for alt in page.translations %}{% if alt.lang == lang %}<a href="{{ alt.href }}" class="nav-link lang-switch lang-switch-muted" hreflang="{{ alt.lang }}" onclick="try{localStorage.setItem('lang','{{ alt.lang }}')}catch(e){}">{{ alt.lang|uppercase }}</a>{% endif %}{% endfor %}{% endif %}{% endfor %}</span>{% endif %}
       <button type="button" onclick="toggleTheme()" class="chip no-print" aria-label="{{ site.themeCopy.themeToggleLabel }}">☼</button>
     </nav>
   </div>

@@ -25,7 +25,7 @@
       <h2 class="h2">{{ home.recentLabel }}</h2>
       {% if home.recentCta %}<a href="{{ home.recentCta.href }}" class="read-link">{{ home.recentCta.label }} <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
     </div>
-    <div class="reading">{% for post in home.recent %}{% include "post-list-item.html" %}{% endfor %}</div>
+    <div class="recent-list">{% for post in home.recent %}{% include "post-list-item.html" %}{% endfor %}</div>
   </section>{% endif %}
 
   {% if site.author.aboutTeaser %}<hr class="hairline-soft">
