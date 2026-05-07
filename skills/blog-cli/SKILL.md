@@ -5,7 +5,7 @@ description: Use when a user wants to operate the Swift inkwell CLI — create p
 
 # Inkwell CLI
 
-Use this skill to operate the `inkwell` command safely and consistently. Inkwell is a Swift static publishing tool; v0.3+ supports both blogs and portfolio sites, v0.5+ adds i18n, and v0.6–0.8 adds the responsive image pipeline, OG cards, KaTeX math, reading time, code-copy, the `quiet` theme spacing system, the `brandIcon` config, downloadable PDF résumés, and standardized page layouts.
+Use this skill to operate the `inkwell` command safely and consistently. Inkwell is a Swift static publishing tool; v0.3+ supports both blogs and portfolio sites, v0.5+ adds i18n, and v0.6–0.8 adds the responsive image pipeline, OG cards, KaTeX math, reading time, code-copy, the `quiet` theme spacing system, the `brandIcon` config, downloadable PDF résumés, standardized page layouts, and first-class Umami analytics with a serve-mode override.
 
 ## When To Use
 - User asks to run or explain `inkwell` commands.

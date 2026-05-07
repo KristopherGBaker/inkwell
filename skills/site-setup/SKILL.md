@@ -172,6 +172,30 @@ The `quiet` theme renders a 28×28 brand mark to the left of the site name. Two 
 
 Aim for ≥120×120 source images so they look crisp at any DPR. PNGs with transparency work; JPEGs are fine if the icon already has its own background.
 
+## Analytics (Umami)
+
+Inkwell ships a first-class Umami integration. Add an `analytics.umami` block to `blog.config.json`:
+
+```jsonc
+{
+  "analytics": {
+    "umami": {
+      "scriptUrl": "https://analytics.example.com/script.js",
+      "websiteId": "<prod website ID>",
+      "domains": "example.com",
+      "respectDoNotTrack": true,
+      "local": {
+        "scriptUrl": "http://localhost:3000/script.js",
+        "websiteId": "<dev website ID>",
+        "domains": "localhost"
+      }
+    }
+  }
+}
+```
+
+Production builds (`inkwell build`) inject the prod script with the configured `data-*` attributes. `inkwell serve --watch` swaps in the `local` block when present and emits no script at all when it's absent — so dev sessions never accidentally ping the prod Umami instance. Set `domains` to the production hostname so any non-prod traffic that does pick up the prod script gets filtered server-side. Other providers (Plausible, Fathom, custom embeds) don't have first-class config; route them through the `head` HTML fragment via `theme-customize`'s "inject a script" recipe.
+
 ## Hand-Offs
 
 - For **résumé / experience data**, hand off to `portfolio-data`.

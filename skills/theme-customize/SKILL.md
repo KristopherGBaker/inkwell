@@ -127,10 +127,10 @@ Every top-level page (`work-list`, `post-list`, `about`, `resume`, `taxonomy`) u
 
 ### Inject a script site-wide (analytics, comments)
 
-Two paths, depending on what you're adding:
+Two paths:
 
-1. **First-class config (preferred when one exists).** For Umami, set `analytics.umami` in `blog.config.json` and inkwell handles injection — see `docs/getting-started.md`. The `quiet` and `default` themes both render the script tag with the right `data-*` attributes, including a `local` override block for `inkwell serve --watch`.
-2. **Generic head injection (anything else).** Create an HTML fragment in your project, e.g. `head-extras.html`:
+1. **First-class config (Umami).** Set `analytics.umami` in `blog.config.json` and inkwell handles injection — see `docs/getting-started.md`. Both `quiet` and `default` render the `<script>` tag with the right `data-*` attributes (`data-website-id`, `data-host-url`, `data-domains`, `data-do-not-track`, `data-tag`). A `local` override block points `inkwell serve --watch` at a localhost Umami; without it, dev mode emits no script at all so prod analytics never see localhost events.
+2. **Generic head injection (anything else — Plausible, Fathom, custom comments embed, etc.).** Create an HTML fragment in your project, e.g. `head-extras.html`:
    ```html
    <script defer src="https://plausible.io/js/script.js" data-domain="example.com"></script>
    ```
