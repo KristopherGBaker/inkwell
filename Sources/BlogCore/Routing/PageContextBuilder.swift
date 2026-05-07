@@ -62,7 +62,8 @@ public struct PageContextBuilder {
         collections: [String: Collection] = [:],
         collectionRenderedContent: [String: [String: [String: String]]] = [:],
         pages: [Page] = [],
-        pageRenderedContent: [String: [String: String]] = [:]
+        pageRenderedContent: [String: [String: String]] = [:],
+        mode: BuildMode = .build
     ) -> [PagePlan] {
         let defaultLang = siteConfig.i18n?.resolvedDefaultLanguage ?? "en"
         let configuredLangs = siteConfig.i18n?.resolvedLanguages ?? [defaultLang]
@@ -96,7 +97,8 @@ public struct PageContextBuilder {
                 collections: collections,
                 collectionRenderedContent: mergedCollectionRenders,
                 pages: pages,
-                pageRenderedContent: mergedPageRenders
+                pageRenderedContent: mergedPageRenders,
+                mode: mode
             )
             plans.append(contentsOf: perLang)
         }
@@ -151,7 +153,8 @@ public struct PageContextBuilder {
         collections: [String: Collection],
         collectionRenderedContent: [String: [String: String]],
         pages: [Page],
-        pageRenderedContent: [String: String]
+        pageRenderedContent: [String: String],
+        mode: BuildMode
     ) -> [PagePlan] {
         let langPrefix = (lang == defaultLanguage) ? "" : lang
         let urlBuilder = SiteURLBuilder(baseURL: baseURL, langPrefix: langPrefix)
@@ -184,6 +187,9 @@ public struct PageContextBuilder {
         let brandSubtitle = overlay?.author?.tagline ?? siteConfig.author?.tagline
         if let brandSubtitle {
             siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
+        }
+        if let analytics = analyticsContext(for: siteConfig, mode: mode) {
+            siteContext["analytics"] = analytics
         }
         if let icon = siteConfig.brandIcon {
             // URLs are written verbatim into a CSS `url("...")` expression by
@@ -1447,6 +1453,53 @@ private extension PageContextBuilder {
     }
 }
 // swiftlint:enable function_parameter_count
+
+extension PageContextBuilder {
+    /// Resolves the effective Umami block for the current build mode.
+    /// `.build` uses the top-level fields; `.serve` swaps in the `local`
+    /// override block if present and returns nil otherwise — so dev builds
+    /// never accidentally ping the production Umami instance. Values are
+    /// pre-escaped because they land directly inside HTML attributes
+    /// (`data-website-id`, `data-host-url`, etc.).
+    func analyticsContext(for siteConfig: SiteConfig, mode: BuildMode) -> [String: Any]? {
+        guard let umami = siteConfig.analytics?.umami else { return nil }
+
+        let scriptUrl: String
+        let websiteId: String
+        let hostUrl: String?
+        let domains: String?
+        let respectDoNotTrack: Bool?
+        let tag: String?
+
+        switch mode {
+        case .build:
+            scriptUrl = umami.scriptUrl
+            websiteId = umami.websiteId
+            hostUrl = umami.hostUrl
+            domains = umami.domains
+            respectDoNotTrack = umami.respectDoNotTrack
+            tag = umami.tag
+        case .serve:
+            guard let local = umami.local else { return nil }
+            scriptUrl = local.scriptUrl
+            websiteId = local.websiteId
+            hostUrl = local.hostUrl
+            domains = local.domains
+            respectDoNotTrack = local.respectDoNotTrack
+            tag = local.tag
+        }
+
+        var umamiCtx: [String: Any] = [
+            "scriptUrl": escapeHTML(scriptUrl),
+            "websiteId": escapeHTML(websiteId)
+        ]
+        if let hostUrl { umamiCtx["hostUrl"] = escapeHTML(hostUrl) }
+        if let domains { umamiCtx["domains"] = escapeHTML(domains) }
+        if let respectDoNotTrack, respectDoNotTrack { umamiCtx["respectDoNotTrack"] = true }
+        if let tag { umamiCtx["tag"] = escapeHTML(tag) }
+        return ["umami": umamiCtx]
+    }
+}
 
 private extension Array {
     func chunked(into size: Int) -> [[Element]] {

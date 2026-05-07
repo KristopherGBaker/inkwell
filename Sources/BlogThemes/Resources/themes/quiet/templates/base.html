@@ -12,7 +12,7 @@
     <meta name="twitter:image" content="{{ page.ogImage }}">
     {% endif %}<meta name="twitter:card" content="{{ page.twitterCard }}">
     {% if page.hreflangs %}{% for alt in page.hreflangs %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
-    {% endfor %}{% endif %}{% if site.brandIcon %}<style>:root { --brand-icon-light: url("{{ site.brandIcon.light }}"); {% if site.brandIcon.dark %}--brand-icon-dark: url("{{ site.brandIcon.dark }}");{% endif %} }</style>{% endif %}
+    {% endfor %}{% endif %}{% if site.brandIcon %}<style>:root { --brand-icon-light: url("{{ site.brandIcon.light }}"); {% if site.brandIcon.dark %}--brand-icon-dark: url("{{ site.brandIcon.dark }}");{% endif %} }</style>{% endif %}{% if site.analytics.umami %}<script defer src="{{ site.analytics.umami.scriptUrl }}" data-website-id="{{ site.analytics.umami.websiteId }}"{% if site.analytics.umami.hostUrl %} data-host-url="{{ site.analytics.umami.hostUrl }}"{% endif %}{% if site.analytics.umami.domains %} data-domains="{{ site.analytics.umami.domains }}"{% endif %}{% if site.analytics.umami.respectDoNotTrack %} data-do-not-track="true"{% endif %}{% if site.analytics.umami.tag %} data-tag="{{ site.analytics.umami.tag }}"{% endif %}></script>{% endif %}
   </head>
   <body class="grain-bg">
     <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
