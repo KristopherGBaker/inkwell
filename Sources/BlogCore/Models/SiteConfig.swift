@@ -30,6 +30,9 @@ public struct SiteConfig: Codable, Equatable {
     /// Optional brand icon for the top-bar mark. When unset, themes fall back
     /// to the auto-derived text initial pill.
     public var brandIcon: BrandIconConfig?
+    /// Optional analytics integration (currently Umami). When unset, no
+    /// tracking script is injected.
+    public var analytics: AnalyticsConfig?
     /// Optional multi-language settings. When unset, the site is monolingual.
     public var i18n: I18nConfig?
     /// Optional per-language overlay map keyed by BCP-47 tag (e.g. `"ja"`).
@@ -54,6 +57,7 @@ public struct SiteConfig: Codable, Equatable {
         footerCta: FooterCtaConfig? = nil,
         themeCopy: ThemeCopyConfig? = nil,
         brandIcon: BrandIconConfig? = nil,
+        analytics: AnalyticsConfig? = nil,
         i18n: I18nConfig? = nil,
         translations: [String: TranslationOverlay]? = nil
     ) {
@@ -73,6 +77,7 @@ public struct SiteConfig: Codable, Equatable {
         self.footerCta = footerCta
         self.themeCopy = themeCopy
         self.brandIcon = brandIcon
+        self.analytics = analytics
         self.i18n = i18n
         self.translations = translations
     }
@@ -95,6 +100,7 @@ public struct SiteConfig: Codable, Equatable {
         self.footerCta = try container.decodeIfPresent(FooterCtaConfig.self, forKey: .footerCta)
         self.themeCopy = try container.decodeIfPresent(ThemeCopyConfig.self, forKey: .themeCopy)
         self.brandIcon = try container.decodeIfPresent(BrandIconConfig.self, forKey: .brandIcon)
+        self.analytics = try container.decodeIfPresent(AnalyticsConfig.self, forKey: .analytics)
         self.i18n = try container.decodeIfPresent(I18nConfig.self, forKey: .i18n)
         self.translations = try container.decodeIfPresent([String: TranslationOverlay].self, forKey: .translations)
     }

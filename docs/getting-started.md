@@ -55,3 +55,30 @@ Add an `author` block, a `nav` array, and a `home` block to drive the top bar, f
 ### Authoring résumé data
 
 The `portfolio-data` skill walks Claude Code (or any compatible agent) through importing résumé content into `data/experience.yml`, `data/competencies.yml`, and `data/education.yml`. Run `/portfolio-data` to start.
+
+### Analytics (Umami)
+
+Inkwell can inject a [Umami](https://umami.is) tracking script for you. Add an `analytics.umami` block to `blog.config.json`:
+
+```jsonc
+{
+  "analytics": {
+    "umami": {
+      "scriptUrl": "https://analytics.example.com/script.js",
+      "websiteId": "<your website ID>",
+      "domains": "example.com",       // optional — restrict events to your prod hostname
+      "respectDoNotTrack": true,      // optional — honor the browser's DNT header
+      "hostUrl": "https://analytics.example.com",  // optional — Umami API host if different from script src
+      "tag": "site",                  // optional — segments events by tag in the dashboard
+
+      "local": {                      // optional override applied during `inkwell serve --watch`
+        "scriptUrl": "http://localhost:3000/script.js",
+        "websiteId": "<dev website ID>",
+        "domains": "localhost"
+      }
+    }
+  }
+}
+```
+
+Production builds (`inkwell build`) always use the top-level fields. `inkwell serve --watch` swaps in the `local` block if set, and emits no script tag at all when it isn't — so dev sessions never accidentally ping your prod Umami instance. Set `domains` to your production hostname so any stray non-prod traffic that does load the prod script gets filtered server-side. Required fields are `scriptUrl` and `websiteId`; everything else is optional.

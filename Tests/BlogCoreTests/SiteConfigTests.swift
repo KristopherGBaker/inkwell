@@ -82,4 +82,85 @@ final class SiteConfigTests: XCTestCase {
         XCTAssertEqual(config.brandIcon?.light, "/icon.png")
         XCTAssertNil(config.brandIcon?.dark)
     }
+
+    func testDecodesAnalyticsUmamiProdBlockOnly() throws {
+        let json = """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "analytics": {
+            "umami": {
+              "scriptUrl": "https://analytics.krisbaker.com/script.js",
+              "websiteId": "abc-123",
+              "hostUrl": "https://analytics.krisbaker.com",
+              "domains": "krisbaker.com",
+              "respectDoNotTrack": true,
+              "tag": "site"
+            }
+          }
+        }
+        """
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        let umami = try XCTUnwrap(config.analytics?.umami)
+        XCTAssertEqual(umami.scriptUrl, "https://analytics.krisbaker.com/script.js")
+        XCTAssertEqual(umami.websiteId, "abc-123")
+        XCTAssertEqual(umami.hostUrl, "https://analytics.krisbaker.com")
+        XCTAssertEqual(umami.domains, "krisbaker.com")
+        XCTAssertEqual(umami.respectDoNotTrack, true)
+        XCTAssertEqual(umami.tag, "site")
+        XCTAssertNil(umami.local)
+    }
+
+    func testDecodesAnalyticsUmamiWithLocalOverride() throws {
+        let json = """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "analytics": {
+            "umami": {
+              "scriptUrl": "https://analytics.krisbaker.com/script.js",
+              "websiteId": "abc-123",
+              "domains": "krisbaker.com",
+              "local": {
+                "scriptUrl": "http://localhost:3000/script.js",
+                "websiteId": "local-456",
+                "hostUrl": "http://localhost:3000",
+                "domains": "localhost"
+              }
+            }
+          }
+        }
+        """
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        let umami = try XCTUnwrap(config.analytics?.umami)
+        XCTAssertEqual(umami.scriptUrl, "https://analytics.krisbaker.com/script.js")
+        XCTAssertEqual(umami.websiteId, "abc-123")
+        XCTAssertEqual(umami.domains, "krisbaker.com")
+        let local = try XCTUnwrap(umami.local)
+        XCTAssertEqual(local.scriptUrl, "http://localhost:3000/script.js")
+        XCTAssertEqual(local.websiteId, "local-456")
+        XCTAssertEqual(local.hostUrl, "http://localhost:3000")
+        XCTAssertEqual(local.domains, "localhost")
+        XCTAssertNil(local.respectDoNotTrack)
+        XCTAssertNil(local.tag)
+    }
+
+    func testDecodesAnalyticsUmamiMinimalRequiredFields() throws {
+        let json = #"{"title":"Kris","baseURL":"/","analytics":{"umami":{"scriptUrl":"https://x/s.js","websiteId":"id"}}}"#
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        let umami = try XCTUnwrap(config.analytics?.umami)
+        XCTAssertEqual(umami.scriptUrl, "https://x/s.js")
+        XCTAssertEqual(umami.websiteId, "id")
+        XCTAssertNil(umami.hostUrl)
+        XCTAssertNil(umami.domains)
+        XCTAssertNil(umami.respectDoNotTrack)
+        XCTAssertNil(umami.tag)
+        XCTAssertNil(umami.local)
+    }
+
+    func testLegacyConfigWithoutAnalyticsDecodes() throws {
+        let json = #"{"title":"Kris","baseURL":"/"}"#
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        XCTAssertNil(config.analytics)
+    }
 }
