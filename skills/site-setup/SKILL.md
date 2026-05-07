@@ -43,18 +43,23 @@ That's it — no `collections`, no `home`. Legacy posts code path emits everythi
 
 ### Portfolio + blog (combined, krisbaker.com pattern)
 
-```json
+```jsonc
 {
   "title": "Kristopher Baker",
   "baseURL": "https://krisbaker.com/",
   "theme": "quiet",
   "outputDir": "docs",
   "tagline": "Tokyo · Available for new conversations",
+  "brandIcon": {                                              // optional — image mark for the top-bar
+    "light": "/assets/icons/kb.png",
+    "dark":  "/assets/icons/kb-dark.png"
+  },
   "author": {
     "name": "Kristopher Baker",
     "role": "Senior Software Engineer",
     "location": "Tokyo, Japan",
     "email": "kris@example.com",
+    "portrait": "/assets/portraits/about.jpg",                // optional — about page formal portrait
     "social": [
       { "label": "GitHub", "url": "https://github.com/USERNAME" },
       { "label": "LinkedIn", "url": "https://linkedin.com/in/USERNAME" }
@@ -148,6 +153,48 @@ Same as combined, but drop the `posts` entry from `collections` and the `recentC
 - **`baseURL` matters.** For GitHub Pages on a custom domain, use `https://yourdomain.com/`. For project pages, include the repo path: `https://USER.github.io/REPO/`. Inkwell uses `baseURL` to resolve `/assets/...` prefixes and canonical URLs.
 - **Don't overload `home`.** It's optional. If you don't set it, `/` falls back to the legacy paginated landing (when there are no `collections`) or doesn't get emitted (when there are `collections`). The simpler the home, the better the long-term experience.
 - **Custom layout names need theme support.** If you set `detailTemplate: "layouts/my-custom"`, that template must exist in `themes/<theme>/templates/layouts/my-custom.html` (project-side) or be one of the bundled theme's layouts.
+
+## Brand mark (top-bar) options
+
+The `quiet` theme renders a 28×28 brand mark to the left of the site name. Two options:
+
+1. **Auto-derived text initial.** The default. Inkwell uses the first letter of `author.name` (or `title`) inside a colored pill. Zero config.
+2. **Image mark via `brandIcon`** (v0.8.0+). Set `brandIcon.light` (and optionally `brandIcon.dark`) to image URLs and inkwell injects them as `:root { --brand-icon-light: url(…); --brand-icon-dark: url(…); }` for the bundled `.top-brand-mark-icon` rule. The dark variant swaps in via the manual theme toggle. No template or CSS override needed.
+
+```jsonc
+{
+  "brandIcon": {
+    "light": "/assets/icons/kb.png",
+    "dark":  "/assets/icons/kb-dark.png"   // optional; reuses light when unset
+  }
+}
+```
+
+Aim for ≥120×120 source images so they look crisp at any DPR. PNGs with transparency work; JPEGs are fine if the icon already has its own background.
+
+## Analytics (Umami)
+
+Inkwell ships a first-class Umami integration. Add an `analytics.umami` block to `blog.config.json`:
+
+```jsonc
+{
+  "analytics": {
+    "umami": {
+      "scriptUrl": "https://analytics.example.com/script.js",
+      "websiteId": "<prod website ID>",
+      "domains": "example.com",
+      "respectDoNotTrack": true,
+      "local": {
+        "scriptUrl": "http://localhost:3000/script.js",
+        "websiteId": "<dev website ID>",
+        "domains": "localhost"
+      }
+    }
+  }
+}
+```
+
+Production builds (`inkwell build`) inject the prod script with the configured `data-*` attributes. `inkwell serve --watch` swaps in the `local` block when present and emits no script at all when it's absent — so dev sessions never accidentally ping the prod Umami instance. Set `domains` to the production hostname so any non-prod traffic that does pick up the prod script gets filtered server-side. Other providers (Plausible, Fathom, custom embeds) don't have first-class config; route them through the `head` HTML fragment via `theme-customize`'s "inject a script" recipe.
 
 ## Hand-Offs
 

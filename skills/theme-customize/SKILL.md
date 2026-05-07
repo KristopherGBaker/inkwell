@@ -84,6 +84,28 @@ For small tweaks, override `tokens.css` and change a CSS custom property:
 
 For larger restructuring, override `components.css` and edit layout rules.
 
+#### Spacing system (v0.8.0+)
+
+The `quiet` theme layers two named gap tokens on the raw `--space-N` scale, used everywhere:
+
+| Token | Default | Used for |
+|---|---|---|
+| `--gap-section` | `var(--space-8)` (64px) | Top + bottom padding of every top-level section on the home page; `site-footer` margin-top. Two stacked sections add up to 128px of breathing room. |
+| `--page-padding-top` | `var(--space-8)` (64px) | Top padding on `work-list`, `post-list`, `about`, `resume`, `taxonomy`, `post`, and `case-study` layouts. |
+
+To tighten the whole vertical rhythm, override one of these in `tokens.css`:
+
+```css
+:root {
+  --gap-section: var(--space-7);     /* 48px — tighter section spacing */
+  --page-padding-top: var(--space-7);
+}
+```
+
+#### Page-layout structure (v0.8.0+)
+
+Every top-level page (`work-list`, `post-list`, `about`, `resume`, `taxonomy`) uses the same wrapper pattern: `<main class="container page-shell" style="padding-top: var(--page-padding-top);">`. Inside, the eyebrow → h1 → lede block sits at the full `.container` width; the article body (post detail, case-study) is constrained to a readable 880px via `.post-body` / `.case-study-prose`. If you're adding a new layout, mirror this pattern so widths and rhythm stay consistent.
+
 ### Add a new layout
 
 1. Decide a layout name (e.g. `notebook`).
@@ -105,17 +127,24 @@ For larger restructuring, override `components.css` and edit layout rules.
 
 ### Inject a script site-wide (analytics, comments)
 
-1. Create an HTML fragment in your project, e.g. `head-extras.html`:
+Two paths:
+
+1. **First-class config (Umami).** Set `analytics.umami` in `blog.config.json` and inkwell handles injection — see `docs/getting-started.md`. Both `quiet` and `default` render the `<script>` tag with the right `data-*` attributes (`data-website-id`, `data-host-url`, `data-domains`, `data-do-not-track`, `data-tag`). A `local` override block points `inkwell serve --watch` at a localhost Umami; without it, dev mode emits no script at all so prod analytics never see localhost events.
+2. **Generic head injection (anything else — Plausible, Fathom, custom comments embed, etc.).** Create an HTML fragment in your project, e.g. `head-extras.html`:
    ```html
    <script defer src="https://plausible.io/js/script.js" data-domain="example.com"></script>
    ```
-2. Add to `blog.config.json`:
+   Add to `blog.config.json`:
    ```json
    { "head": "head-extras.html" }
    ```
-3. Inkwell injects the file's contents before `</head>` on every page.
+   Inkwell injects the file's contents before `</head>` on every page.
 
 (For per-page or per-theme `<head>` content, override the theme's `base.html` instead.)
+
+### Swap the brand mark for an image (v0.8.0+)
+
+The `quiet` theme's top-bar mark defaults to a colored pill with the auto-derived initial. To use an image instead, set `brandIcon` in `blog.config.json` — no template or CSS override needed. See the `site-setup` skill for the full schema. Adding a new translatable theme string for the mark, or wanting per-page control, falls back to the override-the-partial recipe above.
 
 ## Stencil Crash Course
 
