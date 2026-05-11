@@ -11,6 +11,33 @@ function toggleTheme() {
   localStorage.setItem("theme", next);
 }
 
+function toggleNav(btn) {
+  var open = btn.getAttribute("aria-expanded") === "true";
+  var next = open ? "false" : "true";
+  btn.setAttribute("aria-expanded", next);
+  document.documentElement.setAttribute("data-nav-open", next);
+}
+
+// Mobile nav drawer: close on link tap, Escape, or resize past breakpoint.
+(function() {
+  function closeNav() {
+    var btn = document.querySelector(".nav-toggle");
+    if (!btn) return;
+    btn.setAttribute("aria-expanded", "false");
+    document.documentElement.setAttribute("data-nav-open", "false");
+  }
+  document.addEventListener("click", function(e) {
+    var link = e.target.closest(".top-nav-links .nav-link");
+    if (link) closeNav();
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") closeNav();
+  });
+  window.addEventListener("resize", function() {
+    if (window.innerWidth > 720) closeNav();
+  }, { passive: true });
+})();
+
 // Scroll progress indicator — fills horizontally as the page scrolls.
 (function() {
   function updateScrollProgress() {
