@@ -87,6 +87,80 @@
   gap: var(--space-5);
 }
 .top-nav .nav-link.is-active { color: var(--accent); }
+/* Desktop: nav-links group is transparent to flex layout so links sit
+   inline with lang switcher + theme toggle, matching the pre-drawer look. */
+.top-nav-links {
+  display: contents;
+}
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  color: var(--ink);
+}
+.nav-toggle:hover { border-color: var(--ink-3); }
+.nav-toggle-bars,
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+  display: block;
+  position: absolute;
+  left: 50%;
+  width: 16px;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 1px;
+  transform: translateX(-50%);
+  transition: transform 160ms ease, opacity 120ms ease, top 160ms ease;
+}
+.nav-toggle-bars { top: 50%; margin-top: -0.75px; }
+.nav-toggle-bars::before { content: ""; top: -6px; }
+.nav-toggle-bars::after { content: ""; top: 6px; }
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars { background: transparent; }
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::before {
+  top: 0;
+  transform: translateX(-50%) rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::after {
+  top: 0;
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+@media (max-width: 720px) {
+  .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  /* Hide the brand subtitle to reclaim horizontal space on small screens. */
+  .top-brand-sub { display: none; }
+  /* Drawer: collapsed by default, expanded when [data-nav-open="true"]
+     is set on the <html> element by toggleNav(). Positions itself just
+     below the sticky top-bar without shifting page layout. */
+  .top-nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: var(--space-3) 0 var(--space-4);
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  [data-nav-open="true"] .top-nav-links { display: flex; }
+  .top-nav-links .nav-link {
+    padding: var(--space-3) var(--space-5);
+    font-size: 17px;
+    text-align: right;
+  }
+}
+@media print { .nav-toggle { display: none !important; } }
 
 /* ============================================================
    Hero (home)

@@ -8,9 +8,14 @@
       </span>
     </a>
     <nav class="top-nav">
-      {% for item in site.nav %}<a href="{{ item.route }}" class="nav-link">{{ item.label }}</a>{% endfor %}
+      <div class="top-nav-links" id="primary-nav">
+        {% for item in site.nav %}<a href="{{ item.route }}" class="nav-link">{{ item.label }}</a>{% endfor %}
+      </div>
       {% if page.translations %}<span class="lang-switch-group">{% for lang in site.languages %}{% if not forloop.first %}<span class="lang-switch-sep" aria-hidden="true">·</span>{% endif %}{% if lang == page.lang %}<span class="nav-link lang-switch" aria-current="true">{{ lang|uppercase }}</span>{% else %}{% for alt in page.translations %}{% if alt.lang == lang %}<a href="{{ alt.href }}" class="nav-link lang-switch lang-switch-muted" hreflang="{{ alt.lang }}" onclick="try{localStorage.setItem('lang','{{ alt.lang }}')}catch(e){}">{{ alt.lang|uppercase }}</a>{% endif %}{% endfor %}{% endif %}{% endfor %}</span>{% endif %}
       <button type="button" onclick="toggleTheme()" class="chip no-print" aria-label="{{ site.themeCopy.themeToggleLabel }}">☼</button>
+      <button type="button" class="nav-toggle no-print" aria-label="Menu" aria-expanded="false" aria-controls="primary-nav" onclick="toggleNav(this)">
+        <span class="nav-toggle-bars" aria-hidden="true"></span>
+      </button>
     </nav>
   </div>
 </header>
