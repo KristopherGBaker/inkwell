@@ -15,8 +15,8 @@
 
   {% if page.chips %}<div class="case-study-tags">{% for chip in page.chips %}<a href="{{ chip.href }}" class="tag-chip">{{ chip.label }}</a>{% endfor %}</div>{% endif %}
 
-  {% if page.frontMatter.metrics %}<section class="case-study-metrics" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
-    {% for metric in page.frontMatter.metrics %}<div>
+  {% if page.frontMatter.metrics %}<section class="case-study-metrics">
+    {% for metric in page.frontMatter.metrics %}<div class="case-study-metric">
       <p class="case-study-metric-value">{{ metric.value }}</p>
       <p class="case-study-metric-label">{{ metric.label }}</p>
     </div>{% endfor %}
