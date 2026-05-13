@@ -430,7 +430,9 @@
   color: var(--ink-3);
   display: inline-block;
   margin-bottom: 28px;
+  transition: color var(--dur-fast);
 }
+.case-study-back:hover { color: var(--accent); }
 .case-study-brand { margin-bottom: 12px; }
 .case-study-title {
   margin-bottom: 28px;
@@ -580,7 +582,9 @@
   color: var(--ink-3);
   display: inline-block;
   margin-bottom: 18px;
+  transition: color var(--dur-fast);
 }
+.post-back:hover { color: var(--accent); }
 .post-meta {
   font-family: var(--font-mono);
   font-size: var(--fs-mono-xs);
