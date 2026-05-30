@@ -20,7 +20,7 @@ Static site generator written in Swift. Started as a personal blog tool; v0.3 ge
 Homebrew (recommended):
 
 ```bash
-brew tap KristopherGBaker/tap && brew install inkwell
+brew install KristopherGBaker/tap/inkwell
 ```
 
 Mint:
