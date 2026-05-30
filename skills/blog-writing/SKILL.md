@@ -5,7 +5,7 @@ description: Use when drafting or editing prose content (blog posts, project cas
 
 # Inkwell Writing
 
-Use this skill when drafting, revising, or polishing prose content for an inkwell site. Works for posts, project case studies, and pages alike — the core loop (read voice profile → propose shape → draft → self-check) is the same; only the structure differs.
+Use this skill when drafting, revising, or polishing prose content for an inkwell site. Works for posts, project case studies, and pages alike — the core loop (read voice profile → identify tension → propose shape → draft → self-check) is the same; only the structure differs.
 
 ## Voice Profile Contract
 
@@ -21,10 +21,14 @@ If the file is missing:
 
 1. Read `content/voice-profile.md`.
 2. Extract constraints (tone, style, formatting, banned patterns).
-3. Propose a compact outline appropriate for the content type (see "Structure by Type" below).
-4. Draft content in the configured voice.
-5. Self-check against profile requirements.
-6. Revise for clarity, specificity, and narrative flow.
+3. Before drafting, identify:
+   - the central tension
+   - the real constraint
+   - the thing that changed
+4. Propose a compact outline appropriate for the content type (see "Structure by Type" below).
+5. Draft content in the configured voice.
+6. Self-check against profile requirements.
+7. Revise for clarity, specificity, and narrative flow.
 
 ## Structure by Type
 
@@ -36,7 +40,12 @@ If the file is missing:
 ### Project case study (`content/projects/<slug>.md` with `quiet` theme's `case-study` layout)
 - Front matter carries the headline metrics in a `metrics:` array — write those first; they anchor the rest.
 - Opening paragraph: what the project was, your role, the time window.
-- Sections that work well: Context, Approach, What changed, What I'd do differently.
+- Sections that work well:
+  - Context
+  - Constraints
+  - Approach
+  - What changed
+  - What I'd do differently
 - Closing: durable lesson or what shipped beyond the headline metric.
 - The body is technical-but-readable. The metrics row carries the numbers; the prose carries the story.
 
@@ -46,11 +55,9 @@ If the file is missing:
 
 ## Default Post Shape
 
-(Same as v0.2 — preserved here for reference when the user is writing a blog post.)
-
 - Opening: concrete hook.
 - 2–4 body sections with headings.
-- Closing with takeaway.
+- Closing with takeaway or reflection.
 
 ## Guardrails
 
@@ -59,7 +66,28 @@ If the file is missing:
 - Keep sentence length varied and readable.
 - Preserve technical accuracy and uncertainty markers.
 - Match the intended audience from the voice profile.
+- Prefer real constraints over abstract framing.
+- Show trade-offs honestly, including unresolved ones.
+- Ground observations in workflows, behavior changes, or lived experience.
+- Explain why the system mattered before diving deeply into implementation details.
+- Preserve nuance instead of flattening everything into a strong opinion.
 - For case studies: numbers are sacred. Don't soften "+29.8%" to "~30%" or "nearly 30%". Match the source material's exact phrasing.
+
+## Self-Check Pass
+
+Before finalizing, verify:
+
+- Could this paragraph apply to almost anyone?
+- Does this section contain a real constraint, trade-off, or decision?
+- Are there enough concrete details?
+- Is the technical depth earned by context?
+- Did the writing accidentally become motivational, preachy, or self-important?
+- Are opposing viewpoints acknowledged fairly?
+- Does the draft sound like someone who actually used the workflow being described?
+- Are there places where uncertainty or awkwardness should be admitted more honestly?
+- Are small environmental or lived details helping ground the writing?
+
+If the answer to several of these is "no", revise before finalizing.
 
 ## Collaborative Voice-Profile Mode
 
@@ -68,40 +96,22 @@ When the user says they need help defining their voice:
 - Start with purpose and audience.
 - Then capture style dimensions (directness, humor, vulnerability, detail depth).
 - Add "always do" and "never do" writing rules.
+- Look for recurring themes, tensions, and lived constraints in the user's answers.
 - Write results into `content/voice-profile.md` using the template structure.
 
 ## Quick Commands
 
-- Create voice profile starter: copy `templates/voice-profile-template.md` → `content/voice-profile.md`.
-- Draft a blog post: `inkwell post new "Title"`.
-- Draft a project case study: `inkwell content new projects "Title"`.
-- Build preview after editing: `inkwell serve --watch` (live-reloads as you save).
-
-## Authoring features (v0.6+)
-
-These are bundled-theme conveniences that come up while writing — toggle them per-post via front matter or markdown syntax.
-
-| Feature | How to use | Notes |
-|---|---|---|
-| **Reading time** | Automatic | The `quiet` theme renders `N min read` next to the date. Computed from word count (200 wpm Latin, 450 cpm CJK). No knob; appears on post lists and detail pages. |
-| **Table of contents** | Front matter: `toc: true` | Inserts a TOC partial above the article body, populated from `<h2>` / `<h3>` headings. Skip on short posts. |
-| **Math** | `$inline$` for inline, `$$block$$` for display math | Server-rendered via KaTeX. Currency is safe — `$5 and $10` won't trigger. Block math uses lines that contain only `$$`. KaTeX CSS is loaded only on pages that actually use math. |
-| **Cover image** | Front matter: `coverImage: { src: "/posts/<slug>/cover.png", alt: "…" }` | Resolved through the responsive image pipeline (variant generation + `<picture>` srcsets). Drop the source in `static/posts/<slug>/`. |
-| **OG image** | Front matter: `ogImage: "/posts/<slug>/og.png"` (explicit) or omit and inkwell renders one server-side | Auto-generated cards use the post title + author + theme accent. `og:image` and `twitter:image` are wired up automatically. |
-| **Code copy** | Automatic | Fenced code blocks get a copy button in the bundled themes. Just write fences. |
-| **Pull quotes / blockquotes** | `> quote` | Standard markdown; the quiet theme styles with an accent left border. |
-
-## Translations (v0.5+)
-
-If the site has `i18n` configured and the user wants a translated version of a post, project, or page:
-
-- Translate by adding a sibling file with a `<base>.<lang>.md` suffix — `foo.md` (default) and `foo.ja.md` (Japanese). Keep the same `slug` in the front matter; that's what pairs them.
-- Co-located static assets (videos, images under `static/posts/<slug>/`) don't need to be duplicated. Inkwell rewrites relative `src` / `href` URLs in markdown to absolute canonical paths at build time, so a single asset works from any language URL.
-- Translations are independent — if the user only wants to translate one paragraph, leave the rest in the default language and ship; the JA listing will fall back to the default-language version where no `.ja.md` exists.
-- Match the voice profile's tone in the target language; don't simply translate phrase by phrase. Read the user's existing translated content first if any exists.
+- Create voice profile starter:
+  - copy `templates/voice-profile-template.md` → `content/voice-profile.md`
+- Draft a blog post:
+  - `inkwell post new "Title"`
+- Draft a project case study:
+  - `inkwell content new projects "Title"`
+- Build preview after editing:
+  - `inkwell serve --watch`
 
 ## Related Skills
 
 - `portfolio-data` for résumé / experience content (those go in `data/*.yml`, not prose).
-- `site-setup` for initial project configuration, including i18n setup.
+- `site-setup` for initial project configuration.
 - `blog-cli` for build / preview / publish commands.
