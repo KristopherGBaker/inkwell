@@ -11,7 +11,7 @@ Static site generator written in Swift. Started as a personal blog tool; v0.3 ge
 - **Themes.** Two themes bundled (`default` for blogs, `quiet` for portfolios + blogs). Stencil templates, project-side files override bundled ones per file.
 - **Multi-language (v0.5).** Opt-in i18n with default-at-root URLs (`/posts/foo/`) and prefixed translations (`/ja/posts/foo/`). File-suffix authoring — `foo.md` is the default, `foo.ja.md` is the translation. Browser-language detection on first visit, language switcher in the top bar, `<link rel="alternate" hreflang>` for SEO, and graceful fallback so partial translation never hides content.
 - **Authoring CLI.** `init`, `post new`, `content new`, `build`, `serve --watch`, `check`, `theme`, `deploy`.
-- **Markdown.** GFM (tables, task lists, strikethrough, alerts, fenced code) plus Mermaid blocks; build-time syntax highlighting with Shiki.
+- **Markdown.** GFM (tables, task lists, strikethrough, alerts, fenced code) plus Mermaid blocks; bundled client-side code highlighting, with optional build-time Shiki highlighting when configured.
 - **SEO + feeds.** Canonical URLs, Open Graph, Twitter cards, sitemap.xml, robots.txt, RSS, search index.
 - **Static deploy.** GitHub Pages workflow generator built in; output is a plain directory you can deploy anywhere.
 
@@ -114,6 +114,52 @@ The `resume` layout reads from `data/experience.yml`, `data/competencies.yml`, a
 - **Data files** are YAML/JSON in `data/`, loaded as `data.<basename>` in every template's context. Use them for résumé content, link rolls, structured profile data — anything where keeping the content out of markdown is cleaner.
 - **Themes** ship with the binary; project-side `themes/<name>/templates/` and `themes/<name>/assets/` override on a per-file basis. The `default` theme keeps the v0.2 blog look (Tailwind, amber/stone). The `quiet` theme is portfolio-friendly (Fraunces / Manrope / JetBrains Mono, generous whitespace, print-friendly résumé).
 - **Backward compatibility.** A v0.2 `blog.config.json` with no `collections`/`home`/`author`/`nav` keeps today's URL structure verbatim — `/posts/<slug>/`, `/archive/`, top-level `/tags/<slug>/`, paginated `/`. Sites without an `i18n` block stay monolingual.
+
+## Code highlighting
+
+Inkwell always emits fenced code blocks with `language-*` classes, and the bundled themes include a small client-side highlighter for common languages. That path works from any released Inkwell install with no project setup.
+
+For higher fidelity, Inkwell can highlight code at build time with [Shiki](https://shiki.style/). Build-time Shiki is optional and silent-fallback: if Node, the script, or `shiki` is unavailable, the generated site still builds and the theme's client-side highlighter colors the code in the browser.
+
+To enable build-time Shiki in a site project:
+
+1. Install Node.js 20 or newer.
+2. Add Shiki to the site project:
+
+   ```bash
+   npm install --save-dev shiki
+   ```
+
+3. Add `scripts/highlight-code.mjs` to the site project:
+
+   ```js
+   import { codeToHtml } from 'shiki'
+
+   const language = process.argv[2] || 'text'
+   const encoded = process.argv[3] || ''
+
+   if (!encoded) {
+     process.stdout.write('')
+     process.exit(0)
+   }
+
+   const code = Buffer.from(encoded, 'base64').toString('utf8')
+
+   try {
+     const html = await codeToHtml(code, {
+       lang: language,
+       theme: 'github-dark-default'
+     })
+     process.stdout.write(html)
+   } catch {
+     process.stdout.write('')
+     process.exit(0)
+   }
+   ```
+
+4. Run `inkwell build` from the site project root.
+
+When running Inkwell from a local source checkout, `npm ci` in the Inkwell repo also enables the bundled `scripts/highlight-code.mjs` path for local development and tests.
 
 ## Multi-language
 
