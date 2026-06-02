@@ -1,0 +1,68 @@
+.prose pre code .token.comment,
+.post-content pre code .token.comment {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.prose pre code .token.keyword,
+.post-content pre code .token.keyword {
+  color: #7c3aed;
+}
+
+.prose pre code .token.string,
+.post-content pre code .token.string {
+  color: #047857;
+}
+
+.prose pre code .token.number,
+.post-content pre code .token.number,
+.prose pre code .token.boolean,
+.post-content pre code .token.boolean,
+.prose pre code .token.null,
+.post-content pre code .token.null {
+  color: #b45309;
+}
+
+.prose pre code .token.function,
+.post-content pre code .token.function {
+  color: #0369a1;
+}
+
+.prose pre code .token.operator,
+.post-content pre code .token.operator {
+  color: #be123c;
+}
+
+[data-theme="dark"] .prose pre code .token.comment,
+.dark .post-content pre code .token.comment {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .prose pre code .token.keyword,
+.dark .post-content pre code .token.keyword {
+  color: #ff7b72;
+}
+
+[data-theme="dark"] .prose pre code .token.string,
+.dark .post-content pre code .token.string {
+  color: #a5d6ff;
+}
+
+[data-theme="dark"] .prose pre code .token.number,
+[data-theme="dark"] .prose pre code .token.boolean,
+[data-theme="dark"] .prose pre code .token.null,
+.dark .post-content pre code .token.number,
+.dark .post-content pre code .token.boolean,
+.dark .post-content pre code .token.null {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .prose pre code .token.function,
+.dark .post-content pre code .token.function {
+  color: #d2a8ff;
+}
+
+[data-theme="dark"] .prose pre code .token.operator,
+.dark .post-content pre code .token.operator {
+  color: #ff7b72;
+}

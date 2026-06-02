@@ -94,8 +94,14 @@ public struct ThemeManager {
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/code-copy.css">
         <script type="module">
           import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-          mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
           window.addEventListener("DOMContentLoaded", function() {
+            var isDark = document.documentElement.classList.contains("dark") ||
+              document.documentElement.getAttribute("data-theme") === "dark";
+            mermaid.initialize({
+              startOnLoad: false,
+              securityLevel: "loose",
+              theme: isDark ? "dark" : "default"
+            });
             mermaid.run({ querySelector: ".mermaid" }).catch(function() {});
           });
         </script>
@@ -110,15 +116,23 @@ public struct ThemeManager {
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/tokens.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/components.css">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/prism.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/print.css" media="print">
         <script type="module">
           import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-          mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
           window.addEventListener("DOMContentLoaded", function() {
+            var isDark = document.documentElement.classList.contains("dark") ||
+              document.documentElement.getAttribute("data-theme") === "dark";
+            mermaid.initialize({
+              startOnLoad: false,
+              securityLevel: "loose",
+              theme: isDark ? "dark" : "default"
+            });
             mermaid.run({ querySelector: ".mermaid" }).catch(function() {});
           });
         </script>
         <script defer src="\(assetPrefix)/assets/js/theme-toggle.js"></script>
+        <script defer src="\(assetPrefix)/assets/js/prism.js"></script>
         <script defer src="\(assetPrefix)/assets/js/code-copy.js"></script>
         """
     }

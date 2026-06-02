@@ -12,7 +12,11 @@ public enum MarkdownRenderError: Error {
 }
 
 public struct GFMEngine: MarkdownEngine {
-    public init() {}
+    private let highlightScriptURL: URL?
+
+    public init(highlightScriptURL: URL? = nil) {
+        self.highlightScriptURL = highlightScriptURL
+    }
 
     public func render(_ markdown: String) throws -> String {
         let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -176,15 +180,41 @@ public struct GFMEngine: MarkdownEngine {
     }
 
     private func highlightWithShiki(code: String, language: String) -> String? {
-        let script = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            .appendingPathComponent("scripts/highlight-code.mjs")
         let encoded = Data(code.utf8).base64EncodedString()
         let args = [language.isEmpty ? "text" : language, encoded]
-        guard let data = NodeRunner().run(script: script, args: args),
-              let html = String(data: data, encoding: .utf8),
-              !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return nil
+
+        for script in highlightScriptCandidates() {
+            guard let data = NodeRunner().run(script: script, args: args),
+                  let html = String(data: data, encoding: .utf8),
+                  !html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                continue
+            }
+            return html
         }
-        return html
+
+        return nil
+    }
+
+    private func highlightScriptCandidates() -> [URL] {
+        if let highlightScriptURL {
+            return [highlightScriptURL]
+        }
+
+        let cwdScript = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts/highlight-code.mjs")
+            .standardizedFileURL
+
+        let sourceCheckoutScript = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("scripts/highlight-code.mjs")
+            .standardizedFileURL
+
+        var seen = Set<String>()
+        return [cwdScript, sourceCheckoutScript].filter { candidate in
+            seen.insert(candidate.path).inserted
+        }
     }
 }

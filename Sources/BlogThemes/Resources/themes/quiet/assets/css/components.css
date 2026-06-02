@@ -924,6 +924,33 @@
   color: var(--ink-2);
   font-size: inherit;
 }
+.prose .mermaid {
+  background: color-mix(in srgb, var(--surface-strong) 82%, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink);
+  margin: 1.5em 0;
+  overflow-x: auto;
+  padding: 18px;
+}
+.prose .mermaid svg {
+  height: auto;
+  max-width: 100%;
+}
+[data-theme="dark"] .prose .mermaid {
+  background: #0d1117;
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  color: #f0f6fc;
+}
+[data-theme="dark"] .prose .mermaid text,
+[data-theme="dark"] .prose .mermaid tspan {
+  fill: #f0f6fc !important;
+}
+[data-theme="dark"] .prose .mermaid .label,
+[data-theme="dark"] .prose .mermaid .nodeLabel,
+[data-theme="dark"] .prose .mermaid .edgeLabel {
+  color: #f0f6fc !important;
+}
 .prose blockquote {
   border-left: 2px solid var(--accent);
   padding: 4px 0 4px 18px;
