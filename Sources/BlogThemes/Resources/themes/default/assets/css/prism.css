@@ -1,0 +1,52 @@
+.post-content pre code .token.comment {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.post-content pre code .token.keyword {
+  color: #7c3aed;
+}
+
+.post-content pre code .token.string {
+  color: #047857;
+}
+
+.post-content pre code .token.number,
+.post-content pre code .token.boolean,
+.post-content pre code .token.null {
+  color: #b45309;
+}
+
+.post-content pre code .token.function {
+  color: #0369a1;
+}
+
+.post-content pre code .token.operator {
+  color: #be123c;
+}
+
+.dark .post-content pre code .token.comment {
+  color: #8b949e;
+}
+
+.dark .post-content pre code .token.keyword {
+  color: #ff7b72;
+}
+
+.dark .post-content pre code .token.string {
+  color: #a5d6ff;
+}
+
+.dark .post-content pre code .token.number,
+.dark .post-content pre code .token.boolean,
+.dark .post-content pre code .token.null {
+  color: #79c0ff;
+}
+
+.dark .post-content pre code .token.function {
+  color: #d2a8ff;
+}
+
+.dark .post-content pre code .token.operator {
+  color: #ff7b72;
+}
