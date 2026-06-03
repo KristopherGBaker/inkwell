@@ -4,6 +4,7 @@ included:
 
 excluded:
   - .build
+  - .swiftpm
   - .worktrees
   - docs
   - node_modules
@@ -15,24 +16,31 @@ opt_in_rules:
   - explicit_init
   - fatal_error_message
   - first_where
+  - multiline_parameters
   - redundant_nil_coalescing
   - sorted_first_last
   - vertical_parameter_alignment_on_call
 
-disabled_rules:
-  - cyclomatic_complexity
-  - function_body_length
-  - line_length
+cyclomatic_complexity:
+  warning: 18
+  error: 25
+
+function_body_length:
+  warning: 70
+  error: 120
+
+nesting:
+  type_level: 2
 
 identifier_name:
   min_length:
     warning: 2
   excluded:
     - id
-    - i
-    - x
-    - y
-    - rc
+
+large_tuple:
+  warning: 4
+  error: 5
 
 force_cast: warning
 force_try: warning
