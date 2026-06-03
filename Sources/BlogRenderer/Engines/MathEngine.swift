@@ -44,27 +44,27 @@ public struct MathEngine {
         var output: [String] = []
         let lines = markdown.components(separatedBy: "\n")
         var inFence = false
-        var i = 0
+        var index = 0
 
-        while i < lines.count {
-            let line = lines[i]
+        while index < lines.count {
+            let line = lines[index]
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
             if trimmed.hasPrefix("```") {
                 inFence.toggle()
                 output.append(line)
-                i += 1
+                index += 1
                 continue
             }
             if inFence {
                 output.append(line)
-                i += 1
+                index += 1
                 continue
             }
 
             if trimmed == "$$" {
                 var bodyLines: [String] = []
-                var scan = i + 1
+                var scan = index + 1
                 var foundClose = false
                 while scan < lines.count {
                     if lines[scan].trimmingCharacters(in: .whitespaces) == "$$" {
@@ -79,13 +79,13 @@ public struct MathEngine {
                     let run = MathRun(id: id, source: bodyLines.joined(separator: "\n"), isBlock: true)
                     runs.append(run)
                     output.append(placeholder(for: run))
-                    i = scan + 1
+                    index = scan + 1
                     continue
                 }
             }
 
             output.append(processInlineMath(line: line, runs: &runs))
-            i += 1
+            index += 1
         }
 
         return ExtractResult(markdown: output.joined(separator: "\n"), runs: runs)
@@ -155,43 +155,43 @@ public struct MathEngine {
 
         var result = ""
         let chars = Array(line)
-        var i = 0
+        var index = 0
 
-        while i < chars.count {
-            let char = chars[i]
+        while index < chars.count {
+            let char = chars[index]
 
             if char == "`" {
-                if let closingIndex = findInlineCodeClose(chars, from: i + 1) {
-                    result.append(contentsOf: chars[i...closingIndex])
-                    i = closingIndex + 1
+                if let closingIndex = findInlineCodeClose(chars, from: index + 1) {
+                    result.append(contentsOf: chars[index...closingIndex])
+                    index = closingIndex + 1
                     continue
                 }
                 result.append(char)
-                i += 1
+                index += 1
                 continue
             }
 
-            if char == "$", let match = matchInlineMath(in: chars, openAt: i) {
+            if char == "$", let match = matchInlineMath(in: chars, openAt: index) {
                 let id = runs.count
                 let run = MathRun(id: id, source: match.source, isBlock: false)
                 runs.append(run)
                 result.append(placeholder(for: run))
-                i = match.endIndex
+                index = match.endIndex
                 continue
             }
 
             result.append(char)
-            i += 1
+            index += 1
         }
 
         return result
     }
 
     private func findInlineCodeClose(_ chars: [Character], from start: Int) -> Int? {
-        var i = start
-        while i < chars.count {
-            if chars[i] == "`" { return i }
-            i += 1
+        var index = start
+        while index < chars.count {
+            if chars[index] == "`" { return index }
+            index += 1
         }
         return nil
     }

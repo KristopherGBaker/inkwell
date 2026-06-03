@@ -10,7 +10,12 @@ public final class PreviewWatcher {
     private var timer: DispatchSourceTimer?
     private var lastSnapshot = ""
 
-    public init(paths: [URL], excludedPaths: [URL] = [], pollInterval: TimeInterval = 0.5, onChange: @escaping () -> Void) {
+    public init(
+        paths: [URL],
+        excludedPaths: [URL] = [],
+        pollInterval: TimeInterval = 0.5,
+        onChange: @escaping () -> Void
+    ) {
         self.paths = paths
         self.excludedPaths = excludedPaths.map { $0.standardizedFileURL }
         self.pollInterval = pollInterval
@@ -102,7 +107,11 @@ public final class PreviewWatcher {
             }
 
             if isDirectory.boolValue {
-                entries.append(contentsOf: directoryEntries(at: standardized, fileManager: fileManager, excludedPaths: excludedPaths))
+                entries.append(contentsOf: directoryEntries(
+                    at: standardized,
+                    fileManager: fileManager,
+                    excludedPaths: excludedPaths
+                ))
             } else {
                 entries.append(fileEntry(at: standardized, fileManager: fileManager))
             }

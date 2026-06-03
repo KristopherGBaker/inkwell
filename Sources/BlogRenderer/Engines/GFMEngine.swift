@@ -21,95 +21,113 @@ public struct GFMEngine: MarkdownEngine {
     public func render(_ markdown: String) throws -> String {
         let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         var output: [String] = []
-        var i = 0
+        var index = 0
 
-        while i < lines.count {
-            if lines[i].hasPrefix("```") {
-                let language = lines[i].replacingOccurrences(of: "```", with: "").trimmingCharacters(in: .whitespaces)
-                i += 1
-                var code: [String] = []
-                var foundClosing = false
-                while i < lines.count {
-                    if lines[i].hasPrefix("```") {
-                        foundClosing = true
-                        break
-                    }
-                    code.append(lines[i])
-                    i += 1
-                }
-                guard foundClosing else { throw MarkdownRenderError.encodingFailed }
-                let source = code.joined(separator: "\n")
-                if isMermaidLanguage(language) {
-                    output.append("<pre class=\"mermaid\">\(escapeHTML(source))</pre>")
-                } else if let highlighted = highlightWithShiki(code: source, language: language) {
-                    output.append(highlighted)
-                } else {
-                    let languageClass = language.isEmpty ? "" : " class=\"language-\(language)\""
-                    output.append("<pre><code\(languageClass)>\(escapeHTML(source))</code></pre>")
-                }
-                i += 1
+        while index < lines.count {
+            if let block = try renderCodeFence(lines, &index) { output.append(block); continue }
+            if let block = renderTable(lines, &index) { output.append(block); continue }
+            if let block = renderTaskList(lines, &index) { output.append(block); continue }
+            if let block = try renderAlert(lines, &index) { output.append(block); continue }
+            if lines[index].trimmingCharacters(in: .whitespaces).isEmpty {
+                index += 1
                 continue
             }
-
-            if isTableHeader(lines, at: i) {
-                let headers = parseTableCells(lines[i])
-                let rows = parseTableCells(lines[i + 2])
-                output.append("<table><thead><tr>\(headers.map { "<th>\(inline($0))</th>" }.joined())</tr></thead><tbody><tr>\(rows.map { "<td>\(inline($0))</td>" }.joined())</tr></tbody></table>")
-                i += 3
-                continue
-            }
-
-            if lines[i].hasPrefix("- [") {
-                var items: [String] = []
-                while i < lines.count, lines[i].hasPrefix("- [") {
-                    let item = lines[i]
-                    let checked = item.contains("[x]") || item.contains("[X]")
-                    let text = item.replacingOccurrences(of: "- [x] ", with: "")
-                        .replacingOccurrences(of: "- [X] ", with: "")
-                        .replacingOccurrences(of: "- [ ] ", with: "")
-                    let mark = checked ? " checked" : ""
-                    items.append("<li><input type=\"checkbox\" disabled\(mark)> \(inline(text))</li>")
-                    i += 1
-                }
-                output.append("<ul class=\"task-list\">\(items.joined())</ul>")
-                continue
-            }
-
-            if let alert = parseAlertStart(lines[i]) {
-                i += 1
-                var bodyLines: [String] = []
-                while i < lines.count, lines[i].hasPrefix(">") {
-                    let raw = lines[i]
-                    let stripped = raw.hasPrefix("> ") ? String(raw.dropFirst(2)) : String(raw.dropFirst())
-                    bodyLines.append(stripped)
-                    i += 1
-                }
-
-                let bodyMarkdown = bodyLines.joined(separator: "\n")
-                let renderedBody = try renderWithCMark(bodyMarkdown).trimmingCharacters(in: .whitespacesAndNewlines)
-                output.append("<aside class=\"alert alert-\(alert.type)\"><p class=\"alert-title\">\(alert.label)</p>\(renderedBody)</aside>")
-                continue
-            }
-
-            if lines[i].trimmingCharacters(in: .whitespaces).isEmpty {
-                i += 1
-                continue
-            }
-
-            var paragraphLines: [String] = []
-            while i < lines.count,
-                  !lines[i].trimmingCharacters(in: .whitespaces).isEmpty,
-                  !lines[i].hasPrefix("```") &&
-                  !lines[i].hasPrefix("- [") &&
-                  !isTableHeader(lines, at: i) {
-                paragraphLines.append(lines[i])
-                i += 1
-            }
-            let paragraphMarkdown = applyStrikethroughHTML(paragraphLines.joined(separator: "\n"))
-            output.append(try renderWithCMark(paragraphMarkdown).trimmingCharacters(in: .whitespacesAndNewlines))
+            output.append(try renderParagraph(lines, &index))
         }
 
         return output.joined(separator: "\n")
+    }
+
+    /// Renders a fenced code block at `index`, advancing past the closing fence.
+    /// Returns nil if the current line does not open a fence.
+    private func renderCodeFence(_ lines: [String], _ index: inout Int) throws -> String? {
+        guard lines[index].hasPrefix("```") else { return nil }
+        let language = lines[index].replacingOccurrences(of: "```", with: "").trimmingCharacters(in: .whitespaces)
+        index += 1
+        var code: [String] = []
+        var foundClosing = false
+        while index < lines.count {
+            if lines[index].hasPrefix("```") {
+                foundClosing = true
+                break
+            }
+            code.append(lines[index])
+            index += 1
+        }
+        guard foundClosing else { throw MarkdownRenderError.encodingFailed }
+        index += 1
+        let source = code.joined(separator: "\n")
+        if isMermaidLanguage(language) {
+            return "<pre class=\"mermaid\">\(escapeHTML(source))</pre>"
+        }
+        if let highlighted = highlightWithShiki(code: source, language: language) {
+            return highlighted
+        }
+        let languageClass = language.isEmpty ? "" : " class=\"language-\(language)\""
+        return "<pre><code\(languageClass)>\(escapeHTML(source))</code></pre>"
+    }
+
+    /// Renders a pipe table starting at `index`, advancing past header/divider/row.
+    /// Returns nil if the current line does not begin a table.
+    private func renderTable(_ lines: [String], _ index: inout Int) -> String? {
+        guard isTableHeader(lines, at: index) else { return nil }
+        let headers = parseTableCells(lines[index])
+        let rows = parseTableCells(lines[index + 2])
+        index += 3
+        let head = headers.map { "<th>\(inline($0))</th>" }.joined()
+        let body = rows.map { "<td>\(inline($0))</td>" }.joined()
+        return "<table><thead><tr>\(head)</tr></thead><tbody><tr>\(body)</tr></tbody></table>"
+    }
+
+    /// Renders a run of GitHub task-list items, advancing past the consumed lines.
+    /// Returns nil if the current line is not a task-list item.
+    private func renderTaskList(_ lines: [String], _ index: inout Int) -> String? {
+        guard lines[index].hasPrefix("- [") else { return nil }
+        var items: [String] = []
+        while index < lines.count, lines[index].hasPrefix("- [") {
+            let item = lines[index]
+            let checked = item.contains("[x]") || item.contains("[X]")
+            let text = item.replacingOccurrences(of: "- [x] ", with: "")
+                .replacingOccurrences(of: "- [X] ", with: "")
+                .replacingOccurrences(of: "- [ ] ", with: "")
+            let mark = checked ? " checked" : ""
+            items.append("<li><input type=\"checkbox\" disabled\(mark)> \(inline(text))</li>")
+            index += 1
+        }
+        return "<ul class=\"task-list\">\(items.joined())</ul>"
+    }
+
+    /// Renders a GitHub alert blockquote, advancing past its body lines.
+    /// Returns nil if the current line does not open an alert.
+    private func renderAlert(_ lines: [String], _ index: inout Int) throws -> String? {
+        guard let alert = parseAlertStart(lines[index]) else { return nil }
+        index += 1
+        var bodyLines: [String] = []
+        while index < lines.count, lines[index].hasPrefix(">") {
+            let raw = lines[index]
+            let stripped = raw.hasPrefix("> ") ? String(raw.dropFirst(2)) : String(raw.dropFirst())
+            bodyLines.append(stripped)
+            index += 1
+        }
+        let bodyMarkdown = bodyLines.joined(separator: "\n")
+        let renderedBody = try renderWithCMark(bodyMarkdown).trimmingCharacters(in: .whitespacesAndNewlines)
+        return "<aside class=\"alert alert-\(alert.type)\">"
+            + "<p class=\"alert-title\">\(alert.label)</p>\(renderedBody)</aside>"
+    }
+
+    /// Renders a paragraph by consuming contiguous non-block lines through cmark.
+    private func renderParagraph(_ lines: [String], _ index: inout Int) throws -> String {
+        var paragraphLines: [String] = []
+        while index < lines.count,
+              !lines[index].trimmingCharacters(in: .whitespaces).isEmpty,
+              !lines[index].hasPrefix("```") &&
+              !lines[index].hasPrefix("- [") &&
+              !isTableHeader(lines, at: index) {
+            paragraphLines.append(lines[index])
+            index += 1
+        }
+        let paragraphMarkdown = applyStrikethroughHTML(paragraphLines.joined(separator: "\n"))
+        return try renderWithCMark(paragraphMarkdown).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func renderWithCMark(_ markdown: String) throws -> String {
@@ -148,7 +166,11 @@ public struct GFMEngine: MarkdownEngine {
         let header = lines[index]
         let divider = lines[index + 1]
         let row = lines[index + 2]
-        return header.contains("|") && divider.replacingOccurrences(of: "|", with: "").trimmingCharacters(in: CharacterSet(charactersIn: "-: ")).isEmpty && row.contains("|")
+        let dividerIsRule = divider
+            .replacingOccurrences(of: "|", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-: "))
+            .isEmpty
+        return header.contains("|") && dividerIsRule && row.contains("|")
     }
 
     private func parseTableCells(_ line: String) -> [String] {

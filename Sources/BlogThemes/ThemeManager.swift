@@ -53,7 +53,13 @@ public struct ThemeManager {
         try out.write(to: configPath)
     }
 
-    public func injectHeadAssets(into html: String, baseURL: String = "/", extraHead: String = "", theme: String = "default", hasMath: Bool = false) -> String {
+    public func injectHeadAssets(
+        into html: String,
+        baseURL: String = "/",
+        extraHead: String = "",
+        theme: String = "default",
+        hasMath: Bool = false
+    ) -> String {
         let assetPrefix = normalizedAssetPrefix(from: baseURL)
         var tags = theme == "quiet"
             ? quietThemeHead(assetPrefix: assetPrefix)
@@ -71,6 +77,9 @@ public struct ThemeManager {
         return tags + html
     }
 
+    // The Google Fonts <link> below is a single unbreakable URL longer than the
+    // line limit, so line_length is disabled across this head template.
+    // swiftlint:disable line_length
     private func defaultThemeHead(assetPrefix: String) -> String {
         return """
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -110,6 +119,7 @@ public struct ThemeManager {
         <script defer src="\(assetPrefix)/assets/js/code-copy.js"></script>
         """
     }
+    // swiftlint:enable line_length
 
     private func quietThemeHead(assetPrefix: String) -> String {
         return """
@@ -197,7 +207,8 @@ public struct ThemeManager {
         for relative in files {
             let source = sourceRoot.appendingPathComponent(relative)
             var isDirectory: ObjCBool = false
-            guard fm.fileExists(atPath: source.path, isDirectory: &isDirectory), !isDirectory.boolValue else { continue }
+            guard fm.fileExists(atPath: source.path, isDirectory: &isDirectory),
+                  !isDirectory.boolValue else { continue }
             let destination = destinationRoot.appendingPathComponent(relative)
             try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
             if fm.fileExists(atPath: destination.path) {

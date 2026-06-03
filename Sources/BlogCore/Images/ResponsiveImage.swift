@@ -133,7 +133,10 @@ enum ResponsiveImageMarkup {
 enum ImageAssetPathResolver {
     static func projectURL(forSource src: String, projectRoot: URL) -> URL? {
         let trimmed = src.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.contains("://") || trimmed.hasPrefix("data:") || trimmed.hasPrefix("mailto:") || trimmed.hasPrefix("tel:") {
+        if trimmed.contains("://")
+            || trimmed.hasPrefix("data:")
+            || trimmed.hasPrefix("mailto:")
+            || trimmed.hasPrefix("tel:") {
             return nil
         }
         guard trimmed.hasPrefix("/") else { return nil }
