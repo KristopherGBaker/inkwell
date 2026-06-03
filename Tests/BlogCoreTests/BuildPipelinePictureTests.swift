@@ -85,10 +85,10 @@ final class BuildPipelinePictureTests: XCTestCase {
             throw NSError(domain: "BuildPipelinePictureTests", code: 1)
         }
         let bands = 16
-        for i in 0..<bands {
-            let progress = Double(i) / Double(bands)
+        for band in 0..<bands {
+            let progress = Double(band) / Double(bands)
             ctx.setFillColor(red: progress, green: 1.0 - progress, blue: 0.4, alpha: 1.0)
-            ctx.fill(CGRect(x: 0, y: i * (height / bands), width: width, height: height / bands))
+            ctx.fill(CGRect(x: 0, y: band * (height / bands), width: width, height: height / bands))
         }
         guard let image = ctx.makeImage() else {
             throw NSError(domain: "BuildPipelinePictureTests", code: 2)

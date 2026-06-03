@@ -94,6 +94,7 @@ final class MathEngineTests: XCTestCase {
         ]
         let stitched = MathEngine().restitch(html: html, runs: runs, renderedHTML: renderedRuns)
         XCTAssertTrue(stitched.contains("<span class=\"math math-inline\"><span class=\"katex\">x+y</span></span>"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(stitched.contains("<div class=\"math math-block\"><span class=\"katex-display\">z=0</span></div>"))
         XCTAssertFalse(stitched.contains("inkwell-math"))
     }

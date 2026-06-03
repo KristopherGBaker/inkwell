@@ -6,8 +6,11 @@ final class TemplateRendererTests: XCTestCase {
     func testRendersBundledLandingTemplate() throws {
         let renderer = try TemplateRenderer(theme: "default", projectRoot: nil)
         let html = try renderer.render(template: "layouts/landing", context: defaultContext(
+            // swiftlint:disable:next line_length
             site: ["title": "Field Notes", "description": "A blog", "tagline": "Tagline.", "searchEnabled": true, "baseURL": "/"],
+            // swiftlint:disable:next line_length
             page: ["title": "Field Notes", "description": "A blog", "canonicalURL": "https://example.com/", "twitterCard": "summary"],
+            // swiftlint:disable:next line_length
             extras: ["posts": [], "pagination": ["currentPage": 1, "totalPages": 1, "items": []], "links": ["home": "/", "archive": "/archive/"]]
         ))
         XCTAssertTrue(html.contains("<title>Field Notes</title>"))
@@ -20,6 +23,7 @@ final class TemplateRendererTests: XCTestCase {
         let templatesRoot = projectRoot
             .appendingPathComponent("themes/default/templates")
         try FileManager.default.createDirectory(at: templatesRoot, withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "<p>{{ message }}</p>".write(to: templatesRoot.appendingPathComponent("base.html"), atomically: true, encoding: .utf8)
 
         let renderer = try TemplateRenderer(theme: "default", projectRoot: projectRoot)
@@ -31,6 +35,7 @@ final class TemplateRendererTests: XCTestCase {
         let projectRoot = makeTempDirectory()
         let templatesRoot = projectRoot.appendingPathComponent("themes/default/templates")
         try FileManager.default.createDirectory(at: templatesRoot, withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "{{ value|escape }}".write(to: templatesRoot.appendingPathComponent("base.html"), atomically: true, encoding: .utf8)
 
         let renderer = try TemplateRenderer(theme: "default", projectRoot: projectRoot)

@@ -25,6 +25,7 @@ final class ReadingTimeIntegrationTests: XCTestCase {
         XCTAssertEqual(report.errors.count, 0)
 
         let postHTML = try String(contentsOf: temp.appendingPathComponent("docs/posts/long-read/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(postHTML.contains("4 min read"), "post header should show formatted reading time, got: \(postHTML.prefix(800))")
     }
 
@@ -115,6 +116,7 @@ final class ReadingTimeIntegrationTests: XCTestCase {
         XCTAssertTrue(englishHTML.contains("4 min read"))
 
         let japaneseHTML = try String(contentsOf: temp.appendingPathComponent("docs/ja/posts/long/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(japaneseHTML.contains("4 分で読了"), "Japanese overlay should translate the label, got: \(japaneseHTML.prefix(800))")
     }
 }

@@ -146,6 +146,7 @@ final class SiteConfigTests: XCTestCase {
     }
 
     func testDecodesAnalyticsUmamiMinimalRequiredFields() throws {
+        // swiftlint:disable:next line_length
         let json = #"{"title":"Kris","baseURL":"/","analytics":{"umami":{"scriptUrl":"https://x/s.js","websiteId":"id"}}}"#
         let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
         let umami = try XCTUnwrap(config.analytics?.umami)

@@ -7,6 +7,7 @@ import XCTest
 final class CheckCommandTests: XCTestCase {
     func testCheckFailsOnBrokenInternalLink() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("docs"), withIntermediateDirectories: true)
         let html = "<a href=\"/missing-page/\">missing</a>"
         try html.write(to: root.appendingPathComponent("docs/index.html"), atomically: true, encoding: .utf8)
@@ -18,8 +19,11 @@ final class CheckCommandTests: XCTestCase {
 
     func testLinkCheckerIgnoresFragmentInInternalLinkTarget() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("docs/post"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "<a href=\"/post/#intro\">post</a>".write(to: root.appendingPathComponent("docs/index.html"), atomically: true, encoding: .utf8)
+        // swiftlint:disable:next line_length
         try "<h1 id=\"intro\">Intro</h1>".write(to: root.appendingPathComponent("docs/post/index.html"), atomically: true, encoding: .utf8)
 
         let result = LinkChecker().check(projectRoot: root)
@@ -30,8 +34,11 @@ final class CheckCommandTests: XCTestCase {
 
     func testLinkCheckerIgnoresQueryStringInInternalLinkTarget() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("docs/search"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "<a href=\"/search/?q=x\">search</a>".write(to: root.appendingPathComponent("docs/index.html"), atomically: true, encoding: .utf8)
+        // swiftlint:disable:next line_length
         try "<h1>Search</h1>".write(to: root.appendingPathComponent("docs/search/index.html"), atomically: true, encoding: .utf8)
 
         let result = LinkChecker().check(projectRoot: root)
@@ -55,6 +62,7 @@ final class CheckCommandTests: XCTestCase {
 
         Hello world
         """
+        // swiftlint:disable:next line_length
         try markdown.write(to: root.appendingPathComponent("content/posts/2026-03-08-example.md"), atomically: true, encoding: .utf8)
 
         let oldDirectory = fm.currentDirectoryPath
@@ -134,6 +142,7 @@ final class CheckCommandTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try firstPost.write(to: root.appendingPathComponent("content/posts/2026-03-08-first.md"), atomically: true, encoding: .utf8)
 
         let secondPost = """
@@ -146,6 +155,7 @@ final class CheckCommandTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try secondPost.write(to: root.appendingPathComponent("content/posts/2026-03-09-second.md"), atomically: true, encoding: .utf8)
 
         let oldDirectory = fm.currentDirectoryPath

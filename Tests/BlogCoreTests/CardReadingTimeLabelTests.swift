@@ -70,9 +70,11 @@ final class CardReadingTimeLabelTests: XCTestCase {
         XCTAssertEqual(report.errors.count, 0)
 
         let englishHome = try String(contentsOf: temp.appendingPathComponent("docs/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(englishHome.contains("4 min read"), "EN home card should use base format, got: \(englishHome.prefix(2400))")
 
         let japaneseHome = try String(contentsOf: temp.appendingPathComponent("docs/ja/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(japaneseHome.contains("約4分"), "JA home card should use translated format, got: \(japaneseHome.prefix(2400))")
     }
 }
