@@ -47,6 +47,7 @@ final class I18nContentTests: XCTestCase {
         """)
 
         let configs = [CollectionConfig(id: "posts", dir: "content/posts", route: "/posts")]
+        // swiftlint:disable:next line_length
         let collections = try ContentLoader().loadCollections(configs, in: root, defaultLanguage: "en", configuredLanguages: ["en", "ja"])
 
         let items = collections["posts"]?.items ?? []
@@ -89,6 +90,7 @@ final class I18nContentTests: XCTestCase {
         """)
 
         let configs = [CollectionConfig(id: "posts", dir: "content/posts", route: "/posts")]
+        // swiftlint:disable:next line_length
         let collections = try ContentLoader().loadCollections(configs, in: root, defaultLanguage: "en", configuredLanguages: ["en", "ja"])
 
         let items = collections["posts"]?.items ?? []

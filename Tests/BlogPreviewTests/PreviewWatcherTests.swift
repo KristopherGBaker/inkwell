@@ -42,6 +42,7 @@ final class PreviewWatcherTests: XCTestCase {
 
     func testDetectsChangesInHiddenFiles() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent(".drafts"), withIntermediateDirectories: true)
         let file = root.appendingPathComponent(".drafts/post.md")
         try "first".write(to: file, atomically: true, encoding: .utf8)

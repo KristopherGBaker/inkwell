@@ -58,6 +58,7 @@ final class ReadingTimeTests: XCTestCase {
 
     func testCountsHiraganaKatakanaAndIdeographs() {
         // 450 hiragana + 450 katakana + 450 kanji = 1350 chars at 450 cpm = 3 min.
+        // swiftlint:disable:next line_length
         let mixed = String(repeating: "あ", count: 450) + String(repeating: "ア", count: 450) + String(repeating: "字", count: 450)
         XCTAssertEqual(ReadingTime.compute(html: "<p>\(mixed)</p>"), 3)
     }

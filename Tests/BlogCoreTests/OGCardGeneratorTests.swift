@@ -49,6 +49,7 @@ final class OGCardGeneratorTests: XCTestCase {
         try XCTSkipUnless(systemFontAvailable(), "no candidate font on this host")
 
         let generator = OGCardGenerator(projectRoot: projectRoot)
+        // swiftlint:disable:next line_length
         let spec = OGCardSpec(title: "Cached", subtitle: "x", author: "y", lang: "en", theme: "default", accent: "#fbbf24")
         let first = generator.ensureCard(spec: spec)
         XCTAssertNotNil(first)
@@ -110,6 +111,7 @@ final class OGCardGeneratorTests: XCTestCase {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = [
             "node", "-e",
+            // swiftlint:disable:next line_length
             "Promise.all([import('satori'),import('@resvg/resvg-js')]).then(()=>process.exit(0)).catch(()=>process.exit(1))"
         ]
         process.currentDirectoryURL = repoRoot()

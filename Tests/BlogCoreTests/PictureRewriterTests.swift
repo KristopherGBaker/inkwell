@@ -30,6 +30,7 @@ final class PictureRewriterTests: XCTestCase {
         try XCTSkipUnless(sharpAvailable(), "sharp not installed")
         try writeJPEG(width: 1800, height: 1200, to: projectRoot.appendingPathComponent("static/photo.jpg"))
 
+        // swiftlint:disable:next line_length
         let rewriter = PictureRewriter(projectRoot: projectRoot, spec: .init(widths: [480, 800, 1200, 1600], formats: ["avif", "webp"], minBytes: 0))
         let html = #"<p>Look:</p><img src="/static/photo.jpg" alt="a photo">"#
         let result = rewriter.rewrite(html: html)
@@ -49,6 +50,7 @@ final class PictureRewriterTests: XCTestCase {
         try XCTSkipUnless(sharpAvailable(), "sharp not installed")
         try writeJPEG(width: 800, height: 600, to: projectRoot.appendingPathComponent("static/raw/keep.jpg"))
 
+        // swiftlint:disable:next line_length
         let rewriter = PictureRewriter(projectRoot: projectRoot, spec: .init(widths: [480], formats: ["webp"], minBytes: 0))
         let html = #"<img src="/static/raw/keep.jpg" alt="raw">"#
         let result = rewriter.rewrite(html: html)
@@ -135,10 +137,10 @@ final class PictureRewriterTests: XCTestCase {
             throw NSError(domain: "PictureRewriterTests", code: 1)
         }
         let bands = 16
-        for i in 0..<bands {
-            let progress = Double(i) / Double(bands)
+        for band in 0..<bands {
+            let progress = Double(band) / Double(bands)
             ctx.setFillColor(red: progress, green: 1.0 - progress, blue: 0.4, alpha: 1.0)
-            ctx.fill(CGRect(x: 0, y: i * (height / bands), width: width, height: height / bands))
+            ctx.fill(CGRect(x: 0, y: band * (height / bands), width: width, height: height / bands))
         }
         guard let image = ctx.makeImage() else {
             throw NSError(domain: "PictureRewriterTests", code: 2)

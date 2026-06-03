@@ -7,6 +7,7 @@ final class ThemeManagerTests: XCTestCase {
         let fm = FileManager.default
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         try fm.createDirectory(at: root.appendingPathComponent("themes/default"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "{\"title\":\"Test\",\"theme\":\"other\"}".write(to: root.appendingPathComponent("blog.config.json"), atomically: true, encoding: .utf8)
 
         try ThemeManager().useTheme("default", in: root)

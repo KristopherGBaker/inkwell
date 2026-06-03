@@ -6,9 +6,11 @@ import BlogPlugins
 func makeTempBlogProject(extraDirectories: [String] = []) throws -> URL {
     let temp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+    // swiftlint:disable:next line_length
     try FileManager.default.createDirectory(at: temp.appendingPathComponent("content/posts"), withIntermediateDirectories: true)
 
     for directory in extraDirectories {
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: temp.appendingPathComponent(directory), withIntermediateDirectories: true)
     }
 

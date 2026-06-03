@@ -47,6 +47,7 @@ final class ProjectCheckerTests: XCTestCase {
 
     func testRootRelativeCoverImageResolvesFromPublicDirectory() throws {
         let root = try makeProjectRoot()
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("public/images"), withIntermediateDirectories: true)
         try Data("image".utf8).write(to: root.appendingPathComponent("public/images/cover.jpg"))
         try writePost(
@@ -82,10 +83,15 @@ final class ProjectCheckerTests: XCTestCase {
             }
             """
         )
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("docs"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("public-site/posts/test"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "<a href=\"/missing/\">missing</a>".write(to: root.appendingPathComponent("docs/index.html"), atomically: true, encoding: .utf8)
+        // swiftlint:disable:next line_length
         try "<a href=\"/posts/test/\">test</a>".write(to: root.appendingPathComponent("public-site/index.html"), atomically: true, encoding: .utf8)
+        // swiftlint:disable:next line_length
         try "<h1>Test</h1>".write(to: root.appendingPathComponent("public-site/posts/test/index.html"), atomically: true, encoding: .utf8)
 
         let result = ProjectChecker().check(projectRoot: root)
@@ -107,8 +113,11 @@ final class ProjectCheckerTests: XCTestCase {
             }
             """
         )
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("docs/posts/test"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "<a href=\"/blog/posts/test/\">test</a>".write(to: root.appendingPathComponent("docs/index.html"), atomically: true, encoding: .utf8)
+        // swiftlint:disable:next line_length
         try "<h1>Test</h1>".write(to: root.appendingPathComponent("docs/posts/test/index.html"), atomically: true, encoding: .utf8)
 
         let result = ProjectChecker().check(projectRoot: root)
@@ -241,6 +250,7 @@ final class ProjectCheckerTests: XCTestCase {
           ]
         }
         """)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("static/assets/shots"), withIntermediateDirectories: true)
         try Data().write(to: root.appendingPathComponent("static/assets/shots/wolt.png"))
         try writeProject(to: root, named: "wolt.md", markdown: """
@@ -265,11 +275,13 @@ final class ProjectCheckerTests: XCTestCase {
 
     private func makeProjectRoot() throws -> URL {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("content/posts"), withIntermediateDirectories: true)
         return root
     }
 
     private func writePost(to root: URL, named fileName: String, markdown: String) throws {
+        // swiftlint:disable:next line_length
         try markdown.write(to: root.appendingPathComponent("content/posts/\(fileName)"), atomically: true, encoding: .utf8)
     }
 

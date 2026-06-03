@@ -18,18 +18,24 @@ final class BuildPipelineIntegrationTests: XCTestCase {
 
         Test post body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-05-hello-world.md"), atomically: true, encoding: .utf8)
 
         let report = try BuildPipeline().run(in: temp)
         XCTAssertEqual(report.errors.count, 0)
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/index.html").path))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/archive/index.html").path))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/posts/hello-world/index.html").path))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/tags/swift/index.html").path))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/categories/engineering/index.html").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/sitemap.xml").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/robots.txt").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/rss.xml").path))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/search-index.json").path))
 
         let indexHTML = try String(contentsOf: temp.appendingPathComponent("docs/index.html"))
@@ -59,10 +65,12 @@ final class BuildPipelineIntegrationTests: XCTestCase {
             Body
             """
             let fileName = "\(date)-post-\(day).md"
+            // swiftlint:disable:next line_length
             try post.write(to: temp.appendingPathComponent("content/posts/\(fileName)"), atomically: true, encoding: .utf8)
         }
 
         _ = try BuildPipeline().run(in: temp)
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("docs/page/2/index.html").path))
     }
 
@@ -93,14 +101,18 @@ final class BuildPipelineIntegrationTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-06-metadata-ready.md"), atomically: true, encoding: .utf8)
 
         _ = try BuildPipeline().run(in: temp)
 
         let postHTML = try String(contentsOf: temp.appendingPathComponent("docs/posts/metadata-ready/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(postHTML.contains("<link rel=\"canonical\" href=\"https://canonical.example.com/posts/metadata-ready/\""))
         XCTAssertTrue(postHTML.contains("property=\"og:title\" content=\"Metadata Ready\""))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(postHTML.contains("property=\"og:description\" content=\"Shipping metadata for modern previews.\""))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(postHTML.contains("property=\"og:url\" content=\"https://canonical.example.com/posts/metadata-ready/\""))
         XCTAssertTrue(postHTML.contains("name=\"twitter:card\" content=\"summary_large_image\""))
 
@@ -119,7 +131,9 @@ final class BuildPipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(tagHTML.contains("property=\"og:url\" content=\"https://example.com/blog/tags/swift/\""))
 
         let categoryHTML = try String(contentsOf: temp.appendingPathComponent("docs/categories/engineering/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(categoryHTML.contains("<link rel=\"canonical\" href=\"https://example.com/blog/categories/engineering/\""))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(categoryHTML.contains("property=\"og:url\" content=\"https://example.com/blog/categories/engineering/\""))
     }
 
@@ -136,6 +150,7 @@ final class BuildPipelineIntegrationTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try firstPost.write(to: temp.appendingPathComponent("content/posts/2026-03-07-first.md"), atomically: true, encoding: .utf8)
 
         let secondPost = """
@@ -148,9 +163,11 @@ final class BuildPipelineIntegrationTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try secondPost.write(to: temp.appendingPathComponent("content/posts/2026-03-08-second.md"), atomically: true, encoding: .utf8)
 
         XCTAssertThrowsError(try BuildPipeline().run(in: temp)) { error in
+            // swiftlint:disable:next line_length
             XCTAssertEqual(error as? BuildPipelineError, .taxonomySlugCollision(kind: "tags", slug: "swift", labels: ["Swift", "swift!"]))
         }
     }
@@ -167,6 +184,7 @@ final class BuildPipelineIntegrationTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-07-hook-target.md"), atomically: true, encoding: .utf8)
 
         let plugin = RecordingAfterRenderPlugin()
@@ -206,6 +224,7 @@ final class BuildPipelineIntegrationTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-07-nested-hook-target.md"), atomically: true, encoding: .utf8)
 
         let plugin = RecordingAfterRenderPlugin()
@@ -239,6 +258,7 @@ final class BuildPipelineIntegrationTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-08-escaping-check.md"), atomically: true, encoding: .utf8)
 
         _ = try BuildPipeline().run(in: temp)
@@ -250,6 +270,7 @@ final class BuildPipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(postHTML.contains("src=\"/images/cover?caption=&lt;unsafe&gt;&amp;name=&quot;hero&quot;\""))
         XCTAssertTrue(postHTML.contains(">dev &lt;tools&gt;</a>"))
         XCTAssertTrue(postHTML.contains(">research &amp; development</a>"))
+        // swiftlint:disable:next line_length
         XCTAssertFalse(postHTML.contains("<h1 class=\"mt-3 font-display text-4xl leading-tight text-stone-900 dark:text-stone-100 md:text-5xl\">Rock < Roll & \"Quotes\"</h1>"))
 
         let indexHTML = try String(contentsOf: temp.appendingPathComponent("docs/index.html"))
