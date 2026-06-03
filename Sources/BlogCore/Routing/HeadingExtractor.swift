@@ -59,8 +59,9 @@ public enum HeadingExtractor {
 
     private static func existingID(in attrs: String) -> String? {
         let pattern = "\\bid\\s*=\\s*\"([^\"]*)\""
+        let attrsRange = NSRange(location: 0, length: (attrs as NSString).length)
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
-              let match = regex.firstMatch(in: attrs, range: NSRange(location: 0, length: (attrs as NSString).length)) else {
+              let match = regex.firstMatch(in: attrs, range: attrsRange) else {
             return nil
         }
         let value = (attrs as NSString).substring(with: match.range(at: 1))

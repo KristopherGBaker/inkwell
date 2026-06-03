@@ -179,7 +179,10 @@ final class LiveReloadBroker: @unchecked Sendable {
         }
     }
 
-    private func addClient(on eventLoop: EventLoop, makeClient: (EventLoopPromise<Void>) -> Client) -> EventLoopFuture<Void> {
+    private func addClient(
+        on eventLoop: EventLoop,
+        makeClient: (EventLoopPromise<Void>) -> Client
+    ) -> EventLoopFuture<Void> {
         let id = UUID()
         let promise = eventLoop.makePromise(of: Void.self)
         let client = makeClient(promise)

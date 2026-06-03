@@ -19,7 +19,10 @@ public struct ContentLoader {
 
     func postFileURLs(in projectRoot: URL) -> [URL] {
         let postsDir = projectRoot.appendingPathComponent("content/posts")
-        guard let files = try? FileManager.default.contentsOfDirectory(at: postsDir, includingPropertiesForKeys: nil) else {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: postsDir,
+            includingPropertiesForKeys: nil
+        ) else {
             return []
         }
 
@@ -82,7 +85,10 @@ public struct ContentLoader {
     }
 
     private func collectionFileURLs(at directory: URL) -> [URL] {
-        guard let files = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil
+        ) else {
             return []
         }
         return files
