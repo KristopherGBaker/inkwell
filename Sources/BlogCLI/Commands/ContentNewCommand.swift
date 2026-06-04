@@ -38,7 +38,9 @@ struct ContentNewCommand: ParsableCommand {
         let configData = try Data(contentsOf: configURL)
         let config = try JSONDecoder().decode(SiteConfig.self, from: configData)
         guard let collectionConfig = config.collections?.first(where: { $0.id == collectionId }) else {
-            throw ValidationError("Unknown collection '\(collectionId)'. Add it to collections in blog.config.json first.")
+            throw ValidationError(
+                "Unknown collection '\(collectionId)'. Add it to collections in blog.config.json first."
+            )
         }
 
         let slug = slugify(title)

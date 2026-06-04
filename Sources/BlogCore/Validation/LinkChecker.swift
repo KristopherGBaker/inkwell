@@ -20,7 +20,8 @@ public struct LinkChecker {
     public func check(projectRoot: URL, siteConfig: SiteConfig) -> LinkCheckResult {
         let docsRoot = projectRoot.appendingPathComponent(siteConfig.outputDir)
         let basePath = normalizedBasePath(from: siteConfig.baseURL)
-        guard let files = try? FileManager.default.subpathsOfDirectory(atPath: docsRoot.path).filter({ $0.hasSuffix(".html") }) else {
+        let allPaths = try? FileManager.default.subpathsOfDirectory(atPath: docsRoot.path)
+        guard let files = allPaths?.filter({ $0.hasSuffix(".html") }) else {
             return LinkCheckResult(brokenLinks: [])
         }
 
@@ -30,7 +31,8 @@ public struct LinkChecker {
             guard let html = try? String(contentsOf: fullPath) else { continue }
             let links = extractInternalLinks(from: html)
             for link in links {
-                let normalized = normalizedPath(from: link, basePath: basePath).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                let normalized = normalizedPath(from: link, basePath: basePath)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 let target: URL
                 if normalized.isEmpty {
                     target = docsRoot.appendingPathComponent("index.html")

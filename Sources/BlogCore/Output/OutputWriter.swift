@@ -8,7 +8,10 @@ public struct OutputWriter {
         for page in pages {
             let relativePath = outputPath(forRoute: page.route)
             let fullPath = outputRoot.appendingPathComponent(relativePath)
-            try FileManager.default.createDirectory(at: fullPath.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: fullPath.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try page.html.write(to: fullPath, atomically: true, encoding: .utf8)
         }
     }
@@ -38,7 +41,10 @@ public struct OutputWriter {
 
     public func writeFile(relativePath: String, content: String, to outputRoot: URL) throws {
         let fullPath = outputRoot.appendingPathComponent(relativePath)
-        try FileManager.default.createDirectory(at: fullPath.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: fullPath.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
         try content.write(to: fullPath, atomically: true, encoding: .utf8)
     }
 
@@ -80,7 +86,8 @@ public struct OutputWriter {
 
             let sourceURL = sourceRoot.appendingPathComponent(relativePath)
             var sourceIsDirectory: ObjCBool = false
-            guard fm.fileExists(atPath: sourceURL.path, isDirectory: &sourceIsDirectory), !sourceIsDirectory.boolValue else {
+            guard fm.fileExists(atPath: sourceURL.path, isDirectory: &sourceIsDirectory),
+                  !sourceIsDirectory.boolValue else {
                 continue
             }
 

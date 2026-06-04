@@ -41,9 +41,11 @@ final class HomePageTests: XCTestCase {
 
         // Override the landing layout to print featured + recent so the
         // test can verify the context shape regardless of theme styling.
+        // swiftlint:disable line_length
         try writeFile(root, "themes/default/templates/layouts/landing.html", """
         FEATURED:{% for f in home.featured %}{{ f.title }}{% endfor %}|RECENT:{% for r in home.recent %}{{ r.title }}{% endfor %}
         """)
+        // swiftlint:enable line_length
 
         _ = try BuildPipeline().run(in: root)
         let html = try String(contentsOf: root.appendingPathComponent("docs/index.html"))

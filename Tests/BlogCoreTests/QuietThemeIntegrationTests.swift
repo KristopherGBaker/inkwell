@@ -5,6 +5,7 @@ import XCTest
 final class QuietThemeIntegrationTests: XCTestCase {
     func testQuietThemeRendersLandingFromConfig() throws {
         let root = try makeTempBlogProject()
+        // swiftlint:disable line_length
         try writeBlogConfig(root, """
         {
           "title": "Kris",
@@ -18,6 +19,7 @@ final class QuietThemeIntegrationTests: XCTestCase {
           ]
         }
         """)
+        // swiftlint:enable line_length
         try writeFile(root, "content/projects/wolt.md", """
         ---
         title: Wolt Membership
@@ -37,6 +39,7 @@ final class QuietThemeIntegrationTests: XCTestCase {
 
     func testQuietThemeCaseStudyShowsMetricsFromFrontMatter() throws {
         let root = try makeTempBlogProject()
+        // swiftlint:disable line_length
         try writeBlogConfig(root, """
         {
           "title": "Kris",
@@ -47,6 +50,7 @@ final class QuietThemeIntegrationTests: XCTestCase {
           ]
         }
         """)
+        // swiftlint:enable line_length
         try writeFile(root, "content/projects/wolt.md", """
         ---
         title: Wolt Membership

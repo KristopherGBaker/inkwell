@@ -25,6 +25,7 @@ final class BuildPipelineSearchRuntimeTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-08-search-runtime.md"), atomically: true, encoding: .utf8)
 
         let runtimeSource = URL(fileURLWithPath: #filePath)
@@ -32,6 +33,7 @@ final class BuildPipelineSearchRuntimeTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("themes/default/assets/js/search.js")
+        // swiftlint:disable:next line_length
         try FileManager.default.copyItem(at: runtimeSource, to: temp.appendingPathComponent("themes/default/assets/js/search.js"))
 
         _ = try BuildPipeline().run(in: temp)

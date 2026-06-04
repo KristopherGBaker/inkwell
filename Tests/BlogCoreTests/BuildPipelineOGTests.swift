@@ -63,6 +63,7 @@ final class BuildPipelineOGTests: XCTestCase {
         XCTAssertEqual(report.errors.count, 0)
 
         let postHTML = try String(contentsOf: temp.appendingPathComponent("docs/posts/external-og/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(postHTML.contains("https://cdn.example.com/social.png"), "external override should appear verbatim")
 
         // Without the script symlinked, generation can't run — overriding via
@@ -86,6 +87,7 @@ final class BuildPipelineOGTests: XCTestCase {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = [
             "node", "-e",
+            // swiftlint:disable:next line_length
             "Promise.all([import('satori'),import('@resvg/resvg-js')]).then(()=>process.exit(0)).catch(()=>process.exit(1))"
         ]
         process.currentDirectoryURL = URL(fileURLWithPath: #filePath)

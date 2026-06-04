@@ -228,7 +228,9 @@ final class I18nFeedsAndSitemapTests: XCTestCase {
 
     private func makeTempBlogProject() throws -> URL {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("content/posts"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("content/pages"), withIntermediateDirectories: true)
         return root
     }

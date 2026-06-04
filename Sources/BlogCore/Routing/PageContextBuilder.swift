@@ -108,7 +108,9 @@ public struct PageContextBuilder {
         if siteConfig.i18n != nil, configuredLangs.count > 1 {
             let urlBuilder = SiteURLBuilder(baseURL: baseURL)
             let defaultLangPrefix = "/\(defaultLang)"
-            for plan in plans where plan.route.hasPrefix("/") && plan.route.hasPrefix(defaultLangPrefix + "/") == false {
+            for plan in plans
+            where plan.route.hasPrefix("/")
+                && plan.route.hasPrefix(defaultLangPrefix + "/") == false {
                 // Skip plans that already belong to a non-default language.
                 let isOtherLangPlan = configuredLangs
                     .filter { $0 != defaultLang }
@@ -160,20 +162,90 @@ public struct PageContextBuilder {
         let urlBuilder = SiteURLBuilder(baseURL: baseURL, langPrefix: langPrefix)
         let overlay = siteConfig.translations?[lang]
 
-        let normalizedSiteTitle: String = {
-            if let title = overlay?.title, title.isEmpty == false { return title }
-            let trimmed = siteConfig.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            return trimmed.isEmpty ? "Field Notes" : siteConfig.title
-        }()
+        let normalizedSiteTitle = resolvedSiteTitle(siteConfig: siteConfig, overlay: overlay)
         let siteDescription = overlay?.description ?? siteConfig.description ?? normalizedSiteTitle
         let siteTagline = overlay?.tagline ?? siteConfig.tagline ?? siteDescription
-        let searchEnabled = siteConfig.searchEnabled ?? true
 
+        let siteContext = buildSiteContext(
+            lang: lang,
+            defaultLanguage: defaultLanguage,
+            allLanguages: allLanguages,
+            siteConfig: siteConfig,
+            overlay: overlay,
+            urlBuilder: urlBuilder,
+            mode: mode,
+            title: normalizedSiteTitle,
+            description: siteDescription,
+            tagline: siteTagline
+        )
+
+        if let configs = siteConfig.collections, configs.isEmpty == false {
+            return collectionModePlans(
+                configs: configs,
+                collections: collections,
+                collectionRenderedContent: collectionRenderedContent,
+                pages: pages,
+                pageRenderedContent: pageRenderedContent,
+                home: siteConfig.home,
+                overlay: overlay,
+                data: data,
+                siteContext: siteContext,
+                urlBuilder: urlBuilder,
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                allLanguages: allLanguages,
+                baseURL: baseURL
+            )
+        }
+
+        // Legacy posts path runs only for the default language; non-default
+        // languages without collections produce no plans.
+        guard lang == defaultLanguage else { return [] }
+
+        return legacyPostsPlans(
+            posts: posts,
+            renderedContent: renderedContent,
+            pages: pages,
+            pageRenderedContent: pageRenderedContent,
+            home: siteConfig.home,
+            collections: collections,
+            data: data,
+            siteContext: siteContext,
+            siteTitle: normalizedSiteTitle,
+            siteDescription: siteDescription,
+            urlBuilder: urlBuilder,
+            lang: lang
+        )
+    }
+
+    /// Resolves the display site title, honoring a per-language overlay and
+    /// falling back to "Field Notes" when the configured title is blank.
+    private func resolvedSiteTitle(siteConfig: SiteConfig, overlay: TranslationOverlay?) -> String {
+        if let title = overlay?.title, title.isEmpty == false { return title }
+        let trimmed = siteConfig.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Field Notes" : siteConfig.title
+    }
+
+    // Assembles the shared `site` context dict passed into every template for
+    // a given language, including optional brand/analytics/author/nav keys.
+    // swiftlint:disable:next function_parameter_count
+    private func buildSiteContext(
+        lang: String,
+        defaultLanguage: String,
+        allLanguages: [String],
+        siteConfig: SiteConfig,
+        overlay: TranslationOverlay?,
+        urlBuilder: SiteURLBuilder,
+        mode: BuildMode,
+        title: String,
+        description: String,
+        tagline: String
+    ) -> [String: Any] {
         var siteContext: [String: Any] = [
-            "title": escapeHTML(normalizedSiteTitle),
-            "description": escapeHTML(siteDescription),
-            "tagline": escapeHTML(siteTagline),
-            "searchEnabled": searchEnabled,
+            "title": escapeHTML(title),
+            "description": escapeHTML(description),
+            "tagline": escapeHTML(tagline),
+            "searchEnabled": siteConfig.searchEnabled ?? true,
             "baseURL": siteConfig.baseURL,
             "lang": lang,
             "languages": allLanguages,
@@ -184,8 +256,7 @@ public struct PageContextBuilder {
             "footerCta": footerCtaContext(for: siteConfig, overlay: overlay),
             "themeCopy": themeCopyContext(for: siteConfig, overlay: overlay)
         ]
-        let brandSubtitle = overlay?.author?.tagline ?? siteConfig.author?.tagline
-        if let brandSubtitle {
+        if let brandSubtitle = overlay?.author?.tagline ?? siteConfig.author?.tagline {
             siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
         }
         if let analytics = analyticsContext(for: siteConfig, mode: mode) {
@@ -202,126 +273,113 @@ public struct PageContextBuilder {
         if let author = siteConfig.author {
             siteContext["author"] = authorContext(author, overlay: overlay?.author, urlBuilder: urlBuilder)
         }
-        let resolvedNav = overlay?.nav ?? siteConfig.nav
-        if let nav = resolvedNav, nav.isEmpty == false {
+        if let nav = overlay?.nav ?? siteConfig.nav, nav.isEmpty == false {
             siteContext["nav"] = nav.map { item -> [String: String] in
-                [
-                    "label": escapeHTML(item.label),
-                    "route": urlBuilder.link(for: item.route)
-                ]
+                ["label": escapeHTML(item.label), "route": urlBuilder.link(for: item.route)]
             }
         }
+        return siteContext
+    }
 
+    // Builds plans for the explicit-collections content model: one set of
+    // plans per configured collection, plus standalone pages and the home page.
+    // swiftlint:disable:next function_parameter_count
+    private func collectionModePlans(
+        configs: [CollectionConfig],
+        collections: [String: Collection],
+        collectionRenderedContent: [String: [String: String]],
+        pages: [Page],
+        pageRenderedContent: [String: String],
+        home: HomeConfig?,
+        overlay: TranslationOverlay?,
+        data: [String: Any],
+        siteContext: [String: Any],
+        urlBuilder: SiteURLBuilder,
+        lang: String,
+        defaultLanguage: String,
+        allLanguages: [String],
+        baseURL: String
+    ) -> [PagePlan] {
         var plans: [PagePlan] = []
-
-        if let configs = siteConfig.collections, configs.isEmpty == false {
-            for config in configs {
-                guard let collection = collections[config.id] else { continue }
-                let resolvedConfig = applyOverlay(to: config, overlay: overlay)
-                let resolvedItems = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
-                let rendered = collectionRenderedContent[config.id] ?? [:]
-                let langCollection = Collection(config: resolvedConfig, items: resolvedItems)
-                plans.append(contentsOf: makeCollectionPlans(
-                    collection: langCollection,
-                    rendered: rendered,
-                    site: siteContext,
-                    urlBuilder: urlBuilder,
-                    lang: lang,
-                    defaultLanguage: defaultLanguage,
-                    allLanguages: allLanguages,
-                    baseURL: baseURL
-                ))
-            }
-            let resolvedPages = bestFitPages(pages, lang: lang, defaultLanguage: defaultLanguage)
-            for page in resolvedPages {
-                plans.append(makeStandalonePagePlan(
-                    page: page,
-                    rendered: pageRenderedContent[page.route] ?? "",
-                    site: siteContext,
-                    urlBuilder: urlBuilder,
-                    lang: lang,
-                    defaultLanguage: defaultLanguage,
-                    baseURL: baseURL
-                ))
-            }
-            if let home = siteConfig.home {
-                let homeRoute = (lang == defaultLanguage) ? "/" : "/\(lang)/"
-                plans = plans.filter { $0.route != homeRoute }
-                plans.append(makeHomePlan(
-                    home: applyOverlay(to: home, overlay: overlay),
-                    site: siteContext,
-                    collections: collections,
-                    urlBuilder: urlBuilder,
-                    lang: lang,
-                    defaultLanguage: defaultLanguage,
-                    allLanguages: allLanguages,
-                    baseURL: baseURL
-                ))
-            }
-            if data.isEmpty == false {
-                plans = plans.map { plan in
-                    var context = plan.context
-                    context["data"] = data
-                    return PagePlan(route: plan.route, template: plan.template, context: context)
-                }
-            }
-            return plans
-        }
-
-        // Legacy posts path runs only for the default language; non-default
-        // languages without collections produce no plans.
-        guard lang == defaultLanguage else { return [] }
-
-        let mapped = posts.compactMap(mapPost).sorted { $0.date > $1.date }
-
-        let chunks = mapped.chunked(into: postsPerPage)
-        let totalPages = max(chunks.count, 1)
-
-        if chunks.isEmpty {
-            plans.append(makeLandingPlan(
-                route: "/",
-                posts: [],
-                page: 1,
-                totalPages: 1,
+        for config in configs {
+            guard let collection = collections[config.id] else { continue }
+            let resolvedConfig = applyOverlay(to: config, overlay: overlay)
+            let resolvedItems = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
+            let langCollection = Collection(config: resolvedConfig, items: resolvedItems)
+            plans.append(contentsOf: makeCollectionPlans(
+                collection: langCollection,
+                rendered: collectionRenderedContent[config.id] ?? [:],
                 site: siteContext,
-                siteTitle: normalizedSiteTitle,
-                siteDescription: siteDescription,
-                urlBuilder: urlBuilder
+                urlBuilder: urlBuilder,
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                allLanguages: allLanguages,
+                baseURL: baseURL
             ))
-        } else {
-            for (index, chunk) in chunks.enumerated() {
-                let pageNumber = index + 1
-                let route = pageNumber == 1 ? "/" : "/page/\(pageNumber)/"
-                plans.append(makeLandingPlan(
-                    route: route,
-                    posts: chunk,
-                    page: pageNumber,
-                    totalPages: totalPages,
-                    site: siteContext,
-                    siteTitle: normalizedSiteTitle,
-                    siteDescription: siteDescription,
-                    urlBuilder: urlBuilder
-                ))
-            }
         }
+        for page in bestFitPages(pages, lang: lang, defaultLanguage: defaultLanguage) {
+            plans.append(makeStandalonePagePlan(
+                page: page,
+                rendered: pageRenderedContent[page.route] ?? "",
+                site: siteContext,
+                urlBuilder: urlBuilder,
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL
+            ))
+        }
+        if let home {
+            let homeRoute = (lang == defaultLanguage) ? "/" : "/\(lang)/"
+            plans = plans.filter { $0.route != homeRoute }
+            plans.append(makeHomePlan(
+                home: applyOverlay(to: home, overlay: overlay),
+                site: siteContext,
+                collections: collections,
+                urlBuilder: urlBuilder,
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                allLanguages: allLanguages,
+                baseURL: baseURL
+            ))
+        }
+        return injectingData(plans, data: data)
+    }
 
-        plans.append(makeArchivePlan(
-            posts: mapped,
+    // Builds plans for the legacy blog content model (no `collections` in
+    // config): paginated landing, archive, per-post, taxonomy, pages, home.
+    // swiftlint:disable:next function_parameter_count
+    private func legacyPostsPlans(
+        posts: [PostDocument],
+        renderedContent: [String: String],
+        pages: [Page],
+        pageRenderedContent: [String: String],
+        home: HomeConfig?,
+        collections: [String: Collection],
+        data: [String: Any],
+        siteContext: [String: Any],
+        siteTitle: String,
+        siteDescription: String,
+        urlBuilder: SiteURLBuilder,
+        lang: String
+    ) -> [PagePlan] {
+        let mapped = posts.compactMap(mapPost).sorted { $0.date > $1.date }
+        var plans = landingPlans(
+            mapped: mapped,
             site: siteContext,
+            siteTitle: siteTitle,
+            siteDescription: siteDescription,
             urlBuilder: urlBuilder
-        ))
-
+        )
+        plans.append(makeArchivePlan(posts: mapped, site: siteContext, urlBuilder: urlBuilder))
         for post in mapped {
-            let content = renderedContent[post.slug] ?? ""
             plans.append(makePostPlan(
                 post: post,
-                content: content,
+                content: renderedContent[post.slug] ?? "",
                 site: siteContext,
                 urlBuilder: urlBuilder,
                 lang: lang
             ))
         }
-
         plans.append(contentsOf: makeTaxonomyPlans(
             kind: "tags",
             posts: mapped,
@@ -336,7 +394,6 @@ public struct PageContextBuilder {
             urlBuilder: urlBuilder,
             extractor: { $0.categories }
         ))
-
         for page in pages {
             plans.append(makeStandalonePagePlan(
                 page: page,
@@ -345,8 +402,7 @@ public struct PageContextBuilder {
                 urlBuilder: urlBuilder
             ))
         }
-
-        if let home = siteConfig.home {
+        if let home {
             plans = plans.filter { $0.route != "/" }
             plans.append(makeHomePlan(
                 home: home,
@@ -355,16 +411,55 @@ public struct PageContextBuilder {
                 urlBuilder: urlBuilder
             ))
         }
+        return injectingData(plans, data: data)
+    }
 
-        if data.isEmpty == false {
-            plans = plans.map { plan in
-                var context = plan.context
-                context["data"] = data
-                return PagePlan(route: plan.route, template: plan.template, context: context)
-            }
+    /// Builds the paginated landing-page plans for the legacy posts path.
+    private func landingPlans(
+        mapped: [RenderablePost],
+        site: [String: Any],
+        siteTitle: String,
+        siteDescription: String,
+        urlBuilder: SiteURLBuilder
+    ) -> [PagePlan] {
+        let chunks = mapped.chunked(into: postsPerPage)
+        let totalPages = max(chunks.count, 1)
+        guard chunks.isEmpty == false else {
+            return [makeLandingPlan(
+                route: "/",
+                posts: [],
+                page: 1,
+                totalPages: 1,
+                site: site,
+                siteTitle: siteTitle,
+                siteDescription: siteDescription,
+                urlBuilder: urlBuilder
+            )]
         }
+        return chunks.enumerated().map { index, chunk in
+            let pageNumber = index + 1
+            return makeLandingPlan(
+                route: pageNumber == 1 ? "/" : "/page/\(pageNumber)/",
+                posts: chunk,
+                page: pageNumber,
+                totalPages: totalPages,
+                site: site,
+                siteTitle: siteTitle,
+                siteDescription: siteDescription,
+                urlBuilder: urlBuilder
+            )
+        }
+    }
 
-        return plans
+    /// Returns `plans` with the shared `data` dict merged into each context,
+    /// or the plans unchanged when there is no data.
+    private func injectingData(_ plans: [PagePlan], data: [String: Any]) -> [PagePlan] {
+        guard data.isEmpty == false else { return plans }
+        return plans.map { plan in
+            var context = plan.context
+            context["data"] = data
+            return PagePlan(route: plan.route, template: plan.template, context: context)
+        }
     }
 
     private func mapPost(_ post: PostDocument) -> RenderablePost? {
@@ -700,24 +795,24 @@ private extension PageContextBuilder {
         let title = (site["title"] as? String) ?? "Home"
         let description = (site["description"] as? String) ?? title
 
-        let featured: [[String: Any]] = home.featuredCollection
-            .flatMap { collections[$0] }
-            .map { collection in
-                let count = home.featuredCount ?? 4
-                let resolved = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
-                return Array(resolved.prefix(count)).map {
-                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder, site: site)
-                }
-            } ?? []
-        let recent: [[String: Any]] = home.recentCollection
-            .flatMap { collections[$0] }
-            .map { collection in
-                let count = home.recentCount ?? 3
-                let resolved = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
-                return Array(resolved.prefix(count)).map {
-                    collectionItemCardContext($0, route: normalizedCollectionRoute(collection.config.route), urlBuilder: urlBuilder, site: site)
-                }
-            } ?? []
+        let featured = homeCollectionCards(
+            collectionId: home.featuredCollection,
+            count: home.featuredCount ?? 4,
+            collections: collections,
+            lang: lang,
+            defaultLanguage: defaultLanguage,
+            urlBuilder: urlBuilder,
+            site: site
+        )
+        let recent = homeCollectionCards(
+            collectionId: home.recentCollection,
+            count: home.recentCount ?? 3,
+            collections: collections,
+            lang: lang,
+            defaultLanguage: defaultLanguage,
+            urlBuilder: urlBuilder,
+            site: site
+        )
 
         let pageContext: [String: Any] = [
             "type": "home",
@@ -740,6 +835,47 @@ private extension PageContextBuilder {
                 canonicalRoute: route
             )
         ]
+        let homeContext = homeBlockContext(home: home, featured: featured, recent: recent)
+        let context: [String: Any] = [
+            "site": site,
+            "page": pageContext,
+            "home": homeContext,
+            "links": [
+                "home": urlBuilder.link(for: "/"),
+                "archive": urlBuilder.link(for: "/archive/")
+            ],
+            "posts": [],
+            "pagination": ["currentPage": 1, "totalPages": 1, "items": []]
+        ]
+        return PagePlan(route: langPrefix + route, template: "layouts/\(home.template)", context: context)
+    }
+
+    /// Builds the card contexts for a home-page collection slot (featured or
+    /// recent), best-fitting items to `lang` and capping at `count`.
+    private func homeCollectionCards(
+        collectionId: String?,
+        count: Int,
+        collections: [String: Collection],
+        lang: String,
+        defaultLanguage: String,
+        urlBuilder: SiteURLBuilder,
+        site: [String: Any]
+    ) -> [[String: Any]] {
+        guard let collectionId, let collection = collections[collectionId] else { return [] }
+        let resolved = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
+        let route = normalizedCollectionRoute(collection.config.route)
+        return Array(resolved.prefix(count)).map {
+            collectionItemCardContext($0, route: route, urlBuilder: urlBuilder, site: site)
+        }
+    }
+
+    /// Assembles the `home` template block: featured/recent cards, labels, and
+    /// optional CTAs/about-links.
+    private func homeBlockContext(
+        home: HomeConfig,
+        featured: [[String: Any]],
+        recent: [[String: Any]]
+    ) -> [String: Any] {
         var homeContext: [String: Any] = [
             "featured": featured,
             "recent": recent
@@ -762,18 +898,7 @@ private extension PageContextBuilder {
         if let links = home.aboutLinks, links.isEmpty == false {
             homeContext["aboutLinks"] = links.map { ctaContext($0) }
         }
-        let context: [String: Any] = [
-            "site": site,
-            "page": pageContext,
-            "home": homeContext,
-            "links": [
-                "home": urlBuilder.link(for: "/"),
-                "archive": urlBuilder.link(for: "/archive/")
-            ],
-            "posts": [],
-            "pagination": ["currentPage": 1, "totalPages": 1, "items": []]
-        ]
-        return PagePlan(route: langPrefix + route, template: "layouts/\(home.template)", context: context)
+        return homeContext
     }
 
     /// Hero headline with `*word*` → `<em class="accent-em">word</em>` transform.
@@ -840,7 +965,9 @@ private extension PageContextBuilder {
             "workCardCta": escapeHTML(over?.workCardCta ?? base?.workCardCta ?? "Read case study"),
             "caseStudyBack": escapeHTML(over?.caseStudyBack ?? base?.caseStudyBack ?? "← All work"),
             "caseStudyNextLabel": escapeHTML(over?.caseStudyNextLabel ?? base?.caseStudyNextLabel ?? "Next"),
-            "caseStudyNextFallbackCta": escapeHTML(over?.caseStudyNextFallbackCta ?? base?.caseStudyNextFallbackCta ?? "Read case study"),
+            "caseStudyNextFallbackCta": escapeHTML(
+                over?.caseStudyNextFallbackCta ?? base?.caseStudyNextFallbackCta ?? "Read case study"
+            ),
             "aboutEyebrow": escapeHTML(over?.aboutEyebrow ?? base?.aboutEyebrow ?? "04 · About"),
             "aboutResumeCta": escapeHTML(over?.aboutResumeCta ?? base?.aboutResumeCta ?? "Read the résumé"),
             "aboutEmailCta": escapeHTML(over?.aboutEmailCta ?? base?.aboutEmailCta ?? "Email me"),
@@ -850,8 +977,14 @@ private extension PageContextBuilder {
             "postMinRead": escapeHTML(over?.postMinRead ?? base?.postMinRead ?? "min read"),
             "readingTimeLabel": over?.readingTimeLabel ?? base?.readingTimeLabel ?? "%d min read",
             "notFoundEyebrow": escapeHTML(over?.notFoundEyebrow ?? base?.notFoundEyebrow ?? "404 · NOT FOUND"),
-            "notFoundHeadline": escapeHTML(over?.notFoundHeadline ?? base?.notFoundHeadline ?? "This page is in another castle."),
-            "notFoundBody": escapeHTML(over?.notFoundBody ?? base?.notFoundBody ?? "Or it never existed. Or it's still drafted in a markdown file on my laptop. Try the home page."),
+            "notFoundHeadline": escapeHTML(
+                over?.notFoundHeadline ?? base?.notFoundHeadline ?? "This page is in another castle."
+            ),
+            "notFoundBody": escapeHTML(
+                over?.notFoundBody
+                    ?? base?.notFoundBody
+                    ?? "Or it never existed. Or it's still drafted in a markdown file on my laptop. Try the home page."
+            ),
             "notFoundCta": escapeHTML(over?.notFoundCta ?? base?.notFoundCta ?? "Back home"),
             "themeToggleLabel": escapeHTML(over?.themeToggleLabel ?? base?.themeToggleLabel ?? "Toggle theme")
         ]
@@ -878,7 +1011,11 @@ private extension PageContextBuilder {
         return escapeHTML("© \(year) · \(owner)")
     }
 
-    func authorContext(_ author: AuthorConfig, overlay: AuthorOverlay? = nil, urlBuilder: SiteURLBuilder) -> [String: Any] {
+    func authorContext(
+        _ author: AuthorConfig,
+        overlay: AuthorOverlay? = nil,
+        urlBuilder: SiteURLBuilder
+    ) -> [String: Any] {
         var context: [String: Any] = [
             "name": escapeHTML(author.name)
         ]
@@ -1112,16 +1249,64 @@ private extension PageContextBuilder {
     ) -> [PagePlan] {
         let listLanguages = allLanguages ?? [lang]
         let route = normalizedCollectionRoute(collection.config.route)
-        let listTemplate = collection.config.listTemplate ?? "layouts/post-list"
         let detailTemplate = collection.config.detailTemplate ?? "layouts/post"
         let langPrefix = (lang == defaultLanguage) ? "" : "/\(lang)"
 
-        var plans: [PagePlan] = []
+        var plans: [PagePlan] = [
+            makeCollectionListPlan(
+                collection: collection,
+                site: site,
+                urlBuilder: urlBuilder,
+                route: route,
+                langPrefix: langPrefix,
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                listLanguages: listLanguages,
+                baseURL: baseURL
+            )
+        ]
+        for (index, item) in collection.items.enumerated() {
+            plans.append(makeCollectionDetailPlan(
+                item: item,
+                index: index,
+                collection: collection,
+                rendered: rendered,
+                site: site,
+                urlBuilder: urlBuilder,
+                route: route,
+                detailTemplate: detailTemplate,
+                langPrefix: langPrefix,
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL
+            ))
+        }
+        plans.append(contentsOf: makeCollectionTaxonomyPlans(
+            collection: collection,
+            site: site,
+            urlBuilder: urlBuilder,
+            route: route,
+            langPrefix: langPrefix
+        ))
+        return plans
+    }
 
+    /// Builds the listing-page plan for a collection.
+    private func makeCollectionListPlan(
+        collection: Collection,
+        site: [String: Any],
+        urlBuilder: SiteURLBuilder,
+        route: String,
+        langPrefix: String,
+        lang: String,
+        defaultLanguage: String,
+        listLanguages: [String],
+        baseURL: String
+    ) -> PagePlan {
+        let listTemplate = collection.config.listTemplate ?? "layouts/post-list"
         let itemContexts = collection.items.map {
             collectionItemCardContext($0, route: route, urlBuilder: urlBuilder, site: site)
         }
-
         let listTitle = collection.config.headline ?? collection.config.id.capitalized
         var listPageContext: [String: Any] = [
             "type": "collection-list",
@@ -1162,142 +1347,210 @@ private extension PageContextBuilder {
             "posts": itemContexts,
             "items": itemContexts
         ]
-        plans.append(PagePlan(route: langPrefix + route, template: listTemplate, context: listContext))
+        return PagePlan(route: langPrefix + route, template: listTemplate, context: listContext)
+    }
 
-        for (index, item) in collection.items.enumerated() {
-            let detailRoute = "\(route)\(item.slug)/"
-            let chips = makeCollectionTaxonomyChips(
-                item: item,
-                taxonomies: collection.config.resolvedTaxonomies,
-                collectionRoute: route,
-                urlBuilder: urlBuilder
-            )
-            let trimmedCoverImage = item.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let rawDetailHTML = rendered[item.slug] ?? ""
-            let detailReadingMinutes = ReadingTime.compute(html: rawDetailHTML.isEmpty ? item.body : rawDetailHTML)
-            let detailLabel: String? = {
-                guard detailReadingMinutes > 0 else { return nil }
-                let format = (site["themeCopy"] as? [String: String])?["readingTimeLabel"] ?? "%d min read"
-                return escapeHTML(String(format: format, detailReadingMinutes))
-            }()
-            let detailTOCOptIn = item.frontMatter["toc"] as? Bool
-            let annotatedDetail = annotateHeadings(html: rawDetailHTML, tocOptIn: detailTOCOptIn)
-            var pageContext: [String: Any] = [
-                "type": "collection-detail",
-                "title": escapeHTML(item.title),
-                "description": escapeHTML(item.summary ?? item.title),
-                "summary": escapeHTML(item.summary ?? ""),
-                "date": escapeHTML(item.date ?? ""),
-                "displayDate": escapeHTML(formatDisplayDate(item.date ?? "")),
-                "readMin": detailReadingMinutes,
-                "readingTime": detailReadingMinutes,
-                "canonicalURL": escapeHTML(item.normalizedCanonicalURL ?? urlBuilder.compose(route: detailRoute)),
-                "twitterCard": (trimmedCoverImage?.isEmpty == false) ? "summary_large_image" : "summary",
-                "chips": chips,
-                "content": annotatedDetail.html,
-                "frontMatter": item.frontMatter,
-                "lang": lang,
-                "translations": translationLinks(
-                    availableLanguages: item.availableLanguages,
-                    currentLang: lang,
-                    defaultLanguage: defaultLanguage,
-                    baseURL: baseURL,
-                    canonicalRoute: detailRoute
-                ),
-                "hreflangs": hreflangLinks(
-                    availableLanguages: item.availableLanguages,
-                    defaultLanguage: defaultLanguage,
-                    baseURL: baseURL,
-                    canonicalRoute: detailRoute
-                )
-            ]
-            if let detailLabel {
-                pageContext["readingTimeLabel"] = detailLabel
-            }
-            if let detailTOC = annotatedDetail.toc {
-                pageContext["toc"] = detailTOC
-            }
-            if let primary = item.tags?.first {
-                pageContext["primaryTag"] = escapeHTML(primary)
-            }
-            if let year = item.frontMatter["year"] {
-                pageContext["year"] = String(describing: year)
-            }
-            if let org = item.frontMatter["org"] as? String {
-                pageContext["org"] = escapeHTML(org)
-            }
-            if let role = item.frontMatter["role"] as? String {
-                pageContext["role"] = escapeHTML(role)
-            }
-            if let brand = item.frontMatter["brand"] as? String {
-                pageContext["brand"] = brand
-            }
-            if let coverContext = resolveCoverImage(
-                path: trimmedCoverImage,
-                alt: item.title,
-                urlBuilder: urlBuilder
-            ) {
-                pageContext["coverImage"] = coverContext
-            }
+    /// Builds the detail-page plan for one collection item, including reading
+    /// time, optional front-matter fields, and the wrap-around "next" sibling.
+    private func makeCollectionDetailPlan(
+        item: CollectionItem,
+        index: Int,
+        collection: Collection,
+        rendered: [String: String],
+        site: [String: Any],
+        urlBuilder: SiteURLBuilder,
+        route: String,
+        detailTemplate: String,
+        langPrefix: String,
+        lang: String,
+        defaultLanguage: String,
+        baseURL: String
+    ) -> PagePlan {
+        let detailRoute = "\(route)\(item.slug)/"
+        let pageContext = collectionDetailPageContext(
+            item: item,
+            site: site,
+            urlBuilder: urlBuilder,
+            detailRoute: detailRoute,
+            taxonomies: collection.config.resolvedTaxonomies,
+            collectionRoute: route,
+            rendered: rendered,
+            lang: lang,
+            defaultLanguage: defaultLanguage,
+            baseURL: baseURL
+        )
 
-            // Wrap-around "next" sibling — used by the case-study layout's
-            // bottom navigation. Skipped when the collection has only one item.
-            var collectionContext: [String: Any] = [
-                "id": collection.config.id,
-                "route": urlBuilder.link(for: route)
-            ]
-            if collection.items.count > 1 {
-                let nextItem = collection.items[(index + 1) % collection.items.count]
-                let nextDetailRoute = "\(route)\(nextItem.slug)/"
-                var next: [String: Any] = [
-                    "title": escapeHTML(nextItem.title),
-                    "link": urlBuilder.link(for: nextDetailRoute)
-                ]
-                if let nextOrg = nextItem.frontMatter["org"] as? String {
-                    next["org"] = escapeHTML(nextOrg)
-                }
-                if let nextYear = nextItem.frontMatter["year"] {
-                    next["year"] = String(describing: nextYear)
-                }
-                collectionContext["next"] = next
-            }
-
-            let context: [String: Any] = [
-                "site": site,
-                "page": pageContext,
-                "links": ["home": urlBuilder.link(for: "/")],
-                "collection": collectionContext
-            ]
-            plans.append(PagePlan(route: langPrefix + detailRoute, template: detailTemplate, context: context))
+        // Wrap-around "next" sibling — used by the case-study layout's
+        // bottom navigation. Skipped when the collection has only one item.
+        var collectionContext: [String: Any] = [
+            "id": collection.config.id,
+            "route": urlBuilder.link(for: route)
+        ]
+        if let next = nextSiblingContext(
+            items: collection.items,
+            index: index,
+            route: route,
+            urlBuilder: urlBuilder
+        ) {
+            collectionContext["next"] = next
         }
 
-        for taxonomy in collection.config.resolvedTaxonomies {
-            let extractor: (CollectionItem) -> [String]
-            switch taxonomy {
-            case "tags":
-                extractor = { $0.tags ?? [] }
-            case "categories":
-                extractor = { $0.categories ?? [] }
-            default:
-                extractor = { item in
-                    if let array = item.frontMatter[taxonomy] as? [String] { return array }
-                    if let array = item.frontMatter[taxonomy] as? [Any] { return array.compactMap { $0 as? String } }
-                    return []
-                }
-            }
+        let context: [String: Any] = [
+            "site": site,
+            "page": pageContext,
+            "links": ["home": urlBuilder.link(for: "/")],
+            "collection": collectionContext
+        ]
+        return PagePlan(route: langPrefix + detailRoute, template: detailTemplate, context: context)
+    }
 
+    /// Builds the `page` context for a collection-detail page: SEO fields,
+    /// reading time, content, and optional front-matter-derived fields.
+    private func collectionDetailPageContext(
+        item: CollectionItem,
+        site: [String: Any],
+        urlBuilder: SiteURLBuilder,
+        detailRoute: String,
+        taxonomies: [String],
+        collectionRoute: String,
+        rendered: [String: String],
+        lang: String,
+        defaultLanguage: String,
+        baseURL: String
+    ) -> [String: Any] {
+        let chips = makeCollectionTaxonomyChips(
+            item: item,
+            taxonomies: taxonomies,
+            collectionRoute: collectionRoute,
+            urlBuilder: urlBuilder
+        )
+        let trimmedCoverImage = item.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawDetailHTML = rendered[item.slug] ?? ""
+        let detailReadingMinutes = ReadingTime.compute(html: rawDetailHTML.isEmpty ? item.body : rawDetailHTML)
+        let detailLabel: String? = {
+            guard detailReadingMinutes > 0 else { return nil }
+            let format = (site["themeCopy"] as? [String: String])?["readingTimeLabel"] ?? "%d min read"
+            return escapeHTML(String(format: format, detailReadingMinutes))
+        }()
+        let annotatedDetail = annotateHeadings(html: rawDetailHTML, tocOptIn: item.frontMatter["toc"] as? Bool)
+        var pageContext: [String: Any] = [
+            "type": "collection-detail",
+            "title": escapeHTML(item.title),
+            "description": escapeHTML(item.summary ?? item.title),
+            "summary": escapeHTML(item.summary ?? ""),
+            "date": escapeHTML(item.date ?? ""),
+            "displayDate": escapeHTML(formatDisplayDate(item.date ?? "")),
+            "readMin": detailReadingMinutes,
+            "readingTime": detailReadingMinutes,
+            "canonicalURL": escapeHTML(item.normalizedCanonicalURL ?? urlBuilder.compose(route: detailRoute)),
+            "twitterCard": (trimmedCoverImage?.isEmpty == false) ? "summary_large_image" : "summary",
+            "chips": chips,
+            "content": annotatedDetail.html,
+            "frontMatter": item.frontMatter,
+            "lang": lang,
+            "translations": translationLinks(
+                availableLanguages: item.availableLanguages,
+                currentLang: lang,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: detailRoute
+            ),
+            "hreflangs": hreflangLinks(
+                availableLanguages: item.availableLanguages,
+                defaultLanguage: defaultLanguage,
+                baseURL: baseURL,
+                canonicalRoute: detailRoute
+            )
+        ]
+        if let detailLabel {
+            pageContext["readingTimeLabel"] = detailLabel
+        }
+        if let detailTOC = annotatedDetail.toc {
+            pageContext["toc"] = detailTOC
+        }
+        applyDetailFrontMatter(
+            to: &pageContext,
+            item: item,
+            trimmedCoverImage: trimmedCoverImage,
+            urlBuilder: urlBuilder
+        )
+        return pageContext
+    }
+
+    /// Merges optional collection-detail front-matter fields into `pageContext`.
+    private func applyDetailFrontMatter(
+        to pageContext: inout [String: Any],
+        item: CollectionItem,
+        trimmedCoverImage: String?,
+        urlBuilder: SiteURLBuilder
+    ) {
+        if let primary = item.tags?.first {
+            pageContext["primaryTag"] = escapeHTML(primary)
+        }
+        if let year = item.frontMatter["year"] {
+            pageContext["year"] = String(describing: year)
+        }
+        if let org = item.frontMatter["org"] as? String {
+            pageContext["org"] = escapeHTML(org)
+        }
+        if let role = item.frontMatter["role"] as? String {
+            pageContext["role"] = escapeHTML(role)
+        }
+        if let brand = item.frontMatter["brand"] as? String {
+            pageContext["brand"] = brand
+        }
+        if let coverContext = resolveCoverImage(
+            path: trimmedCoverImage,
+            alt: item.title,
+            urlBuilder: urlBuilder
+        ) {
+            pageContext["coverImage"] = coverContext
+        }
+    }
+
+    /// Builds the wrap-around "next" sibling context, or nil for a single-item
+    /// collection.
+    private func nextSiblingContext(
+        items: [CollectionItem],
+        index: Int,
+        route: String,
+        urlBuilder: SiteURLBuilder
+    ) -> [String: Any]? {
+        guard items.count > 1 else { return nil }
+        let nextItem = items[(index + 1) % items.count]
+        var next: [String: Any] = [
+            "title": escapeHTML(nextItem.title),
+            "link": urlBuilder.link(for: "\(route)\(nextItem.slug)/")
+        ]
+        if let nextOrg = nextItem.frontMatter["org"] as? String {
+            next["org"] = escapeHTML(nextOrg)
+        }
+        if let nextYear = nextItem.frontMatter["year"] {
+            next["year"] = String(describing: nextYear)
+        }
+        return next
+    }
+
+    /// Builds the per-taxonomy archive plans for a collection.
+    private func makeCollectionTaxonomyPlans(
+        collection: Collection,
+        site: [String: Any],
+        urlBuilder: SiteURLBuilder,
+        route: String,
+        langPrefix: String
+    ) -> [PagePlan] {
+        var plans: [PagePlan] = []
+        for taxonomy in collection.config.resolvedTaxonomies {
+            let extractor = taxonomyExtractor(for: taxonomy)
             var grouped: [String: [CollectionItem]] = [:]
             for item in collection.items {
                 for value in extractor(item) {
                     grouped[value, default: []].append(item)
                 }
             }
-
             for key in grouped.keys.sorted() {
                 let slug = taxonomySlug(key)
                 let taxRoute = "\(route)\(taxonomy)/\(slug)/"
-                let title = "\(taxonomy.capitalized): \(key)"
-                let description = "Archive page for \(taxonomy) \(key)."
                 let cards = (grouped[key] ?? []).map {
                     collectionItemCardContext($0, route: route, urlBuilder: urlBuilder, site: site)
                 }
@@ -1305,8 +1558,8 @@ private extension PageContextBuilder {
                     "type": "collection-taxonomy",
                     "kind": taxonomy,
                     "label": escapeHTML(key),
-                    "title": escapeHTML(title),
-                    "description": escapeHTML(description),
+                    "title": escapeHTML("\(taxonomy.capitalized): \(key)"),
+                    "description": escapeHTML("Archive page for \(taxonomy) \(key)."),
                     "canonicalURL": escapeHTML(urlBuilder.compose(route: taxRoute)),
                     "twitterCard": "summary"
                 ]
@@ -1324,8 +1577,23 @@ private extension PageContextBuilder {
                 plans.append(PagePlan(route: langPrefix + taxRoute, template: "layouts/taxonomy", context: taxContext))
             }
         }
-
         return plans
+    }
+
+    /// Returns the value-extraction closure for a collection taxonomy kind.
+    private func taxonomyExtractor(for taxonomy: String) -> (CollectionItem) -> [String] {
+        switch taxonomy {
+        case "tags":
+            return { $0.tags ?? [] }
+        case "categories":
+            return { $0.categories ?? [] }
+        default:
+            return { item in
+                if let array = item.frontMatter[taxonomy] as? [String] { return array }
+                if let array = item.frontMatter[taxonomy] as? [Any] { return array.compactMap { $0 as? String } }
+                return []
+            }
+        }
     }
 
     func collectionItemCardContext(
