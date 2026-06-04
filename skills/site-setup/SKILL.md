@@ -113,6 +113,40 @@ Same as combined, but drop the `posts` entry from `collections` and the `recentC
 }
 ```
 
+### Building section (projects + updates, via child collections)
+
+Add this when the user wants to show what they are *actively building* — personal projects that each accumulate a stream of lightweight progress updates, distinct from polished `work` case studies. It uses a **child collection**: `updates` declares `parent: "building"`, so each update is routed under its project and surfaces on the project's timeline.
+
+```jsonc
+{
+  "nav": [
+    { "label": "Work", "route": "/work/" },
+    { "label": "Building", "route": "/building/" },     // between Work and Writing
+    { "label": "Writing", "route": "/posts/" }
+  ],
+  "home": {
+    "template": "landing",
+    "featuredCollection": "projects", "featuredCount": 4,
+    "buildingCollection": "updates", "buildingCount": 3, // "what I'm building" feed
+    "recentCollection": "posts", "recentCount": 2
+  },
+  "collections": [
+    { "id": "building", "dir": "content/building", "route": "/building",
+      "sortBy": "order", "sortOrder": "asc", "taxonomies": ["tags"],
+      "listTemplate": "layouts/building-list", "detailTemplate": "layouts/building" },
+    { "id": "updates", "dir": "content/updates", "route": "/building",
+      "parent": "building", "parentField": "project",
+      "sortBy": "date", "sortOrder": "desc", "taxonomies": [],
+      "detailTemplate": "layouts/update" }
+  ]
+}
+```
+
+- **Project front matter** (`content/building/<slug>.md`): `title`, `slug`, `order`, optional `status` (`active`/`shipped`/`paused`/`exploring`, default `active`), `summary`, `tags`, `repo`, `coverImage`.
+- **Update front matter** (`content/updates/YYYY-MM-DD-<slug>.md`): `title`, `slug`, `date`, `project` (the parent slug), optional `status` (`shipped`/`wip`/`note`/`decision`). Scaffold with `inkwell content new updates "Title"`.
+- URLs produced: `/building/`, `/building/<project>/`, `/building/<project>/<update>/`, `/building/tags/<slug>/`.
+- The `quiet` theme ships the `building-list`, `building`, and `update` layouts plus the living-changelog CSS (status dots, update timeline). Translate the building label/CTA via `translations.<lang>.home` and back-link/section copy via `translations.<lang>.themeCopy` (`buildingBack`, `buildingUpdates`, `updateNewer`, `updateOlder`).
+
 ## Workflow
 
 1. Confirm the user's goals (blog vs portfolio vs combined; preserve existing URLs?).
@@ -143,9 +177,13 @@ Same as combined, but drop the `posts` entry from `collections` and the `recentC
   "paginate":        null,                // not yet implemented in v0.3
   "listTemplate":    "layouts/work-list", // optional override; default "layouts/post-list"
   "detailTemplate":  "layouts/case-study", // optional override; default "layouts/post"
+  "parent":          null,                // set to another collection's id to make this a child collection
+  "parentField":     "parent",            // front-matter key on child items naming the parent slug (default "parent")
   "scaffold":        null                 // optional path to a custom scaffold template (future)
 }
 ```
+
+A collection with `parent` set is a **child collection**: its items route under the matching parent item at `<parentRoute>/<parentSlug>/<childSlug>/`, get no list/taxonomy pages of their own, and appear on the parent's detail page as a newest-first timeline (plus `status` + relative recency on cards/detail). Point `home.buildingCollection` at it for the home feed. See the Building section recipe above.
 
 ## Guardrails
 
