@@ -189,6 +189,7 @@ final class SiteConfigTests: XCTestCase {
 
     func testDecodesAnalyticsUmamiEventsPartialBlock() throws {
         // Only one flag set; the rest stay nil and downloadExtensions is omitted.
+        // swiftlint:disable:next line_length
         let json = #"{"title":"Kris","baseURL":"/","analytics":{"umami":{"scriptUrl":"https://x/s.js","websiteId":"id","events":{"outboundLinks":true}}}}"#
         let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
         let events = try XCTUnwrap(config.analytics?.umami?.events)
