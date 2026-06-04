@@ -42,6 +42,29 @@ final class ContentNewCommandTests: XCTestCase {
         XCTAssertTrue(content.contains("draft: true"))
     }
 
+    func testContentNewChildCollectionAddsParentLinkField() throws {
+        let root = makeTempProject()
+        try writeConfig(root, """
+        {
+          "title": "Kris",
+          "collections": [
+            { "id": "building", "dir": "content/building", "route": "/building" },
+            {
+              "id": "updates", "dir": "content/updates", "route": "/building",
+              "parent": "building", "parentField": "project", "sortBy": "date"
+            }
+          ]
+        }
+        """)
+
+        let path = try ContentNewCommand.scaffold(root: root, collectionId: "updates", title: "Streaming tool calls")
+        XCTAssertTrue(path.lastPathComponent.hasSuffix("-streaming-tool-calls.md"))
+        let content = try String(contentsOf: path)
+        XCTAssertTrue(content.contains("title: Streaming tool calls"))
+        XCTAssertTrue(content.contains("draft: true"))
+        XCTAssertTrue(content.contains("project:"), "child scaffold should include the parent-link field")
+    }
+
     func testContentNewRejectsUnknownCollection() throws {
         let root = makeTempProject()
         try writeConfig(root, """
