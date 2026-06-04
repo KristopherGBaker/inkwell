@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block main %}<main class="container building-detail page-shell">
+  <a href="{{ collection.route }}" class="case-study-back">{{ site.themeCopy.buildingBack }}</a>
+
+  <div class="building-detail-head is-{{ page.status|default:"active" }}">
+    <span class="status-line"><span class="status-dot"></span>{{ page.status|default:"active" }}</span>
+    {% if page.relativeUpdated %}<span class="building-detail-updated">updated {{ page.relativeUpdated }}</span>{% endif %}
+    {% if page.frontMatter.repo %}<a href="{{ page.frontMatter.repo }}" class="read-link building-detail-repo">Repository <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
+  </div>
+
+  <h1 class="h1 building-detail-title">{{ page.title }}</h1>
+  {% if page.summary %}<p class="body-lg building-detail-blurb">{{ page.summary }}</p>{% endif %}
+  {% if page.chips %}<div class="case-study-tags">{% for chip in page.chips %}<a href="{{ chip.href }}" class="tag-chip">{{ chip.label }}</a>{% endfor %}</div>{% endif %}
+
+  {% if page.content %}<article class="prose building-detail-prose">{{ page.content }}</article>{% endif %}
+
+  <section class="building-updates">
+    <div class="section-head">
+      <h2 class="h3 building-updates-title">{{ site.themeCopy.buildingUpdates }}{% if page.updateCount %} <span class="building-updates-count">{{ page.updateCount }}</span>{% endif %}</h2>
+    </div>
+    {% if page.updates %}<div class="update-timeline">{% for update in page.updates %}{% include "update-entry.html" %}{% endfor %}</div>{% else %}<p class="building-updates-empty">No updates yet.</p>{% endif %}
+  </section>
+
+  {% if collection.next %}<div class="case-study-next">
+    <p class="case-study-next-label">{{ site.themeCopy.caseStudyNextLabel }}</p>
+    <a href="{{ collection.next.link }}" class="case-study-next-row">
+      <span class="case-study-next-title">{{ collection.next.title }}</span>
+      <span class="read-link">{{ site.themeCopy.caseStudyNextFallbackCta }} <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
+  </div>{% endif %}
+</main>
+{% endblock %}

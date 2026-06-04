@@ -79,6 +79,8 @@ Example `blog.config.json` for a portfolio:
     "template": "landing",
     "featuredCollection": "projects",
     "featuredCount": 4,
+    "buildingCollection": "updates",
+    "buildingCount": 3,
     "recentCollection": "posts",
     "recentCount": 2
   },
@@ -91,6 +93,23 @@ Example `blog.config.json` for a portfolio:
       "sortBy": "year",
       "taxonomies": ["tags"],
       "detailTemplate": "layouts/case-study"
+    },
+    {
+      "id": "building",
+      "dir": "content/building",
+      "route": "/building",
+      "sortBy": "order",
+      "taxonomies": ["tags"],
+      "listTemplate": "layouts/building-list",
+      "detailTemplate": "layouts/building"
+    },
+    {
+      "id": "updates",
+      "dir": "content/updates",
+      "route": "/building",
+      "parent": "building",
+      "parentField": "project",
+      "detailTemplate": "layouts/update"
     }
   ]
 }
@@ -110,6 +129,8 @@ The `resume` layout reads from `data/experience.yml`, `data/competencies.yml`, a
 ## Concepts
 
 - **Collections** are content types. Each declared collection has a `dir` (where markdown lives), a `route` (URL prefix), a `sortBy` (default `date`; use `year` for projects, etc.), and optional `taxonomies` (tag/category-style facets, scoped to the collection — `/work/tags/iOS/`, not top-level).
+- **Child collections** model a one-to-many relationship (a project and its updates). Give a collection `"parent": "<parentId>"` and `"parentField": "<frontMatterKey>"` (default `parent`). Each child item names its parent's slug in that field and is routed *under* the parent at `<parentRoute>/<parentSlug>/<childSlug>/` — it gets no list or taxonomy pages of its own. Parent list cards and detail pages receive the child items as `updates` (newest first) plus `updateCount`, `status`, `lastUpdated`, and `relativeUpdated`; each child page gets `project` (its parent) and `siblingNewer`/`siblingOlder`. A child item whose parent slug matches nothing is reported by `inkwell check` (it would otherwise drop silently). `inkwell content new <childId> "Title"` scaffolds a dated file pre-seeded with the parent-link field.
+- **Home page** has three optional collection-backed sections: `featuredCollection` (cards), `buildingCollection` (a "what I'm building" feed — point it at a child/updates collection so each card links to its nested update and names its project), and `recentCollection` (list). Each takes a `*Count` and an optional `*Label`/`*Cta`, all translatable via the `translations.<lang>.home` overlay.
 - **Pages** are markdown files in `content/pages/` whose route comes from their path (`about.md → /about/`, `now/index.md → /now/`). Front-matter `layout: <name>` selects the theme template.
 - **Data files** are YAML/JSON in `data/`, loaded as `data.<basename>` in every template's context. Use them for résumé content, link rolls, structured profile data — anything where keeping the content out of markdown is cleaner.
 - **Themes** ship with the binary; project-side `themes/<name>/templates/` and `themes/<name>/assets/` override on a per-file basis. The `default` theme keeps the v0.2 blog look (Tailwind, amber/stone). The `quiet` theme is portfolio-friendly (Fraunces / Manrope / JetBrains Mono, generous whitespace, print-friendly résumé).
