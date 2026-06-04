@@ -1,0 +1,7 @@
+<a href="{{ update.link }}" class="update-entry is-{{ update.status|default:"note" }}">
+  <span class="update-entry-meta">
+    <span class="update-entry-date">{{ update.displayDate }}</span>
+    {% if update.status %}<span class="update-entry-status">{{ update.status }}</span>{% endif %}
+  </span>
+  <span class="update-entry-title">{{ update.title }}</span>
+</a>

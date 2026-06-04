@@ -20,6 +20,11 @@ public struct ThemeCopyConfig: Codable, Equatable {
     /// Translatable per language via the `translations.<lang>.themeCopy`
     /// overlay.
     public var readingTimeLabel: String?
+    /// Building section (child-collection) chrome.
+    public var buildingBack: String?
+    public var buildingUpdates: String?
+    public var updateNewer: String?
+    public var updateOlder: String?
     public var notFoundEyebrow: String?
     public var notFoundHeadline: String?
     public var notFoundBody: String?
@@ -39,6 +44,10 @@ public struct ThemeCopyConfig: Codable, Equatable {
         postReplyEmailCta: String? = nil,
         postMinRead: String? = nil,
         readingTimeLabel: String? = nil,
+        buildingBack: String? = nil,
+        buildingUpdates: String? = nil,
+        updateNewer: String? = nil,
+        updateOlder: String? = nil,
         notFoundEyebrow: String? = nil,
         notFoundHeadline: String? = nil,
         notFoundBody: String? = nil,
@@ -57,6 +66,10 @@ public struct ThemeCopyConfig: Codable, Equatable {
         self.postReplyEmailCta = postReplyEmailCta
         self.postMinRead = postMinRead
         self.readingTimeLabel = readingTimeLabel
+        self.buildingBack = buildingBack
+        self.buildingUpdates = buildingUpdates
+        self.updateNewer = updateNewer
+        self.updateOlder = updateOlder
         self.notFoundEyebrow = notFoundEyebrow
         self.notFoundHeadline = notFoundHeadline
         self.notFoundBody = notFoundBody

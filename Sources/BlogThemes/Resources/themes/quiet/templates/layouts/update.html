@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block main %}<main class="container page-shell update-page" style="padding-top: var(--page-padding-top);">
+  {% if page.project %}<a href="{{ page.project.link }}" class="post-back">← {{ page.project.title }}</a>{% endif %}
+  <p class="post-meta update-meta is-{{ page.status|default:"note" }}">
+    {% if page.status %}<span class="update-meta-status"><span class="status-dot"></span>{{ page.status }}</span> · {% endif %}<span>{{ page.displayDate }}</span>
+    {% if page.readingTimeLabel %} · <span>{{ page.readingTimeLabel }}</span>{% endif %}
+  </p>
+  <h1 class="h1 post-title update-title">{{ page.title }}</h1>
+  {% if page.summary %}<p class="body-lg post-blurb">{{ page.summary }}</p>{% endif %}
+  <div class="post-body">
+    <article class="prose">{{ page.content }}</article>
+    <nav class="update-nav">
+      {% if page.siblingNewer %}<a href="{{ page.siblingNewer.link }}" class="update-nav-item update-nav-newer">
+        <span class="update-nav-label">{{ site.themeCopy.updateNewer }}</span>
+        <span class="update-nav-title">{{ page.siblingNewer.title }}</span>
+      </a>{% else %}<span></span>{% endif %}
+      {% if page.siblingOlder %}<a href="{{ page.siblingOlder.link }}" class="update-nav-item update-nav-older">
+        <span class="update-nav-label">{{ site.themeCopy.updateOlder }}</span>
+        <span class="update-nav-title">{{ page.siblingOlder.title }}</span>
+      </a>{% else %}<span></span>{% endif %}
+    </nav>
+    {% if page.project %}<div class="post-footer"><a href="{{ page.project.link }}" class="read-link">{{ page.project.title }} <span class="arrow" aria-hidden="true">→</span></a></div>{% endif %}
+  </div>
+</main>
+{% endblock %}
