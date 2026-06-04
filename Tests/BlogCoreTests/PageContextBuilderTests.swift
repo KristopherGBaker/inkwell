@@ -43,6 +43,7 @@ final class PageContextBuilderTests: XCTestCase {
         XCTAssertEqual(pageContext["content"] as? String, "<p>Hi there.</p>")
     }
 
+    // swiftlint:disable:next line_length
     private func makePost(title: String, date: String, slug: String, summary: String = "Notes", draft: Bool = false) -> PostDocument {
         PostDocument(
             frontMatter: PostFrontMatter(

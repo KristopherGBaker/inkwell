@@ -124,6 +124,7 @@ final class QuietThemeAnalyticsTests: XCTestCase {
 
         XCTAssertFalse(
             html.contains("data-website-id"),
+            // swiftlint:disable:next line_length
             "serve mode without a `local` block must emit no script tag at all — that's the safety guarantee. Got:\n\(html)"
         )
         XCTAssertFalse(html.contains("analytics.krisbaker.com"), "Got:\n\(html)")
@@ -183,6 +184,7 @@ final class QuietThemeAnalyticsTests: XCTestCase {
         XCTAssertTrue(html.contains("data-website-id=\"id\""))
         XCTAssertFalse(html.contains("data-host-url"), "Optional data-host-url shouldn't render when hostUrl is unset")
         XCTAssertFalse(html.contains("data-domains"), "Optional data-domains shouldn't render when domains is unset")
+        // swiftlint:disable:next line_length
         XCTAssertFalse(html.contains("data-do-not-track"), "Optional data-do-not-track shouldn't render when respectDoNotTrack is unset")
         XCTAssertFalse(html.contains("data-tag"), "Optional data-tag shouldn't render when tag is unset")
     }

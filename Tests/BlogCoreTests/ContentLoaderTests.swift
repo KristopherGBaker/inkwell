@@ -5,6 +5,7 @@ import XCTest
 final class ContentLoaderTests: XCTestCase {
     func testLoadsStructuredFrontMatterFromYAML() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("content/posts"), withIntermediateDirectories: true)
 
         let markdown = """
@@ -24,6 +25,7 @@ final class ContentLoaderTests: XCTestCase {
         Hello world
         """
 
+        // swiftlint:disable:next line_length
         try markdown.write(to: root.appendingPathComponent("content/posts/2026-03-06-yaml-example.md"), atomically: true, encoding: .utf8)
 
         let posts = try ContentLoader().loadPosts(in: root)

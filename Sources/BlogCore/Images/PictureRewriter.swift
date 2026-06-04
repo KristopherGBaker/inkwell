@@ -40,7 +40,8 @@ public struct PictureRewriter {
         var cursor = 0
         var used: Set<String> = []
 
-        regex.enumerateMatches(in: html, options: [], range: NSRange(location: 0, length: nsHTML.length)) { match, _, _ in
+        let htmlRange = NSRange(location: 0, length: nsHTML.length)
+        regex.enumerateMatches(in: html, options: [], range: htmlRange) { match, _, _ in
             guard let match else { return }
             output += nsHTML.substring(with: NSRange(location: cursor, length: match.range.location - cursor))
             let original = nsHTML.substring(with: match.range)
@@ -126,7 +127,8 @@ public struct PictureRewriter {
             return nil
         }
         let nsTag = tag as NSString
-        guard let match = regex.firstMatch(in: tag, options: [], range: NSRange(location: 0, length: nsTag.length)) else {
+        let tagRange = NSRange(location: 0, length: nsTag.length)
+        guard let match = regex.firstMatch(in: tag, options: [], range: tagRange) else {
             return nil
         }
         return nsTag.substring(with: match.range(at: 1))

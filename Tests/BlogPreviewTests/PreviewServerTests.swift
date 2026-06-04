@@ -6,6 +6,7 @@ import Vapor
 final class PreviewServerTests: XCTestCase {
     func testResolvesDirectoryRouteToIndexFile() throws {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: root.appendingPathComponent("posts/welcome"), withIntermediateDirectories: true)
         try "ok".write(to: root.appendingPathComponent("posts/welcome/index.html"), atomically: true, encoding: .utf8)
 
@@ -64,16 +65,22 @@ final class PreviewServerTests: XCTestCase {
         let temp = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         let oldRoot = temp.appendingPathComponent("docs-a")
         let newRoot = temp.appendingPathComponent("docs-b")
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: oldRoot.appendingPathComponent("posts/welcome"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try FileManager.default.createDirectory(at: newRoot.appendingPathComponent("posts/welcome"), withIntermediateDirectories: true)
+        // swiftlint:disable:next line_length
         try "old".write(to: oldRoot.appendingPathComponent("posts/welcome/index.html"), atomically: true, encoding: .utf8)
+        // swiftlint:disable:next line_length
         try "new".write(to: newRoot.appendingPathComponent("posts/welcome/index.html"), atomically: true, encoding: .utf8)
 
         let server = PreviewServer(root: oldRoot, port: 8000, liveReloadEnabled: true)
+        // swiftlint:disable:next line_length
         XCTAssertEqual(server.resolvedFilePath(for: "posts/welcome/"), oldRoot.appendingPathComponent("posts/welcome/index.html").path)
 
         server.updateRoot(to: newRoot)
 
+        // swiftlint:disable:next line_length
         XCTAssertEqual(server.resolvedFilePath(for: "posts/welcome/"), newRoot.appendingPathComponent("posts/welcome/index.html").path)
     }
 

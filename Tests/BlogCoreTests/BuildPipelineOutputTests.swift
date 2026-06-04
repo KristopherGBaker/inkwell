@@ -28,6 +28,7 @@ final class BuildPipelineOutputTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-08-base-path-ready.md"), atomically: true, encoding: .utf8)
 
         let report = try BuildPipeline().run(in: temp)
@@ -83,6 +84,7 @@ final class BuildPipelineOutputTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-08-public-asset.md"), atomically: true, encoding: .utf8)
 
         _ = try BuildPipeline().run(in: temp)
@@ -117,15 +119,20 @@ final class BuildPipelineOutputTests: XCTestCase {
 
         Body
         """
+        // swiftlint:disable:next line_length
         try post.write(to: temp.appendingPathComponent("content/posts/2026-03-08-nested-public-output.md"), atomically: true, encoding: .utf8)
 
         let pipeline = BuildPipeline()
         _ = try pipeline.run(in: temp)
         _ = try pipeline.run(in: temp)
 
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("public/site/index.html").path))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("public/site/images/cover.jpg").path))
+        // swiftlint:disable:next line_length
         XCTAssertFalse(FileManager.default.fileExists(atPath: temp.appendingPathComponent("public/site/site/index.html").path))
+        // swiftlint:disable:next line_length
         XCTAssertFalse(FileManager.default.fileExists(atPath: temp.appendingPathComponent("public/site/site/images/cover.jpg").path))
     }
 }

@@ -68,6 +68,7 @@ final class DataLoaderTests: XCTestCase {
         _ = try BuildPipeline().run(in: root)
 
         let html = try String(contentsOf: root.appendingPathComponent("docs/index.html"))
+        // swiftlint:disable:next line_length
         XCTAssertTrue(html.contains("DATA-TAGLINE:From data file"), "Expected data file value to flow into template context, got:\n\(html)")
     }
 

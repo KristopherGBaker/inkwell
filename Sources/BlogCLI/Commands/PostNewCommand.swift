@@ -76,7 +76,8 @@ struct PostPublishCommand: ParsableCommand {
         if markdown.contains("\ndraft: false\n") {
             return markdown
         }
-        if let range = markdown.range(of: "\n---\n", options: [], range: markdown.index(markdown.startIndex, offsetBy: 4)..<markdown.endIndex) {
+        let searchStart = markdown.index(markdown.startIndex, offsetBy: 4)
+        if let range = markdown.range(of: "\n---\n", options: [], range: searchStart..<markdown.endIndex) {
             var copy = markdown
             copy.insert(contentsOf: "\ndraft: false", at: range.lowerBound)
             return copy

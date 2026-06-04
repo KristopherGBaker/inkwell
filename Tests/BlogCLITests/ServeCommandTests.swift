@@ -20,6 +20,7 @@ final class ServeCommandTests: XCTestCase {
     func testWatchExclusionsDoNotExcludePublicWhenOutputDirectoryIsPublic() {
         let root = URL(fileURLWithPath: "/tmp/project")
 
+        // swiftlint:disable:next line_length
         XCTAssertEqual(ServeCommand.watchedExclusions(root: root, outputDirectory: root.appendingPathComponent("public")), [])
     }
 

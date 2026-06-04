@@ -95,6 +95,7 @@ final class CoverImageResolutionTests: XCTestCase {
         let report = try BuildPipeline().run(in: projectRoot)
         XCTAssertEqual(report.errors.count, 0)
 
+        // swiftlint:disable:next line_length
         let postHTML = try String(contentsOf: projectRoot.appendingPathComponent("docs/posts/external-cover/index.html"))
         XCTAssertTrue(postHTML.contains("https://cdn.example.com/cover.jpg"))
     }
@@ -150,10 +151,10 @@ final class CoverImageResolutionTests: XCTestCase {
             throw NSError(domain: "CoverImageResolutionTests", code: 1)
         }
         let bands = 16
-        for i in 0..<bands {
-            let progress = Double(i) / Double(bands)
+        for band in 0..<bands {
+            let progress = Double(band) / Double(bands)
             ctx.setFillColor(red: progress, green: 1.0 - progress, blue: 0.4, alpha: 1.0)
-            ctx.fill(CGRect(x: 0, y: i * (height / bands), width: width, height: height / bands))
+            ctx.fill(CGRect(x: 0, y: band * (height / bands), width: width, height: height / bands))
         }
         guard let image = ctx.makeImage() else {
             throw NSError(domain: "CoverImageResolutionTests", code: 2)

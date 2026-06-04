@@ -34,7 +34,9 @@ struct ServeCommand: ParsableCommand {
             ) {
                 do {
                     let report = try pipeline.run(in: root, mode: .serve)
-                    watcherRef?.updateExcludedPaths(Self.watchedExclusions(root: root, outputDirectory: report.outputDirectory))
+                    watcherRef?.updateExcludedPaths(
+                        Self.watchedExclusions(root: root, outputDirectory: report.outputDirectory)
+                    )
                     server.updateRoot(to: report.outputDirectory)
                     watcherRef?.refreshBaseline()
                     server.triggerReload()

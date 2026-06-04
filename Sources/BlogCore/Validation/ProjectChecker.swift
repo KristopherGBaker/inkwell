@@ -38,7 +38,8 @@ public struct ProjectChecker {
         }
 
         if let collision = TaxonomySlugCollisionValidator.firstCollision(in: posts) {
-            errors.append("Taxonomy slug collision for \(collision.kind) '\(collision.slug)': \(collision.labels.joined(separator: ", "))")
+            let labels = collision.labels.joined(separator: ", ")
+            errors.append("Taxonomy slug collision for \(collision.kind) '\(collision.slug)': \(labels)")
         }
 
         // Collection items: validate asset-shaped front-matter fields.
@@ -47,7 +48,11 @@ public struct ProjectChecker {
                 let collections = try contentLoader.loadCollections(configs, in: projectRoot)
                 for (_, collection) in collections {
                     for item in collection.items {
-                        errors.append(contentsOf: assetErrors(in: item.frontMatter, source: item.sourcePath, projectRoot: projectRoot))
+                        errors.append(contentsOf: assetErrors(
+                            in: item.frontMatter,
+                            source: item.sourcePath,
+                            projectRoot: projectRoot
+                        ))
                     }
                 }
             } catch let error as ContentLoaderError {
@@ -78,7 +83,8 @@ public struct ProjectChecker {
     }
 
     private func missingCoverImageError(for post: PostDocument, projectRoot: URL) -> String? {
-        guard let coverImage = post.frontMatter.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines), !coverImage.isEmpty else {
+        let coverImage = post.frontMatter.coverImage?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let coverImage, !coverImage.isEmpty else {
             return nil
         }
 
@@ -143,19 +149,22 @@ public struct ProjectChecker {
             return nil
         }
         if trimmed.hasPrefix("/") == false {
-            return "\(relativePath(for: source, root: projectRoot)): \(field) has relative asset path \"\(trimmed)\" — use \"/assets/...\" or a fully-qualified URL"
+            return "\(relativePath(for: source, root: projectRoot)): \(field) has relative asset path "
+                + "\"\(trimmed)\" — use \"/assets/...\" or a fully-qualified URL"
         }
         if trimmed.hasPrefix("/assets/") {
             let suffix = String(trimmed.dropFirst("/assets/".count))
             let staticURL = projectRoot.appendingPathComponent("static/assets").appendingPathComponent(suffix)
             let publicURL = projectRoot.appendingPathComponent("public/assets").appendingPathComponent(suffix)
-            if FileManager.default.fileExists(atPath: staticURL.path) || FileManager.default.fileExists(atPath: publicURL.path) {
+            if FileManager.default.fileExists(atPath: staticURL.path)
+                || FileManager.default.fileExists(atPath: publicURL.path) {
                 return nil
             }
             return "\(relativePath(for: source, root: projectRoot)): \(field) references missing asset \(trimmed)"
         }
         // Other root-absolute paths: resolve under public/ for legacy compat.
-        let legacy = projectRoot.appendingPathComponent("public").appendingPathComponent(String(trimmed.drop(while: { $0 == "/" })))
+        let legacySuffix = String(trimmed.drop(while: { $0 == "/" }))
+        let legacy = projectRoot.appendingPathComponent("public").appendingPathComponent(legacySuffix)
         if FileManager.default.fileExists(atPath: legacy.path) {
             return nil
         }
