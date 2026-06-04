@@ -132,9 +132,10 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 - `<html lang>`, `<link rel="alternate" hreflang>` (self + others + x-default), browser-language redirect script, top-bar language switcher in the quiet theme
 - Asset URLs at canonical paths (no language prefix) so a single `static/...` asset serves every language
 
-#### Deferred
-- Localized RSS / Atom feeds per language
-- Localized sitemap (per-language sitemap or `xhtml:link` alternates in unified sitemap)
+#### Follow-ups (shipped later)
+- ~~Localized sitemap (per-language sitemap or `xhtml:link` alternates in unified sitemap)~~ — shipped v0.12.0
+- ~~Localized RSS feeds per language~~ — shipped v0.12.0
+- ~~Atom 1.0 + JSON Feed, full-content `content:encoded`, RFC-822 dates, `atom:link rel=self`, localized channel copy, and `<head>` autodiscovery~~ — shipped v0.13.0
 
 ## Long-Term Roadmap
 
@@ -182,7 +183,7 @@ Evolve `inkwell` from a solid core static blog generator into a more polished pu
 
 - Reading time and table of contents generation
 - Menu configuration and breadcrumbs
-- Multiple feed formats beyond RSS
+- ~~Multiple feed formats beyond RSS~~ — shipped Atom 1.0 + JSON Feed (v0.13.0)
 - Social/comment/newsletter integrations
 - Better theme/starter discovery and sharing
 
