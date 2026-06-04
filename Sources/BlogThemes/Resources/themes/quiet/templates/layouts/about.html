@@ -16,7 +16,7 @@
       {{ page.content }}
       <div class="about-page-actions no-print">
         <a href="/resume/" class="read-link">{{ site.themeCopy.aboutResumeCta }} <span class="arrow" aria-hidden="true">→</span></a>
-        {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="read-link">{{ site.themeCopy.aboutEmailCta }} <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
+        {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="read-link"{% if site.analytics.umami.events.themeElements %} data-umami-event="email"{% endif %}>{{ site.themeCopy.aboutEmailCta }} <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
       </div>
     </article>
   </div>

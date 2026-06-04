@@ -1738,6 +1738,7 @@ extension PageContextBuilder {
         let domains: String?
         let respectDoNotTrack: Bool?
         let tag: String?
+        let events: UmamiEventsConfig?
 
         switch mode {
         case .build:
@@ -1747,6 +1748,7 @@ extension PageContextBuilder {
             domains = umami.domains
             respectDoNotTrack = umami.respectDoNotTrack
             tag = umami.tag
+            events = umami.events
         case .serve:
             guard let local = umami.local else { return nil }
             scriptUrl = local.scriptUrl
@@ -1755,6 +1757,7 @@ extension PageContextBuilder {
             domains = local.domains
             respectDoNotTrack = local.respectDoNotTrack
             tag = local.tag
+            events = local.events
         }
 
         var umamiCtx: [String: Any] = [
@@ -1765,7 +1768,36 @@ extension PageContextBuilder {
         if let domains { umamiCtx["domains"] = escapeHTML(domains) }
         if let respectDoNotTrack, respectDoNotTrack { umamiCtx["respectDoNotTrack"] = true }
         if let tag { umamiCtx["tag"] = escapeHTML(tag) }
+        if let eventsCtx = eventsContext(for: events) { umamiCtx["events"] = eventsCtx }
         return ["umami": umamiCtx]
+    }
+
+    /// File extensions treated as downloads by the auto-tracker when a site
+    /// turns on `events.downloads` without supplying its own list.
+    static let defaultDownloadExtensions = [
+        "pdf", "zip", "dmg", "csv", "xlsx", "doc", "docx",
+        "pptx", "mp3", "mp4", "png", "jpg", "svg"
+    ]
+
+    /// Builds the `events` sub-context for the template. Returns nil unless at
+    /// least one tracking flag is on, so the bundled themes emit no event
+    /// wiring for the default page-views-only setup. The extension list always
+    /// resolves to the config override or the built-in default so the inline
+    /// auto-tracker can render a JS array unconditionally.
+    func eventsContext(for events: UmamiEventsConfig?) -> [String: Any]? {
+        guard let events else { return nil }
+        let outboundLinks = events.outboundLinks ?? false
+        let downloads = events.downloads ?? false
+        let themeElements = events.themeElements ?? false
+        guard outboundLinks || downloads || themeElements else { return nil }
+
+        let extensions = (events.downloadExtensions ?? Self.defaultDownloadExtensions)
+            .map { escapeHTML($0) }
+        var eventsCtx: [String: Any] = ["downloadExtensions": extensions]
+        if outboundLinks { eventsCtx["outboundLinks"] = true }
+        if downloads { eventsCtx["downloads"] = true }
+        if themeElements { eventsCtx["themeElements"] = true }
+        return eventsCtx
     }
 }
 
