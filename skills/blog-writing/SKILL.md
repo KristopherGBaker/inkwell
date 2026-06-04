@@ -53,6 +53,10 @@ If the file is missing:
 - About / Now / Colophon-style pages: usually one section, conversational, no eyebrow needed.
 - Pages can be data-driven shells (empty body, theme template reads from `data/*.yml`) — the résumé page is one of these. For shells, you don't write prose at all; the structured data is the content.
 
+### Building project + update (child-collection content)
+- **Project** (`content/building/<slug>.md`): a short living overview, not a case study. What it is, why it exists, current state. A few tight paragraphs. The chronological updates carry the evolution, so the overview should not try to. Set `status` honestly (`active`/`shipped`/`paused`/`exploring`).
+- **Update** (`content/updates/<...>.md`): intentionally lighter than a blog post — often 1 to 3 short paragraphs about a single change, decision, or observation. Lead with what changed and why it mattered; skip the long setup. The point is momentum and a scannable history, not a polished essay. Still obeys the voice profile (no em dashes, specific over abstract).
+
 ## Default Post Shape
 
 - Opening: concrete hook.
@@ -107,6 +111,8 @@ When the user says they need help defining their voice:
   - `inkwell post new "Title"`
 - Draft a project case study:
   - `inkwell content new projects "Title"`
+- Draft a building project / update:
+  - `inkwell content new building "Project"` / `inkwell content new updates "Update"` (fill in `project:`)
 - Build preview after editing:
   - `inkwell serve --watch`
 
