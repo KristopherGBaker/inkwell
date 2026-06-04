@@ -113,6 +113,8 @@ public struct BuildPipeline {
             builtPages: builtPages,
             posts: posts,
             collections: renderedCollections.collections,
+            postRenderedContent: renderedPosts.rendered,
+            collectionRenderedContent: renderedCollections.rendered,
             pictureVariants: pictureVariantsUsed,
             ogCardFilenames: ogCardGenerator.generatedFilenames,
             projectRoot: projectRoot,
@@ -275,6 +277,8 @@ public struct BuildPipeline {
         builtPages: [BuiltPage],
         posts: [PostDocument],
         collections: [String: Collection],
+        postRenderedContent: [String: String],
+        collectionRenderedContent: [String: [String: [String: String]]],
         pictureVariants: Set<String>,
         ogCardFilenames: Set<String>,
         projectRoot: URL,
@@ -303,6 +307,8 @@ public struct BuildPipeline {
         try writeSEOArtifacts(
             posts: posts,
             collections: collections,
+            postRenderedContent: postRenderedContent,
+            collectionRenderedContent: collectionRenderedContent,
             routes: builtPages.map(\.route),
             outputRoot: outputRoot,
             siteConfig: siteConfig,
@@ -342,9 +348,12 @@ public struct BuildPipeline {
     }
 
     // swiftlint:disable:next function_parameter_count
+    // swiftlint:disable:next function_parameter_count
     private func writeSEOArtifacts(
         posts: [PostDocument],
         collections: [String: Collection],
+        postRenderedContent: [String: String],
+        collectionRenderedContent: [String: [String: [String: String]]],
         routes: [String],
         outputRoot: URL,
         siteConfig: SiteConfig,
@@ -353,6 +362,8 @@ public struct BuildPipeline {
         try SEOArtifactsWriter(writer: writer).writeAll(
             posts: posts,
             collections: collections,
+            postRenderedContent: postRenderedContent,
+            collectionRenderedContent: collectionRenderedContent,
             routes: routes,
             outputRoot: outputRoot,
             siteConfig: siteConfig,
