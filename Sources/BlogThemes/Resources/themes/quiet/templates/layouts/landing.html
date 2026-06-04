@@ -19,6 +19,15 @@
     <div class="featured-grid">{% for item in home.featured %}{% include "work-card.html" %}{% endfor %}</div>
   </section>{% endif %}
 
+  {% if home.building %}<hr class="hairline-soft">
+  <section class="scroll-section">
+    <div class="section-head">
+      <h2 class="h2">{{ home.buildingLabel }}</h2>
+      {% if home.buildingCta %}<a href="{{ home.buildingCta.href }}" class="read-link">{{ home.buildingCta.label }} <span class="arrow" aria-hidden="true">→</span></a>{% endif %}
+    </div>
+    <div class="building-feed">{% for item in home.building %}{% include "building-update-card.html" %}{% endfor %}</div>
+  </section>{% endif %}
+
   {% if home.recent %}<hr class="hairline-soft">
   <section class="scroll-section">
     <div class="section-head">

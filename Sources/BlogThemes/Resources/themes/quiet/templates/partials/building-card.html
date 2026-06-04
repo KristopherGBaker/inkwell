@@ -1,0 +1,11 @@
+<div class="card building-card is-{{ item.status|default:"active" }}">
+  <div class="building-card-head">
+    <span class="status-line"><span class="status-dot"></span>{{ item.status|default:"active" }}</span>
+    {% if item.relativeUpdated %}<span class="building-card-updated">updated {{ item.relativeUpdated }}</span>{% endif %}
+  </div>
+  <a href="{{ item.link }}" class="building-card-title-link"><h2 class="h-card building-card-title">{{ item.title }}</h2></a>
+  {% if item.blurb %}<p class="building-card-summary">{{ item.blurb }}</p>{% endif %}
+  {% if item.frontMatter.tags %}<div class="building-card-tags">{% for tag in item.frontMatter.tags %}<span class="tag-chip">{{ tag }}</span>{% endfor %}</div>{% endif %}
+  {% if item.updates %}<div class="update-timeline update-timeline-mini">{% for update in item.updates %}{% include "update-entry.html" %}{% endfor %}</div>{% endif %}
+  <a href="{{ item.link }}" class="read-link building-card-cta">{% if item.updateCount %}All updates ({{ item.updateCount }}){% else %}View project{% endif %} <span class="arrow" aria-hidden="true">→</span></a>
+</div>
