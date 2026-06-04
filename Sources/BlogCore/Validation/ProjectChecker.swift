@@ -55,6 +55,11 @@ public struct ProjectChecker {
                         ))
                     }
                 }
+                errors.append(contentsOf: orphanChildErrors(
+                    configs: configs,
+                    collections: collections,
+                    projectRoot: projectRoot
+                ))
             } catch let error as ContentLoaderError {
                 errors.append(describe(contentLoaderError: error, projectRoot: projectRoot))
             } catch {
@@ -117,6 +122,34 @@ public struct ProjectChecker {
         case let .unknownCollection(id):
             return "Unknown collection: \(id)"
         }
+    }
+
+    /// Flags child-collection items whose parent link is missing or points to a
+    /// non-existent parent item. Such items would silently drop out of the build
+    /// (no page is generated for them), so they are reported as errors. Drafts
+    /// are already excluded by the loader, so unfinished stubs don't trip this.
+    private func orphanChildErrors(
+        configs: [CollectionConfig],
+        collections: [String: Collection],
+        projectRoot: URL
+    ) -> [String] {
+        var errors: [String] = []
+        for config in configs where config.isChild {
+            guard let parentId = config.parent,
+                  let parentCollection = collections[parentId],
+                  let childCollection = collections[config.id] else { continue }
+            let parentSlugs = Set(parentCollection.items.map { $0.slug })
+            let field = config.resolvedParentField
+            for item in childCollection.items {
+                let parentSlug = (item.frontMatter[field] as? String) ?? ""
+                if parentSlugs.contains(parentSlug) { continue }
+                let detail = parentSlug.isEmpty
+                    ? "is missing its \(field) (\(parentId)) link"
+                    : "references unknown \(parentId) '\(parentSlug)'"
+                errors.append("\(relativePath(for: item.sourcePath, root: projectRoot)): \(field) \(detail)")
+            }
+        }
+        return errors
     }
 
     private static let assetFieldNames: Set<String> = [
