@@ -39,6 +39,24 @@ private struct RenderablePost {
     let tocOptIn: Bool?
 }
 
+/// A child collection resolved against its parent for a single language: the
+/// child items grouped under each parent slug (newest first), the parent's
+/// display titles, and a global recency stream. Built once per language by
+/// `resolveChildCollections` and consumed by parent timelines, nested update
+/// pages, and the home "what I'm building" section.
+private struct ResolvedChildCollection {
+    let childConfig: CollectionConfig
+    let parentConfig: CollectionConfig
+    /// parent slug → parent item title
+    let parentTitles: [String: String]
+    /// parent slug → child items, sorted by date descending (newest first)
+    let itemsByParentSlug: [String: [CollectionItem]]
+    /// child items whose `parentField` matched no parent item
+    let orphans: [CollectionItem]
+    /// every non-orphan child item, newest first
+    let recentItems: [CollectionItem]
+}
+
 // swiftlint:disable:next type_body_length
 public struct PageContextBuilder {
     private let postsPerPage = 6
@@ -301,14 +319,41 @@ public struct PageContextBuilder {
         baseURL: String
     ) -> [PagePlan] {
         var plans: [PagePlan] = []
+        let resolvedChildren = resolveChildCollections(
+            configs: configs,
+            collections: collections,
+            lang: lang,
+            defaultLanguage: defaultLanguage
+        )
         for config in configs {
             guard let collection = collections[config.id] else { continue }
             let resolvedConfig = applyOverlay(to: config, overlay: overlay)
             let resolvedItems = bestFitItems(collection.items, lang: lang, defaultLanguage: defaultLanguage)
             let langCollection = Collection(config: resolvedConfig, items: resolvedItems)
+            // Child collections route their items under the parent instead of
+            // generating their own list/taxonomy pages.
+            if resolvedConfig.isChild {
+                if let resolvedChild = resolvedChildren.byChildId[config.id] {
+                    plans.append(contentsOf: makeChildCollectionPlans(
+                        resolvedChild,
+                        rendered: collectionRenderedContent[config.id] ?? [:],
+                        site: siteContext,
+                        urlBuilder: urlBuilder,
+                        lang: lang,
+                        defaultLanguage: defaultLanguage,
+                        baseURL: baseURL
+                    ))
+                }
+                continue
+            }
+            // When this collection is a parent, precompute the per-project
+            // update timeline so list cards and detail pages can render it.
+            let timeline = resolvedChildren.byParentId[config.id]
+                .map { buildParentTimeline($0, urlBuilder: urlBuilder) }
             plans.append(contentsOf: makeCollectionPlans(
                 collection: langCollection,
                 rendered: collectionRenderedContent[config.id] ?? [:],
+                updatesBySlug: timeline,
                 site: siteContext,
                 urlBuilder: urlBuilder,
                 lang: lang,
@@ -335,6 +380,7 @@ public struct PageContextBuilder {
                 home: applyOverlay(to: home, overlay: overlay),
                 site: siteContext,
                 collections: collections,
+                childCollections: resolvedChildren.byChildId,
                 urlBuilder: urlBuilder,
                 lang: lang,
                 defaultLanguage: defaultLanguage,
@@ -784,6 +830,7 @@ private extension PageContextBuilder {
         home: HomeConfig,
         site: [String: Any],
         collections: [String: Collection],
+        childCollections: [String: ResolvedChildCollection] = [:],
         urlBuilder: SiteURLBuilder,
         lang: String = "en",
         defaultLanguage: String = "en",
@@ -813,6 +860,16 @@ private extension PageContextBuilder {
             urlBuilder: urlBuilder,
             site: site
         )
+        let building = homeBuildingCards(
+            collectionId: home.buildingCollection,
+            count: home.buildingCount ?? 3,
+            childCollections: childCollections,
+            collections: collections,
+            lang: lang,
+            defaultLanguage: defaultLanguage,
+            urlBuilder: urlBuilder,
+            site: site
+        )
 
         let pageContext: [String: Any] = [
             "type": "home",
@@ -835,7 +892,7 @@ private extension PageContextBuilder {
                 canonicalRoute: route
             )
         ]
-        let homeContext = homeBlockContext(home: home, featured: featured, recent: recent)
+        let homeContext = homeBlockContext(home: home, featured: featured, recent: recent, building: building)
         let context: [String: Any] = [
             "site": site,
             "page": pageContext,
@@ -874,11 +931,13 @@ private extension PageContextBuilder {
     private func homeBlockContext(
         home: HomeConfig,
         featured: [[String: Any]],
-        recent: [[String: Any]]
+        recent: [[String: Any]],
+        building: [[String: Any]]
     ) -> [String: Any] {
         var homeContext: [String: Any] = [
             "featured": featured,
-            "recent": recent
+            "recent": recent,
+            "building": building
         ]
         if let cta = home.heroPrimaryCta {
             homeContext["heroPrimaryCta"] = ctaContext(cta)
@@ -888,12 +947,16 @@ private extension PageContextBuilder {
         }
         homeContext["featuredLabel"] = escapeHTML(home.featuredLabel ?? "Selected work")
         homeContext["recentLabel"] = escapeHTML(home.recentLabel ?? "Recent writing")
+        homeContext["buildingLabel"] = escapeHTML(home.buildingLabel ?? "What I'm building")
         homeContext["aboutEyebrow"] = escapeHTML(home.aboutEyebrow ?? "About")
         if let cta = home.featuredCta {
             homeContext["featuredCta"] = ctaContext(cta)
         }
         if let cta = home.recentCta {
             homeContext["recentCta"] = ctaContext(cta)
+        }
+        if let cta = home.buildingCta {
+            homeContext["buildingCta"] = ctaContext(cta)
         }
         if let links = home.aboutLinks, links.isEmpty == false {
             homeContext["aboutLinks"] = links.map { ctaContext($0) }
@@ -1108,6 +1171,8 @@ private extension PageContextBuilder {
         if let cta = homeOverlay.featuredCta { copy.featuredCta = cta }
         if let label = homeOverlay.recentLabel { copy.recentLabel = label }
         if let cta = homeOverlay.recentCta { copy.recentCta = cta }
+        if let label = homeOverlay.buildingLabel { copy.buildingLabel = label }
+        if let cta = homeOverlay.buildingCta { copy.buildingCta = cta }
         if let eyebrow = homeOverlay.aboutEyebrow { copy.aboutEyebrow = eyebrow }
         if let links = homeOverlay.aboutLinks { copy.aboutLinks = links }
         return copy
@@ -1240,6 +1305,7 @@ private extension PageContextBuilder {
     func makeCollectionPlans(
         collection: Collection,
         rendered: [String: String],
+        updatesBySlug: [String: [[String: Any]]]? = nil,
         site: [String: Any],
         urlBuilder: SiteURLBuilder,
         lang: String = "en",
@@ -1255,6 +1321,7 @@ private extension PageContextBuilder {
         var plans: [PagePlan] = [
             makeCollectionListPlan(
                 collection: collection,
+                updatesBySlug: updatesBySlug,
                 site: site,
                 urlBuilder: urlBuilder,
                 route: route,
@@ -1266,11 +1333,17 @@ private extension PageContextBuilder {
             )
         ]
         for (index, item) in collection.items.enumerated() {
+            // Non-nil (possibly empty) when this is a parent collection, so the
+            // detail page can render the timeline + status even with no updates.
+            let itemUpdates: [[String: Any]]? = (updatesBySlug != nil)
+                ? (updatesBySlug?[item.slug] ?? [])
+                : nil
             plans.append(makeCollectionDetailPlan(
                 item: item,
                 index: index,
                 collection: collection,
                 rendered: rendered,
+                updates: itemUpdates,
                 site: site,
                 urlBuilder: urlBuilder,
                 route: route,
@@ -1294,6 +1367,7 @@ private extension PageContextBuilder {
     /// Builds the listing-page plan for a collection.
     private func makeCollectionListPlan(
         collection: Collection,
+        updatesBySlug: [String: [[String: Any]]]? = nil,
         site: [String: Any],
         urlBuilder: SiteURLBuilder,
         route: String,
@@ -1305,7 +1379,9 @@ private extension PageContextBuilder {
     ) -> PagePlan {
         let listTemplate = collection.config.listTemplate ?? "layouts/post-list"
         let itemContexts = collection.items.map {
-            collectionItemCardContext($0, route: route, urlBuilder: urlBuilder, site: site)
+            collectionItemCardContext(
+                $0, route: route, updatesBySlug: updatesBySlug, urlBuilder: urlBuilder, site: site
+            )
         }
         let listTitle = collection.config.headline ?? collection.config.id.capitalized
         var listPageContext: [String: Any] = [
@@ -1357,6 +1433,7 @@ private extension PageContextBuilder {
         index: Int,
         collection: Collection,
         rendered: [String: String],
+        updates: [[String: Any]]? = nil,
         site: [String: Any],
         urlBuilder: SiteURLBuilder,
         route: String,
@@ -1375,6 +1452,7 @@ private extension PageContextBuilder {
             taxonomies: collection.config.resolvedTaxonomies,
             collectionRoute: route,
             rendered: rendered,
+            updates: updates,
             lang: lang,
             defaultLanguage: defaultLanguage,
             baseURL: baseURL
@@ -1414,6 +1492,7 @@ private extension PageContextBuilder {
         taxonomies: [String],
         collectionRoute: String,
         rendered: [String: String],
+        updates: [[String: Any]]? = nil,
         lang: String,
         defaultLanguage: String,
         baseURL: String
@@ -1474,6 +1553,18 @@ private extension PageContextBuilder {
             trimmedCoverImage: trimmedCoverImage,
             urlBuilder: urlBuilder
         )
+        // Parent collections (those with a child/updates collection) carry a
+        // non-nil `updates` array — possibly empty — and gain a status + a
+        // last-activity summary derived from the newest update.
+        if let updates {
+            pageContext["updates"] = updates
+            pageContext["updateCount"] = updates.count
+            pageContext["status"] = escapeHTML((item.frontMatter["status"] as? String) ?? "active")
+            if let newest = updates.first {
+                if let relative = newest["relativeDate"] { pageContext["relativeUpdated"] = relative }
+                if let display = newest["displayDate"] { pageContext["lastUpdated"] = display }
+            }
+        }
         return pageContext
     }
 
@@ -1599,6 +1690,7 @@ private extension PageContextBuilder {
     func collectionItemCardContext(
         _ item: CollectionItem,
         route: String,
+        updatesBySlug: [String: [[String: Any]]]? = nil,
         urlBuilder: SiteURLBuilder,
         site: [String: Any] = [:]
     ) -> [String: Any] {
@@ -1637,6 +1729,18 @@ private extension PageContextBuilder {
         }
         if let coverPath = resolvedCoverImage(for: item, urlBuilder: urlBuilder) {
             ctx["coverImage"] = coverPath
+        }
+        // Parent-collection cards (building index, home) get a capped update
+        // timeline plus status + recency so they can signal momentum.
+        if let updatesBySlug {
+            let rows = updatesBySlug[item.slug] ?? []
+            ctx["updates"] = Array(rows.prefix(3))
+            ctx["updateCount"] = rows.count
+            ctx["status"] = escapeHTML((item.frontMatter["status"] as? String) ?? "active")
+            if let newest = rows.first {
+                if let relative = newest["relativeDate"] { ctx["relativeUpdated"] = relative }
+                if let display = newest["displayDate"] { ctx["lastUpdated"] = display }
+            }
         }
         return ctx
     }
@@ -1691,6 +1795,239 @@ private extension PageContextBuilder {
             }
         }
         return chips
+    }
+
+    /// Resolves every child collection against its parent for one language:
+    /// groups child items under their parent slug (newest first), records
+    /// parent titles, and flags orphans (a `parentField` matching no parent).
+    /// Returned keyed both by parent id and child id for the two consumers.
+    private func resolveChildCollections(
+        configs: [CollectionConfig],
+        collections: [String: Collection],
+        lang: String,
+        defaultLanguage: String
+    ) -> (byParentId: [String: ResolvedChildCollection], byChildId: [String: ResolvedChildCollection]) {
+        var byParentId: [String: ResolvedChildCollection] = [:]
+        var byChildId: [String: ResolvedChildCollection] = [:]
+        for config in configs where config.isChild {
+            guard let parentId = config.parent,
+                  let parentConfig = configs.first(where: { $0.id == parentId }),
+                  let parentCollection = collections[parentId],
+                  let childCollection = collections[config.id] else { continue }
+            let parentItems = bestFitItems(parentCollection.items, lang: lang, defaultLanguage: defaultLanguage)
+            var parentTitles: [String: String] = [:]
+            for item in parentItems { parentTitles[item.slug] = item.title }
+            let validSlugs = Set(parentItems.map { $0.slug })
+
+            let childItems = bestFitItems(childCollection.items, lang: lang, defaultLanguage: defaultLanguage)
+            let field = config.resolvedParentField
+            var grouped: [String: [CollectionItem]] = [:]
+            var orphans: [CollectionItem] = []
+            var valid: [CollectionItem] = []
+            for item in childItems {
+                guard let parentSlug = item.frontMatter[field] as? String, validSlugs.contains(parentSlug) else {
+                    orphans.append(item)
+                    continue
+                }
+                grouped[parentSlug, default: []].append(item)
+                valid.append(item)
+            }
+            let byDateDesc: ([CollectionItem]) -> [CollectionItem] = { items in
+                items.sorted { ($0.date ?? "") > ($1.date ?? "") }
+            }
+            let resolved = ResolvedChildCollection(
+                childConfig: config,
+                parentConfig: parentConfig,
+                parentTitles: parentTitles,
+                itemsByParentSlug: grouped.mapValues(byDateDesc),
+                orphans: orphans,
+                recentItems: byDateDesc(valid)
+            )
+            byParentId[parentId] = resolved
+            byChildId[config.id] = resolved
+        }
+        return (byParentId, byChildId)
+    }
+
+    /// Builds the per-parent-slug timeline (each a list of update row contexts,
+    /// newest first) used by parent list cards and parent detail pages.
+    private func buildParentTimeline(
+        _ resolved: ResolvedChildCollection,
+        urlBuilder: SiteURLBuilder
+    ) -> [String: [[String: Any]]] {
+        let parentRoute = normalizedCollectionRoute(resolved.parentConfig.route)
+        var timeline: [String: [[String: Any]]] = [:]
+        for (parentSlug, items) in resolved.itemsByParentSlug {
+            timeline[parentSlug] = items.map {
+                updateRowContext($0, parentRoute: parentRoute, parentSlug: parentSlug, urlBuilder: urlBuilder)
+            }
+        }
+        return timeline
+    }
+
+    /// One update's context as a timeline row / card: title, nested link, dates,
+    /// relative recency, and optional status.
+    private func updateRowContext(
+        _ item: CollectionItem,
+        parentRoute: String,
+        parentSlug: String,
+        urlBuilder: SiteURLBuilder
+    ) -> [String: Any] {
+        var ctx: [String: Any] = [
+            "slug": item.slug,
+            "title": escapeHTML(item.title),
+            "summary": escapeHTML(item.summary ?? ""),
+            "blurb": escapeHTML(item.summary ?? ""),
+            "date": escapeHTML(item.date ?? ""),
+            "displayDate": escapeHTML(formatDisplayDate(item.date ?? "")),
+            "relativeDate": escapeHTML(relativeDate(item.date ?? "")),
+            "link": urlBuilder.link(for: "\(parentRoute)\(parentSlug)/\(item.slug)/")
+        ]
+        if let status = item.frontMatter["status"] as? String {
+            ctx["status"] = escapeHTML(status)
+        }
+        return ctx
+    }
+
+    /// Builds the standalone detail plans for a child collection's items, routed
+    /// under their parent (`<parentRoute>/<parentSlug>/<slug>/`) with a link
+    /// back to the project and prev/next sibling updates within that project.
+    private func makeChildCollectionPlans(
+        _ resolved: ResolvedChildCollection,
+        rendered: [String: String],
+        site: [String: Any],
+        urlBuilder: SiteURLBuilder,
+        lang: String,
+        defaultLanguage: String,
+        baseURL: String
+    ) -> [PagePlan] {
+        let parentRoute = normalizedCollectionRoute(resolved.parentConfig.route)
+        let detailTemplate = resolved.childConfig.detailTemplate ?? "layouts/post"
+        let langPrefix = (lang == defaultLanguage) ? "" : "/\(lang)"
+        var plans: [PagePlan] = []
+        for (parentSlug, items) in resolved.itemsByParentSlug {
+            let projectLink = urlBuilder.link(for: "\(parentRoute)\(parentSlug)/")
+            let projectTitle = resolved.parentTitles[parentSlug] ?? parentSlug
+            for (index, item) in items.enumerated() {
+                let detailRoute = "\(parentRoute)\(parentSlug)/\(item.slug)/"
+                var pageContext = collectionDetailPageContext(
+                    item: item,
+                    site: site,
+                    urlBuilder: urlBuilder,
+                    detailRoute: detailRoute,
+                    taxonomies: [],
+                    collectionRoute: parentRoute,
+                    rendered: rendered,
+                    lang: lang,
+                    defaultLanguage: defaultLanguage,
+                    baseURL: baseURL
+                )
+                pageContext["project"] = ["title": escapeHTML(projectTitle), "link": projectLink]
+                pageContext["relativeDate"] = escapeHTML(relativeDate(item.date ?? ""))
+                if let status = item.frontMatter["status"] as? String {
+                    pageContext["status"] = escapeHTML(status)
+                }
+                // Items are newest-first: the newer sibling is the previous index.
+                if index > 0 {
+                    pageContext["siblingNewer"] = siblingUpdateRef(
+                        items[index - 1], parentRoute: parentRoute, parentSlug: parentSlug, urlBuilder: urlBuilder
+                    )
+                }
+                if index < items.count - 1 {
+                    pageContext["siblingOlder"] = siblingUpdateRef(
+                        items[index + 1], parentRoute: parentRoute, parentSlug: parentSlug, urlBuilder: urlBuilder
+                    )
+                }
+                let context: [String: Any] = [
+                    "site": site,
+                    "page": pageContext,
+                    "links": ["home": urlBuilder.link(for: "/")],
+                    "collection": ["id": resolved.childConfig.id, "route": projectLink]
+                ]
+                plans.append(PagePlan(route: langPrefix + detailRoute, template: detailTemplate, context: context))
+            }
+        }
+        return plans
+    }
+
+    /// A compact {title, link, displayDate} reference to a sibling update.
+    private func siblingUpdateRef(
+        _ item: CollectionItem,
+        parentRoute: String,
+        parentSlug: String,
+        urlBuilder: SiteURLBuilder
+    ) -> [String: Any] {
+        [
+            "title": escapeHTML(item.title),
+            "link": urlBuilder.link(for: "\(parentRoute)\(parentSlug)/\(item.slug)/"),
+            "displayDate": escapeHTML(formatDisplayDate(item.date ?? ""))
+        ]
+    }
+
+    /// Cards for the home "what I'm building" section: the most recent updates
+    /// across all projects, each linking to its nested page and naming its
+    /// parent project. Falls back to plain collection cards if the configured
+    /// collection isn't a child collection.
+    private func homeBuildingCards(
+        collectionId: String?,
+        count: Int,
+        childCollections: [String: ResolvedChildCollection],
+        collections: [String: Collection],
+        lang: String,
+        defaultLanguage: String,
+        urlBuilder: SiteURLBuilder,
+        site: [String: Any]
+    ) -> [[String: Any]] {
+        guard let collectionId else { return [] }
+        guard let resolved = childCollections[collectionId] else {
+            return homeCollectionCards(
+                collectionId: collectionId,
+                count: count,
+                collections: collections,
+                lang: lang,
+                defaultLanguage: defaultLanguage,
+                urlBuilder: urlBuilder,
+                site: site
+            )
+        }
+        let parentRoute = normalizedCollectionRoute(resolved.parentConfig.route)
+        let field = resolved.childConfig.resolvedParentField
+        return resolved.recentItems.prefix(count).map { item -> [String: Any] in
+            let parentSlug = (item.frontMatter[field] as? String) ?? ""
+            var ctx = updateRowContext(item, parentRoute: parentRoute, parentSlug: parentSlug, urlBuilder: urlBuilder)
+            ctx["project"] = [
+                "title": escapeHTML(resolved.parentTitles[parentSlug] ?? parentSlug),
+                "link": urlBuilder.link(for: "\(parentRoute)\(parentSlug)/")
+            ]
+            return ctx
+        }
+    }
+
+    /// Build-time relative recency ("today", "3d ago", "2w ago", "5mo ago").
+    /// Recomputed on every build; acceptable for a frequently-deployed static
+    /// site. Falls back to the formatted date when parsing fails.
+    func relativeDate(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else { return "" }
+        let parsed: Date? = {
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime]
+            if let date = iso.date(from: trimmed) { return date }
+            let dayFormatter = DateFormatter()
+            dayFormatter.locale = Locale(identifier: "en_US_POSIX")
+            dayFormatter.timeZone = TimeZone(identifier: "UTC")
+            dayFormatter.dateFormat = "yyyy-MM-dd"
+            return dayFormatter.date(from: String(trimmed.prefix(10)))
+        }()
+        guard let date = parsed else { return formatDisplayDate(raw) }
+        let seconds = Date().timeIntervalSince(date)
+        let days = Int(seconds / 86_400)
+        if days <= 0 { return "today" }
+        if days == 1 { return "yesterday" }
+        if days < 7 { return "\(days)d ago" }
+        if days < 30 { return "\(days / 7)w ago" }
+        if days < 365 { return "\(days / 30)mo ago" }
+        return "\(days / 365)y ago"
     }
 
     /// Ensures a collection route ends with a trailing slash so concatenating
