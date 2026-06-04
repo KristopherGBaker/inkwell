@@ -1,3 +1,5 @@
+import BlogCore
+
 enum BlogVersion {
-    static let version = "0.12.0"
+    static let version = InkwellVersion.current
 }
