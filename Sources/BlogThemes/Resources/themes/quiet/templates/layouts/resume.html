@@ -2,7 +2,7 @@
 {% block main %}<main class="container page-shell" style="padding-top: var(--page-padding-top);">
   <div class="no-print resume-toolbar">
     <p class="eyebrow" style="margin: 0;">{% if page.eyebrow %}{{ page.eyebrow }}{% else %}Résumé{% endif %}</p>
-    {% if data.resume.pdf %}<a href="{{ data.resume.pdf }}" download class="btn-ghost">{{ data.resume.labels.download|default:"Download PDF" }} →</a>{% else %}<button type="button" onclick="window.print()" class="btn-ghost">{{ data.resume.labels.print|default:"Print / Save as PDF" }} →</button>{% endif %}
+    {% if data.resume.pdf %}<a href="{{ data.resume.pdf }}" download class="btn-ghost"{% if site.analytics.umami.events.themeElements %} data-umami-event="resume-download"{% endif %}>{{ data.resume.labels.download|default:"Download PDF" }} →</a>{% else %}<button type="button" onclick="window.print()" class="btn-ghost"{% if site.analytics.umami.events.themeElements %} data-umami-event="resume-print"{% endif %}>{{ data.resume.labels.print|default:"Print / Save as PDF" }} →</button>{% endif %}
   </div>
 
   <header class="resume-header">
@@ -10,8 +10,8 @@
     {% if site.author.role %}<p class="resume-header-role">{{ site.author.role }}{% if data.resume.subtitle %} · {{ data.resume.subtitle }}{% endif %}</p>{% endif %}
     <div class="resume-header-meta">
       {% if site.author.location %}<span>{{ site.author.location }}</span>{% endif %}
-      {% if site.author.email %}<span><a href="mailto:{{ site.author.email }}">{{ site.author.email }}</a></span>{% endif %}
-      {% if site.author.social %}{% for link in site.author.social %}<span><a href="{{ link.url }}">{{ link.label }}</a></span>{% endfor %}{% endif %}
+      {% if site.author.email %}<span><a href="mailto:{{ site.author.email }}"{% if site.analytics.umami.events.themeElements %} data-umami-event="email"{% endif %}>{{ site.author.email }}</a></span>{% endif %}
+      {% if site.author.social %}{% for link in site.author.social %}<span><a href="{{ link.url }}"{% if site.analytics.umami.events.themeElements %} data-umami-event="social" data-umami-event-network="{{ link.label }}"{% endif %}>{{ link.label }}</a></span>{% endfor %}{% endif %}
       {% if data.resume.status %}<span>{{ data.resume.status }}</span>{% endif %}
     </div>
   </header>

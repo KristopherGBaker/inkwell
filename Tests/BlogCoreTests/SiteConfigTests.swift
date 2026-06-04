@@ -156,7 +156,72 @@ final class SiteConfigTests: XCTestCase {
         XCTAssertNil(umami.domains)
         XCTAssertNil(umami.respectDoNotTrack)
         XCTAssertNil(umami.tag)
+        XCTAssertNil(umami.events)
         XCTAssertNil(umami.local)
+    }
+
+    func testDecodesAnalyticsUmamiEventsBlock() throws {
+        let json = """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "analytics": {
+            "umami": {
+              "scriptUrl": "https://x/s.js",
+              "websiteId": "id",
+              "events": {
+                "outboundLinks": true,
+                "downloads": true,
+                "themeElements": true,
+                "downloadExtensions": ["pdf", "zip"]
+              }
+            }
+          }
+        }
+        """
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        let events = try XCTUnwrap(config.analytics?.umami?.events)
+        XCTAssertEqual(events.outboundLinks, true)
+        XCTAssertEqual(events.downloads, true)
+        XCTAssertEqual(events.themeElements, true)
+        XCTAssertEqual(events.downloadExtensions, ["pdf", "zip"])
+    }
+
+    func testDecodesAnalyticsUmamiEventsPartialBlock() throws {
+        // Only one flag set; the rest stay nil and downloadExtensions is omitted.
+        // swiftlint:disable:next line_length
+        let json = #"{"title":"Kris","baseURL":"/","analytics":{"umami":{"scriptUrl":"https://x/s.js","websiteId":"id","events":{"outboundLinks":true}}}}"#
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        let events = try XCTUnwrap(config.analytics?.umami?.events)
+        XCTAssertEqual(events.outboundLinks, true)
+        XCTAssertNil(events.downloads)
+        XCTAssertNil(events.themeElements)
+        XCTAssertNil(events.downloadExtensions)
+    }
+
+    func testDecodesAnalyticsUmamiEventsInLocalBlock() throws {
+        let json = """
+        {
+          "title": "Kris",
+          "baseURL": "/",
+          "analytics": {
+            "umami": {
+              "scriptUrl": "https://x/s.js",
+              "websiteId": "id",
+              "local": {
+                "scriptUrl": "http://localhost:3000/script.js",
+                "websiteId": "local-456",
+                "events": { "downloads": true }
+              }
+            }
+          }
+        }
+        """
+        let config = try JSONDecoder().decode(SiteConfig.self, from: Data(json.utf8))
+        let local = try XCTUnwrap(config.analytics?.umami?.local)
+        XCTAssertEqual(local.events?.downloads, true)
+        // Events on the prod block stay independent of the local override.
+        XCTAssertNil(config.analytics?.umami?.events)
     }
 
     func testLegacyConfigWithoutAnalyticsDecodes() throws {
