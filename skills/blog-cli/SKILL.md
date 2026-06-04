@@ -5,7 +5,7 @@ description: Use when a user wants to operate the Swift inkwell CLI — create p
 
 # Inkwell CLI
 
-Use this skill to operate the `inkwell` command safely and consistently. Inkwell is a Swift static publishing tool; v0.3+ supports both blogs and portfolio sites, v0.5+ adds i18n, and v0.6–0.8 adds the responsive image pipeline, OG cards, KaTeX math, reading time, code-copy, the `quiet` theme spacing system, the `brandIcon` config, downloadable PDF résumés, standardized page layouts, and first-class Umami analytics with a serve-mode override.
+Use this skill to operate the `inkwell` command safely and consistently. Inkwell is a Swift static publishing tool; v0.3+ supports both blogs and portfolio sites, v0.5+ adds i18n, v0.6–0.8 adds the responsive image pipeline, OG cards, KaTeX math, reading time, code-copy, the `quiet` theme spacing system, the `brandIcon` config, downloadable PDF résumés, standardized page layouts, and first-class Umami analytics with a serve-mode override, and v0.11+ adds child collections (a parent item with a chronological stream of sub-items — the "Building" section pattern of projects + updates) plus the home `buildingCollection` feed.
 
 ## When To Use
 - User asks to run or explain `inkwell` commands.
@@ -40,6 +40,13 @@ Use this skill to operate the `inkwell` command safely and consistently. Inkwell
 5. Add the résumé shell: `content/pages/resume.md` with `layout: resume` and an empty body.
 6. Build: `inkwell build`
 7. Validate: `inkwell check`
+
+### Building section (projects + updates, via child collections)
+1. Declare two collections: a parent (`building`) and a child with `parent`/`parentField` set (`updates`). See `site-setup` for the full config and `subskills/content-new.md` for the routing rules.
+2. Add a project: `inkwell content new building "Project name"` (set `order` + `status`).
+3. Post an update: `inkwell content new updates "Update title"`, then fill in the `project:` field with the project's slug. Updates are intentionally lighter than blog posts.
+4. (Optional) Point the home page at the feed: `home.buildingCollection = "updates"`.
+5. Validate: `inkwell check` (flags any update whose `project:` matches no project).
 
 ## Guardrails
 - Run all commands from the inkwell project root (the directory containing `blog.config.json`).
