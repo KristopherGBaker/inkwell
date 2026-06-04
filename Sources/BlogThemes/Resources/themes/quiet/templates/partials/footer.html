@@ -3,11 +3,11 @@
     <div>
       <p class="eyebrow site-footer-cta-eyebrow">{{ site.footerCta.eyebrow }}</p>
       <h2 class="h2 site-footer-cta-h2">{{ site.footerCta.headline }}</h2>
-      {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="btn-primary">{{ site.author.email }} →</a>{% endif %}
+      {% if site.author.email %}<a href="mailto:{{ site.author.email }}" class="btn-primary"{% if site.analytics.umami.events.themeElements %} data-umami-event="email"{% endif %}>{{ site.author.email }} →</a>{% endif %}
     </div>
     <div class="site-footer-meta">
       {% if site.author.location %}<p class="site-footer-meta-line">{{ site.author.location }}{% if site.author.timezoneLabel %} · {{ site.author.timezoneLabel }}{% endif %}</p>{% endif %}
-      {% if site.author.social %}<ul class="site-footer-meta-links">{% for link in site.author.social %}<li><a href="{{ link.url }}" class="nav-link">{{ link.label }}</a></li>{% endfor %}</ul>{% endif %}
+      {% if site.author.social %}<ul class="site-footer-meta-links">{% for link in site.author.social %}<li><a href="{{ link.url }}" class="nav-link"{% if site.analytics.umami.events.themeElements %} data-umami-event="social" data-umami-event-network="{{ link.label }}"{% endif %}>{{ link.label }}</a></li>{% endfor %}</ul>{% endif %}
       {% if site.copyrightLine %}<p class="site-footer-meta-copy">{{ site.copyrightLine }}</p>{% endif %}
     </div>
   </div>
