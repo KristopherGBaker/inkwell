@@ -18,6 +18,14 @@ public struct CollectionConfig: Codable, Equatable {
     public var eyebrow: String?
     public var headline: String?
     public var lede: String?
+    /// When set, this collection is a *child* of the collection with this id.
+    /// Child items don't get their own list/taxonomy pages; instead each item
+    /// is routed under its parent item (`<parentRoute>/<parentSlug>/<slug>/`)
+    /// and surfaced back on the parent as a chronological timeline.
+    public var parent: String?
+    /// Front-matter key on a child item naming its parent's slug. Defaults to
+    /// `"parent"`. Only meaningful when `parent` is set.
+    public var parentField: String?
 
     public init(
         id: String,
@@ -32,7 +40,9 @@ public struct CollectionConfig: Codable, Equatable {
         scaffold: String? = nil,
         eyebrow: String? = nil,
         headline: String? = nil,
-        lede: String? = nil
+        lede: String? = nil,
+        parent: String? = nil,
+        parentField: String? = nil
     ) {
         self.id = id
         self.dir = dir
@@ -47,9 +57,16 @@ public struct CollectionConfig: Codable, Equatable {
         self.eyebrow = eyebrow
         self.headline = headline
         self.lede = lede
+        self.parent = parent
+        self.parentField = parentField
     }
 
     public var resolvedSortBy: String { sortBy ?? "date" }
     public var resolvedSortOrder: String { sortOrder ?? "desc" }
     public var resolvedTaxonomies: [String] { taxonomies ?? ["tags", "categories"] }
+
+    /// True when this collection's items hang off a parent collection.
+    public var isChild: Bool { parent != nil }
+    /// Front-matter key holding the parent slug for child items.
+    public var resolvedParentField: String { parentField ?? "parent" }
 }
