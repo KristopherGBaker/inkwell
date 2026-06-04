@@ -82,3 +82,38 @@ Inkwell can inject a [Umami](https://umami.is) tracking script for you. Add an `
 ```
 
 Production builds (`inkwell build`) always use the top-level fields. `inkwell serve --watch` swaps in the `local` block if set, and emits no script tag at all when it isn't — so dev sessions never accidentally ping your prod Umami instance. Set `domains` to your production hostname so any stray non-prod traffic that does load the prod script gets filtered server-side. Required fields are `scriptUrl` and `websiteId`; everything else is optional.
+
+#### Event tracking
+
+By default the integration records page views only. Add an optional `events` block to track clicks, outbound links, and downloads on top of page views. Everything is off unless you turn it on, so existing sites are unaffected.
+
+```jsonc
+{
+  "analytics": {
+    "umami": {
+      "scriptUrl": "https://analytics.example.com/script.js",
+      "websiteId": "<your website ID>",
+      "events": {
+        "outboundLinks": true,    // track clicks to other domains as `outbound-link`
+        "downloads": true,        // track file downloads as `download`
+        "themeElements": true,    // tag the theme's known CTAs (see table below)
+        "downloadExtensions": ["pdf", "zip", "dmg"]  // optional — override the default list
+      }
+    }
+  }
+}
+```
+
+`outboundLinks` and `downloads` install one tiny inline click listener that fires `umami.track()` for any matching link **anywhere on the page**, including links inside post and case-study bodies. A link counts as a download when it has a `download` attribute or its path ends in one of `downloadExtensions` (default: `pdf, zip, dmg, csv, xlsx, doc, docx, pptx, mp3, mp4, png, jpg, svg`). Downloads take precedence over outbound links, so each click fires at most one event.
+
+`themeElements` emits declarative `data-umami-event` attributes on the bundled `quiet` theme's conversion CTAs:
+
+| Element | Event name | Properties |
+|---|---|---|
+| Résumé PDF download | `resume-download` | — |
+| Résumé print button (no PDF) | `resume-print` | — |
+| Email links (footer / about / résumé / post reply) | `email` | — |
+| Social links (footer / résumé) | `social` | `network` (the link label, e.g. `GitHub`) |
+| Landing hero primary / secondary CTA | `cta-hero-primary` / `cta-hero-secondary` | — |
+
+Like the script tag itself, event tracking honors build mode: it only renders when the effective Umami block is active, so `inkwell serve --watch` without a `local` block emits no tracker and no event attributes. To exercise events locally, add an `events` block inside `local` too — `local` inherits nothing from the prod block.

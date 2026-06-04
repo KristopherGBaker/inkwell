@@ -5,8 +5,8 @@
     <h1 class="h-display">{{ site.heroHeadline }}</h1>
     {% if site.author.heroSummary %}<p class="home-hero-summary">{{ site.author.heroSummary }}</p>{% else %}{% if site.description %}<p class="home-hero-summary">{{ site.description }}</p>{% endif %}{% endif %}
     {% if home.heroPrimaryCta or home.heroSecondaryCta %}<div class="home-hero-ctas">
-      {% if home.heroPrimaryCta %}<a href="{{ home.heroPrimaryCta.href }}" class="btn-primary">{{ home.heroPrimaryCta.label }} →</a>{% endif %}
-      {% if home.heroSecondaryCta %}<a href="{{ home.heroSecondaryCta.href }}" class="btn-ghost">{{ home.heroSecondaryCta.label }}</a>{% endif %}
+      {% if home.heroPrimaryCta %}<a href="{{ home.heroPrimaryCta.href }}" class="btn-primary"{% if site.analytics.umami.events.themeElements %} data-umami-event="cta-hero-primary"{% endif %}>{{ home.heroPrimaryCta.label }} →</a>{% endif %}
+      {% if home.heroSecondaryCta %}<a href="{{ home.heroSecondaryCta.href }}" class="btn-ghost"{% if site.analytics.umami.events.themeElements %} data-umami-event="cta-hero-secondary"{% endif %}>{{ home.heroSecondaryCta.label }}</a>{% endif %}
     </div>{% endif %}
   </section>
 
