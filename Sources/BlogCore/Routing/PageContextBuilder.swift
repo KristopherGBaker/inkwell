@@ -272,7 +272,12 @@ public struct PageContextBuilder {
             "copyrightLine": copyrightLine(for: siteConfig),
             "heroHeadline": heroHeadline(for: siteConfig, overlay: overlay),
             "footerCta": footerCtaContext(for: siteConfig, overlay: overlay),
-            "themeCopy": themeCopyContext(for: siteConfig, overlay: overlay)
+            "themeCopy": themeCopyContext(for: siteConfig, overlay: overlay),
+            "feeds": [
+                "rss": urlBuilder.link(for: "/rss.xml"),
+                "atom": urlBuilder.link(for: "/atom.xml"),
+                "json": urlBuilder.link(for: "/feed.json")
+            ]
         ]
         if let brandSubtitle = overlay?.author?.tagline ?? siteConfig.author?.tagline {
             siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
