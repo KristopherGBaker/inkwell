@@ -52,6 +52,7 @@ Stencil syntax notes:
 
 - **Posts** (legacy/blog): typed `PostFrontMatter`. Loaded by `loadPosts(in:)`.
 - **Collections** (v0.3): generic `CollectionItem` with typed post fields plus a raw front-matter dictionary for collection-specific extras (`year`, `metrics`, `shots`, etc.). Loaded by `loadCollections(_:in:)`.
+- **Child collections** (v0.9): a collection with `parent`/`parentField` set. `PageContextBuilder.resolveChildCollections` groups child items under their parent slug (newest first) per language; children route at `<parentRoute>/<parentSlug>/<childSlug>/` with `page.project` + sibling refs and emit no list/taxonomy. Parents gain `updates`/`updateCount`/`status`/`relativeUpdated` on cards + detail. `HomeConfig.buildingCollection` adds a third home slot whose cards link to nested updates. Orphans are dropped at build and flagged by `ProjectChecker`.
 - **Pages** (v0.3): `content/pages/*.md`, route from path, `layout` selects the theme template.
 - **Data files** (v0.3): `data/*.yml|json` → `data.<basename>` in every template context.
 - **Translations** (v0.5): files share a slug/route across languages — `foo.md` and `foo.ja.md` are paired automatically. Each item carries `lang` + `availableLanguages`. The renderer emits one set of plans per configured language; non-default languages prefix routes with `/<lang>/`.
@@ -67,7 +68,7 @@ Stencil syntax notes:
 ### Themes
 
 - `default` — original blog theme. Tailwind + amber/stone palette. Used when `siteConfig.theme` is omitted or `"default"`.
-- `quiet` — portfolio-friendly theme bundled in v0.3. CSS tokens + components, no Tailwind. Layouts: `landing`, `post`, `page`, `post-list`, `work-list`, `case-study`, `resume`, `taxonomy`, `404`.
+- `quiet` — portfolio-friendly theme bundled in v0.3. CSS tokens + components, no Tailwind. Layouts: `landing`, `post`, `page`, `post-list`, `work-list`, `case-study`, `building-list`, `building`, `update`, `resume`, `taxonomy`, `404`.
 
 `ThemeManager.injectHeadAssets` branches per theme: default injects Tailwind/Prism/Mermaid; quiet injects tokens.css/components.css/print.css/theme-toggle.js.
 
