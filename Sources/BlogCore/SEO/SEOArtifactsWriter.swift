@@ -10,6 +10,8 @@ struct SEOArtifactsWriter {
     func writeAll(
         posts: [PostDocument],
         collections: [String: Collection],
+        postRenderedContent: [String: String],
+        collectionRenderedContent: [String: [String: [String: String]]],
         routes: [String],
         outputRoot: URL,
         siteConfig: SiteConfig,
@@ -36,9 +38,11 @@ struct SEOArtifactsWriter {
         try writer.writeFile(relativePath: "sitemap.xml", content: sitemap, to: outputRoot)
         try writer.writeFile(relativePath: "robots.txt", content: robots, to: outputRoot)
 
-        try writeRSSFeeds(
+        try writeFeeds(
             posts: posts,
             collections: collections,
+            postRenderedContent: postRenderedContent,
+            collectionRenderedContent: collectionRenderedContent,
             outputRoot: outputRoot,
             siteConfig: siteConfig,
             defaultLanguage: defaultLanguage,
@@ -144,43 +148,68 @@ struct SEOArtifactsWriter {
         }
         return nil
     }
+}
 
-    // MARK: - RSS
+// MARK: - Feeds
 
+extension SEOArtifactsWriter {
+    // Emits RSS 2.0, Atom 1.0, and JSON Feed for the blog. With i18n + a
+    // primary blog collection, one set per language (`/rss.xml`, `/atom.xml`,
+    // `/feed.json` and `/<lang>/...`). Otherwise a single monolingual set,
+    // sourced from the blog collection when present, else legacy posts.
     // swiftlint:disable:next function_parameter_count
-    private func writeRSSFeeds(
+    func writeFeeds(
         posts: [PostDocument],
         collections: [String: Collection],
+        postRenderedContent: [String: String],
+        collectionRenderedContent: [String: [String: [String: String]]],
         outputRoot: URL,
         siteConfig: SiteConfig,
         defaultLanguage: String,
         configuredLanguages: [String],
         i18nEnabled: Bool
     ) throws {
-        // i18n + a primary blog collection: emit one feed per language.
-        // Otherwise: keep the legacy posts-based feed at /rss.xml.
-        if i18nEnabled, let blog = primaryBlogCollection(siteConfig: siteConfig, collections: collections) {
-            for lang in configuredLanguages {
-                let langPrefix = (lang == defaultLanguage) ? "" : lang
-                let feedBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL, langPrefix: langPrefix)
-                let rss = renderRSSFromCollection(
-                    blog,
-                    siteConfig: siteConfig,
+        if let blog = primaryBlogCollection(siteConfig: siteConfig, collections: collections) {
+            let blogID = blog.config.id
+            let route = normalizedFeedRoute(blog.config.route)
+            let languages = i18nEnabled ? configuredLanguages : [defaultLanguage]
+            for lang in languages {
+                let isDefault = (lang == defaultLanguage)
+                let feedBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL, langPrefix: isDefault ? "" : lang)
+                let renderedForLang = collectionRenderedContent[blogID]?[lang] ?? [:]
+                let items = feedItems(
+                    from: blog,
                     lang: lang,
+                    route: route,
+                    rendered: renderedForLang,
                     feedBuilder: feedBuilder
                 )
-                let path = (lang == defaultLanguage) ? "rss.xml" : "\(lang)/rss.xml"
-                try writer.writeFile(relativePath: path, content: rss, to: outputRoot)
+                let channel = makeChannel(
+                    siteConfig: siteConfig,
+                    lang: lang,
+                    emitLanguage: i18nEnabled,
+                    feedBuilder: feedBuilder,
+                    items: items
+                )
+                try writeChannel(channel, langSegment: isDefault ? nil : lang, to: outputRoot)
             }
             return
         }
 
-        let urlBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
-        let rss = renderRSSFromPosts(posts, siteConfig: siteConfig, urlBuilder: urlBuilder)
-        try writer.writeFile(relativePath: "rss.xml", content: rss, to: outputRoot)
+        // No collections configured: legacy posts-based feed at the root.
+        let feedBuilder = SiteURLBuilder(baseURL: siteConfig.baseURL)
+        let items = legacyPostFeedItems(posts, rendered: postRenderedContent, feedBuilder: feedBuilder)
+        let channel = makeChannel(
+            siteConfig: siteConfig,
+            lang: defaultLanguage,
+            emitLanguage: false,
+            feedBuilder: feedBuilder,
+            items: items
+        )
+        try writeChannel(channel, langSegment: nil, to: outputRoot)
     }
 
-    /// Picks the collection that should drive the blog RSS feed. Prefers an
+    /// Picks the collection that should drive the blog feeds. Prefers an
     /// `id == "posts"` collection (matches the legacy `/posts/` shape and the
     /// `inkwell init` scaffold), then falls back to whichever collection was
     /// declared first in `blog.config.json`.
@@ -193,90 +222,96 @@ struct SEOArtifactsWriter {
         return collections[firstID]
     }
 
-    func renderRSSFromCollection(
-        _ collection: Collection,
-        siteConfig: SiteConfig,
-        lang: String,
-        feedBuilder: SiteURLBuilder
-    ) -> String {
-        let route: String = {
-            var raw = collection.config.route
-            if raw.hasPrefix("/") == false { raw = "/" + raw }
-            if raw.hasSuffix("/") == false { raw += "/" }
-            return raw
-        }()
+    private func normalizedFeedRoute(_ raw: String) -> String {
+        var route = raw
+        if route.hasPrefix("/") == false { route = "/" + route }
+        if route.hasSuffix("/") == false { route += "/" }
+        return route
+    }
 
-        let items = collection.items
+    private func feedItems(
+        from collection: Collection,
+        lang: String,
+        route: String,
+        rendered: [String: String],
+        feedBuilder: SiteURLBuilder
+    ) -> [FeedItem] {
+        collection.items
             .filter { $0.lang == lang && $0.draft != true }
             .sorted { ($0.date ?? "") > ($1.date ?? "") }
             .prefix(20)
-            .map { item -> String in
+            .map { item in
                 let link = feedBuilder.compose(route: "\(route)\(item.slug)/")
-                let date = item.date ?? ""
-                let summary = xmlEscape(item.summary ?? "")
-                return """
-                  <item>
-                    <title>\(xmlEscape(item.title))</title>
-                    <link>\(xmlEscape(link))</link>
-                    <guid>\(xmlEscape(link))</guid>
-                    <pubDate>\(xmlEscape(date))</pubDate>
-                    <description>\(summary)</description>
-                  </item>
-                """
+                let content = rendered[item.slug].map { absolutizeFeedURLs(in: $0, baseURL: feedBuilder.baseURL) }
+                return FeedItem(
+                    title: item.title,
+                    link: link,
+                    date: FeedDate.parse(item.date),
+                    summary: item.summary ?? "",
+                    contentHTML: content,
+                    categories: item.tags ?? []
+                )
             }
-            .joined(separator: "\n")
-
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
-          <channel>
-            <title>\(xmlEscape(siteConfig.title))</title>
-            <link>\(xmlEscape(feedBuilder.compose(route: "/")))</link>
-            <description>Recent entries from \(xmlEscape(siteConfig.title))</description>
-            <language>\(xmlEscape(lang))</language>
-        \(items)
-          </channel>
-        </rss>
-        """
     }
 
-    func renderRSSFromPosts(
+    private func legacyPostFeedItems(
         _ posts: [PostDocument],
-        siteConfig: SiteConfig,
-        urlBuilder: SiteURLBuilder
-    ) -> String {
-        let items = posts
+        rendered: [String: String],
+        feedBuilder: SiteURLBuilder
+    ) -> [FeedItem] {
+        posts
             .filter { $0.frontMatter.draft != true }
             .sorted { ($0.frontMatter.date ?? "") > ($1.frontMatter.date ?? "") }
             .prefix(20)
-            .compactMap { post -> String? in
+            .compactMap { post -> FeedItem? in
                 guard let slug = post.frontMatter.slug, let title = post.frontMatter.title else { return nil }
-                let link = urlBuilder.compose(route: "/posts/\(slug)/")
-                let date = post.frontMatter.date ?? ""
-                let summary = xmlEscape(post.frontMatter.summary ?? "")
-                return """
-                  <item>
-                    <title>\(xmlEscape(title))</title>
-                    <link>\(xmlEscape(link))</link>
-                    <guid>\(xmlEscape(link))</guid>
-                    <pubDate>\(xmlEscape(date))</pubDate>
-                    <description>\(summary)</description>
-                  </item>
-                """
+                let link = feedBuilder.compose(route: "/posts/\(slug)/")
+                let content = rendered[slug].map { absolutizeFeedURLs(in: $0, baseURL: feedBuilder.baseURL) }
+                return FeedItem(
+                    title: title,
+                    link: link,
+                    date: FeedDate.parse(post.frontMatter.date),
+                    summary: post.frontMatter.summary ?? "",
+                    contentHTML: content,
+                    categories: post.frontMatter.tags ?? []
+                )
             }
-            .joined(separator: "\n")
+    }
 
-        return """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <rss version="2.0">
-          <channel>
-            <title>\(xmlEscape(siteConfig.title))</title>
-            <link>\(xmlEscape(urlBuilder.baseURL))</link>
-            <description>Recent posts from \(xmlEscape(siteConfig.title))</description>
-        \(items)
-          </channel>
-        </rss>
-        """
+    /// Resolves channel-level metadata, honoring a per-language translation
+    /// overlay so localized feeds get localized title/description.
+    private func makeChannel(
+        siteConfig: SiteConfig,
+        lang: String,
+        emitLanguage: Bool,
+        feedBuilder: SiteURLBuilder,
+        items: [FeedItem]
+    ) -> FeedChannel {
+        let overlay = siteConfig.translations?[lang]
+        let overlayTitle = overlay?.title.flatMap { $0.isEmpty ? nil : $0 }
+        let title = overlayTitle ?? siteConfig.title
+        let description = overlay?.description ?? siteConfig.description ?? "Recent entries from \(title)"
+        let updated = items.compactMap { $0.date }.max()
+        return FeedChannel(
+            title: title,
+            homeLink: feedBuilder.compose(route: "/"),
+            summary: description,
+            language: emitLanguage ? lang : nil,
+            authorName: siteConfig.author?.name,
+            authorEmail: siteConfig.author?.email,
+            selfRSSURL: feedBuilder.compose(route: "/rss.xml"),
+            selfAtomURL: feedBuilder.compose(route: "/atom.xml"),
+            selfJSONURL: feedBuilder.compose(route: "/feed.json"),
+            updated: updated,
+            items: items
+        )
+    }
+
+    private func writeChannel(_ channel: FeedChannel, langSegment: String?, to outputRoot: URL) throws {
+        let prefix = langSegment.map { "\($0)/" } ?? ""
+        try writer.writeFile(relativePath: "\(prefix)rss.xml", content: renderRSS(channel), to: outputRoot)
+        try writer.writeFile(relativePath: "\(prefix)atom.xml", content: renderAtom(channel), to: outputRoot)
+        try writer.writeFile(relativePath: "\(prefix)feed.json", content: renderJSONFeed(channel), to: outputRoot)
     }
 }
 
