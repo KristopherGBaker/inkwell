@@ -12,7 +12,7 @@ Static site generator written in Swift. Started as a personal blog tool; v0.3 ge
 - **Multi-language (v0.5).** Opt-in i18n with default-at-root URLs (`/posts/foo/`) and prefixed translations (`/ja/posts/foo/`). File-suffix authoring — `foo.md` is the default, `foo.ja.md` is the translation. Browser-language detection on first visit, language switcher in the top bar, `<link rel="alternate" hreflang>` for SEO, and graceful fallback so partial translation never hides content.
 - **Authoring CLI.** `init`, `post new`, `content new`, `build`, `serve --watch`, `check`, `theme`, `deploy`.
 - **Markdown.** GFM (tables, task lists, strikethrough, alerts, fenced code) plus Mermaid blocks; bundled client-side code highlighting, with optional build-time Shiki highlighting when configured.
-- **SEO + feeds.** Canonical URLs, Open Graph, Twitter cards, sitemap.xml, robots.txt, RSS, search index.
+- **SEO + feeds.** Canonical URLs, Open Graph, Twitter cards, hreflang sitemap.xml, robots.txt, and search index. Per-language **RSS 2.0, Atom 1.0, and JSON Feed** with full-content `content:encoded`, absolutized URLs, localized channel copy, and `<head>` autodiscovery links.
 - **Static deploy.** GitHub Pages workflow generator built in; output is a plain directory you can deploy anywhere.
 
 ## Install
@@ -218,6 +218,28 @@ Renderer behavior:
 - Listing pages, the home featured/recent strips, and detail pages always include every item — translated where available, falling back to the default language otherwise.
 - The quiet theme renders a language switcher in the top bar (only on pages that have alternate translations) and an inline browser-language redirect script that runs once per visitor (respects `localStorage.lang` so manual switches stick).
 - `<html lang="...">` and `<link rel="alternate" hreflang="...">` are emitted automatically.
+
+## Feeds
+
+Every build emits three feed formats for the blog, no configuration required:
+
+- **RSS 2.0** — `/rss.xml`
+- **Atom 1.0** — `/atom.xml`
+- **JSON Feed 1.1** — `/feed.json`
+
+Each carries the 20 most recent non-draft entries with the full rendered post body (`content:encoded` in RSS, `content type="html"` in Atom, `content_html` in JSON Feed). Root-relative URLs inside the body are absolutized so readers can resolve images and links. Dates are emitted in each format's required shape (RFC-822 for RSS, RFC-3339 for Atom/JSON Feed). All three themes advertise the feeds with `<link rel="alternate">` autodiscovery tags in `<head>`.
+
+With i18n enabled, each language gets its own set (`/rss.xml` + `/<lang>/rss.xml`, and likewise for Atom and JSON Feed). A language feed contains only that language's entries — no fallback — so subscribers get a consistent language. The channel title and description come from `title` / `description` in `blog.config.json`, localized through the `translations.<lang>` overlay:
+
+```json
+{
+  "title": "Kris",
+  "description": "Notes from Tokyo.",
+  "translations": { "ja": { "description": "東京からのノート。" } }
+}
+```
+
+The feed source is the `posts` collection if present, otherwise the first declared collection. Sites with no collections fall back to a single feed built from `content/posts/`.
 
 ## CLI reference
 
