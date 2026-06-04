@@ -49,12 +49,11 @@ struct ContentNewCommand: ParsableCommand {
 
         let scaffoldText = scaffoldText(for: collectionConfig, title: title, slug: slug)
         let fileName: String
-        switch collectionConfig.resolvedSortBy {
-        case "date":
+        if collectionConfig.isChild || collectionConfig.resolvedSortBy == "date" {
             let now = ISO8601DateFormatter().string(from: Date())
             let datePrefix = String(now.prefix(10))
             fileName = "\(datePrefix)-\(slug).md"
-        default:
+        } else {
             fileName = "\(slug).md"
         }
 
@@ -64,6 +63,22 @@ struct ContentNewCommand: ParsableCommand {
     }
 
     private static func scaffoldText(for config: CollectionConfig, title: String, slug: String) -> String {
+        // Child collections (e.g. project updates) get a parent-link field so a
+        // new update only needs the project slug filled in before publishing.
+        if config.isChild {
+            let now = ISO8601DateFormatter().string(from: Date())
+            return """
+            ---
+            title: \(title)
+            date: \(now)
+            slug: \(slug)
+            \(config.resolvedParentField):\u{0020}
+            draft: true
+            ---
+
+            Start writing here.
+            """
+        }
         switch config.resolvedSortBy {
         case "date":
             let now = ISO8601DateFormatter().string(from: Date())

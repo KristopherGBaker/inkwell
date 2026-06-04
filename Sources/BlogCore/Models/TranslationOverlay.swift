@@ -52,6 +52,8 @@ public struct HomeOverlay: Codable, Equatable {
     public var featuredCta: HomeCta?
     public var recentLabel: String?
     public var recentCta: HomeCta?
+    public var buildingLabel: String?
+    public var buildingCta: HomeCta?
     public var aboutEyebrow: String?
     public var aboutLinks: [HomeCta]?
 
@@ -62,6 +64,8 @@ public struct HomeOverlay: Codable, Equatable {
         featuredCta: HomeCta? = nil,
         recentLabel: String? = nil,
         recentCta: HomeCta? = nil,
+        buildingLabel: String? = nil,
+        buildingCta: HomeCta? = nil,
         aboutEyebrow: String? = nil,
         aboutLinks: [HomeCta]? = nil
     ) {
@@ -71,6 +75,8 @@ public struct HomeOverlay: Codable, Equatable {
         self.featuredCta = featuredCta
         self.recentLabel = recentLabel
         self.recentCta = recentCta
+        self.buildingLabel = buildingLabel
+        self.buildingCta = buildingCta
         self.aboutEyebrow = aboutEyebrow
         self.aboutLinks = aboutLinks
     }

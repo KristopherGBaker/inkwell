@@ -1,0 +1,8 @@
+<a href="{{ item.link }}" class="card building-update-card is-{{ item.status|default:"note" }}">
+  <div class="building-update-card-head">
+    {% if item.project %}<span class="building-update-card-project">{{ item.project.title }}</span>{% endif %}
+    <span class="building-update-card-meta"><span class="status-dot"></span>{% if item.relativeDate %}{{ item.relativeDate }}{% else %}{{ item.displayDate }}{% endif %}</span>
+  </div>
+  <h3 class="h-card building-update-card-title">{{ item.title }}</h3>
+  {% if item.blurb %}<p class="building-update-card-blurb">{{ item.blurb }}</p>{% endif %}
+</a>
