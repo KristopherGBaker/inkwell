@@ -70,11 +70,11 @@ public struct PictureRewriter {
         if result.metadata.bypassed {
             return (renderBypass(src: src, alt: alt, title: title, metadata: result.metadata), [])
         }
-        let markup = renderPicture(alt: alt, title: title, result: result)
+        let markup = renderPicture(src: src, alt: alt, title: title, result: result)
         return (markup, Set(result.variants.map(\.filename)))
     }
 
-    private func renderPicture(alt: String, title: String?, result: ImageVariantResult) -> String {
+    private func renderPicture(src: String, alt: String, title: String?, result: ImageVariantResult) -> String {
         let avif = result.variants.filter { $0.format == "avif" }.sorted { $0.width < $1.width }
         let webp = result.variants.filter { $0.format == "webp" }.sorted { $0.width < $1.width }
         let other = result.variants.filter { $0.format != "avif" && $0.format != "webp" }.sorted { $0.width < $1.width }
@@ -91,6 +91,7 @@ public struct PictureRewriter {
         var img = "<img src=\"\(urlPrefix)\(fallback.filename)\""
         img += attrPair("alt", alt)
         if let title { img += attrPair("title", title) }
+        img += attrPair("data-full", src)
         if result.metadata.width > 0 && result.metadata.height > 0 {
             img += " width=\"\(result.metadata.width)\" height=\"\(result.metadata.height)\""
         }
@@ -104,6 +105,7 @@ public struct PictureRewriter {
         var img = "<img src=\"\(src)\""
         img += attrPair("alt", alt)
         if let title { img += attrPair("title", title) }
+        img += attrPair("data-full", src)
         if metadata.width > 0 && metadata.height > 0 {
             img += " width=\"\(metadata.width)\" height=\"\(metadata.height)\""
         }
