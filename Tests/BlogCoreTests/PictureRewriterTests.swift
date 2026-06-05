@@ -43,6 +43,7 @@ final class PictureRewriterTests: XCTestCase {
         XCTAssertTrue(result.html.contains("decoding=\"async\""), "should mark async decode")
         XCTAssertTrue(result.html.contains("width=\"1800\""), "intrinsic width attr")
         XCTAssertTrue(result.html.contains("height=\"1200\""), "intrinsic height attr")
+        XCTAssertTrue(result.html.contains("data-full=\"/static/photo.jpg\""), "should stamp original URL for lightbox")
         XCTAssertEqual(result.usedVariantFilenames.count, 8, "4 widths × 2 formats tracked for output copy")
     }
 
@@ -77,6 +78,7 @@ final class PictureRewriterTests: XCTestCase {
         XCTAssertTrue(result.html.contains("loading=\"lazy\""), "bypass still gets lazy loading hint")
         XCTAssertTrue(result.html.contains("decoding=\"async\""))
         XCTAssertTrue(result.html.contains("alt=\"icon\""))
+        XCTAssertTrue(result.html.contains("data-full=\"/static/icon.svg\""), "bypass should stamp original URL too")
     }
 
     func testLeavesExternalAndDataURLsUntouched() {

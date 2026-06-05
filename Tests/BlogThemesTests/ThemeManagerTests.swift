@@ -63,6 +63,22 @@ final class ThemeManagerTests: XCTestCase {
         XCTAssertTrue(quietOutput.contains("/assets/js/code-copy.js"), "quiet theme should include code-copy.js")
     }
 
+    func testInjectHeadAssetsIncludesLightboxForQuietTheme() {
+        let input = "<html><head></head><body></body></html>"
+        let output = ThemeManager().injectHeadAssets(into: input, theme: "quiet")
+
+        XCTAssertTrue(output.contains("/assets/css/lightbox.css"), "quiet theme should include lightbox.css")
+        XCTAssertTrue(output.contains("/assets/js/lightbox.js"), "quiet theme should include lightbox.js")
+    }
+
+    func testInjectHeadAssetsLightboxRespectsBaseURLPrefix() {
+        let input = "<html><head></head><body></body></html>"
+        let output = ThemeManager().injectHeadAssets(into: input, baseURL: "https://example.com/blog/", theme: "quiet")
+
+        XCTAssertTrue(output.contains("href=\"/blog/assets/css/lightbox.css\""))
+        XCTAssertTrue(output.contains("src=\"/blog/assets/js/lightbox.js\""))
+    }
+
     func testInjectHeadAssetsSkipsKatexCSSWhenNoMath() {
         let input = "<html><head></head><body></body></html>"
         let output = ThemeManager().injectHeadAssets(into: input)
