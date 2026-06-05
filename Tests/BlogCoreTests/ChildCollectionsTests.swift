@@ -61,6 +61,28 @@ final class ChildCollectionsTests: XCTestCase {
         XCTAssertTrue(ja.contains("制作中のもの"), "JA home should use the translated building label")
     }
 
+    func testBuildingNextLinkUsesBuildingCopyNotCaseStudy() throws {
+        let root = try makeBuildingProject()
+        // A second project gives the first one a "next" link to render.
+        try writeFile(root, "content/building/inkwell.md", """
+        ---
+        title: Inkwell
+        slug: inkwell
+        order: 2
+        status: active
+        summary: A static publishing tool.
+        tags: [Swift]
+        ---
+        Inkwell overview body.
+        """)
+        _ = try BuildPipeline().run(in: root)
+
+        let html = try readFile(root, "docs/building/shikisha/index.html")
+        XCTAssertTrue(html.contains("case-study-next"), "building detail should render a next link")
+        XCTAssertTrue(html.contains("See the build log"), "building next CTA should use building copy")
+        XCTAssertFalse(html.contains("Read case study"), "building next CTA should not reuse case-study copy")
+    }
+
     func testOrphanUpdateIsReportedByCheck() throws {
         let root = try makeBuildingProject()
         try writeFile(root, "content/updates/2026-06-10-orphan.md", """
