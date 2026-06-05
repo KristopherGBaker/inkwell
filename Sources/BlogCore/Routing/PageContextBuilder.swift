@@ -1046,6 +1046,8 @@ private extension PageContextBuilder {
             "readingTimeLabel": over?.readingTimeLabel ?? base?.readingTimeLabel ?? "%d min read",
             "buildingBack": escapeHTML(over?.buildingBack ?? base?.buildingBack ?? "← The workshop"),
             "buildingUpdates": escapeHTML(over?.buildingUpdates ?? base?.buildingUpdates ?? "Updates"),
+            "buildingNextLabel": escapeHTML(over?.buildingNextLabel ?? base?.buildingNextLabel ?? "Next"),
+            "buildingNextCta": escapeHTML(over?.buildingNextCta ?? base?.buildingNextCta ?? "See the build log"),
             "updateNewer": escapeHTML(over?.updateNewer ?? base?.updateNewer ?? "Newer"),
             "updateOlder": escapeHTML(over?.updateOlder ?? base?.updateOlder ?? "Older"),
             "notFoundEyebrow": escapeHTML(over?.notFoundEyebrow ?? base?.notFoundEyebrow ?? "404 · NOT FOUND"),

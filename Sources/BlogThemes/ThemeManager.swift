@@ -127,6 +127,7 @@ public struct ThemeManager {
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/tokens.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/components.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/prism.css">
+        <link rel="stylesheet" href="\(assetPrefix)/assets/css/lightbox.css">
         <link rel="stylesheet" href="\(assetPrefix)/assets/css/print.css" media="print">
         <script type="module">
           import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
@@ -144,6 +145,7 @@ public struct ThemeManager {
         <script defer src="\(assetPrefix)/assets/js/theme-toggle.js"></script>
         <script defer src="\(assetPrefix)/assets/js/prism.js"></script>
         <script defer src="\(assetPrefix)/assets/js/code-copy.js"></script>
+        <script defer src="\(assetPrefix)/assets/js/lightbox.js"></script>
         """
     }
 
