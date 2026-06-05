@@ -23,6 +23,8 @@ public struct ThemeCopyConfig: Codable, Equatable {
     /// Building section (child-collection) chrome.
     public var buildingBack: String?
     public var buildingUpdates: String?
+    public var buildingNextLabel: String?
+    public var buildingNextCta: String?
     public var updateNewer: String?
     public var updateOlder: String?
     public var notFoundEyebrow: String?
@@ -46,6 +48,8 @@ public struct ThemeCopyConfig: Codable, Equatable {
         readingTimeLabel: String? = nil,
         buildingBack: String? = nil,
         buildingUpdates: String? = nil,
+        buildingNextLabel: String? = nil,
+        buildingNextCta: String? = nil,
         updateNewer: String? = nil,
         updateOlder: String? = nil,
         notFoundEyebrow: String? = nil,
@@ -68,6 +72,8 @@ public struct ThemeCopyConfig: Codable, Equatable {
         self.readingTimeLabel = readingTimeLabel
         self.buildingBack = buildingBack
         self.buildingUpdates = buildingUpdates
+        self.buildingNextLabel = buildingNextLabel
+        self.buildingNextCta = buildingNextCta
         self.updateNewer = updateNewer
         self.updateOlder = updateOlder
         self.notFoundEyebrow = notFoundEyebrow
