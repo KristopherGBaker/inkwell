@@ -244,6 +244,44 @@ public struct PageContextBuilder {
         return trimmed.isEmpty ? "Field Notes" : siteConfig.title
     }
 
+    /// Per-collection feed autodiscovery entries (lang-aware), one per id in
+    /// `feeds.collections`. Returns nil when no `feeds` block configures any
+    /// collection feeds. Each entry carries an escaped title plus rss/atom/json
+    /// URLs under the collection's route.
+    private func collectionFeedsContext(
+        siteConfig: SiteConfig,
+        urlBuilder: SiteURLBuilder,
+        siteTitle: String
+    ) -> [[String: String]]? {
+        guard let feeds = siteConfig.feeds, feeds.resolvedCollectionIDs.isEmpty == false else { return nil }
+        let configsByID = Dictionary(
+            (siteConfig.collections ?? []).map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        var entries: [[String: String]] = []
+        for id in feeds.resolvedCollectionIDs {
+            guard let config = configsByID[id] else { continue }
+            var route = config.route
+            if route.hasPrefix("/") == false { route = "/" + route }
+            if route.hasSuffix("/") == false { route += "/" }
+            let label: String
+            if let headline = config.headline, headline.isEmpty == false {
+                label = headline
+            } else if let first = id.first {
+                label = first.uppercased() + id.dropFirst()
+            } else {
+                label = id
+            }
+            entries.append([
+                "title": escapeHTML("\(siteTitle) · \(label)"),
+                "rss": urlBuilder.link(for: "\(route)rss.xml"),
+                "atom": urlBuilder.link(for: "\(route)atom.xml"),
+                "json": urlBuilder.link(for: "\(route)feed.json")
+            ])
+        }
+        return entries.isEmpty ? nil : entries
+    }
+
     // Assembles the shared `site` context dict passed into every template for
     // a given language, including optional brand/analytics/author/nav keys.
     // swiftlint:disable:next function_parameter_count
@@ -279,6 +317,13 @@ public struct PageContextBuilder {
                 "json": urlBuilder.link(for: "/feed.json")
             ]
         ]
+        if let collectionFeeds = collectionFeedsContext(
+            siteConfig: siteConfig,
+            urlBuilder: urlBuilder,
+            siteTitle: title
+        ) {
+            siteContext["collectionFeeds"] = collectionFeeds
+        }
         if let brandSubtitle = overlay?.author?.tagline ?? siteConfig.author?.tagline {
             siteContext["brandSubtitle"] = escapeHTML(brandSubtitle)
         }
