@@ -39,6 +39,10 @@ public struct SiteConfig: Codable, Equatable {
     /// Each value supplies translated overrides for the localizable surface
     /// of `SiteConfig`; unset fields fall back to the default-language values.
     public var translations: [String: TranslationOverlay]?
+    /// Optional feed configuration. When unset, a single root feed is emitted
+    /// from the primary blog collection. When set, enables per-collection feeds
+    /// and a combined root feed.
+    public var feeds: FeedConfig?
 
     public init(
         title: String,
@@ -59,7 +63,8 @@ public struct SiteConfig: Codable, Equatable {
         brandIcon: BrandIconConfig? = nil,
         analytics: AnalyticsConfig? = nil,
         i18n: I18nConfig? = nil,
-        translations: [String: TranslationOverlay]? = nil
+        translations: [String: TranslationOverlay]? = nil,
+        feeds: FeedConfig? = nil
     ) {
         self.title = title
         self.baseURL = baseURL
@@ -80,6 +85,7 @@ public struct SiteConfig: Codable, Equatable {
         self.analytics = analytics
         self.i18n = i18n
         self.translations = translations
+        self.feeds = feeds
     }
 
     public init(from decoder: Decoder) throws {
@@ -103,5 +109,6 @@ public struct SiteConfig: Codable, Equatable {
         self.analytics = try container.decodeIfPresent(AnalyticsConfig.self, forKey: .analytics)
         self.i18n = try container.decodeIfPresent(I18nConfig.self, forKey: .i18n)
         self.translations = try container.decodeIfPresent([String: TranslationOverlay].self, forKey: .translations)
+        self.feeds = try container.decodeIfPresent(FeedConfig.self, forKey: .feeds)
     }
 }
