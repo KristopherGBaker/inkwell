@@ -241,6 +241,28 @@ With i18n enabled, each language gets its own set (`/rss.xml` + `/<lang>/rss.xml
 
 The feed source is the `posts` collection if present, otherwise the first declared collection. Sites with no collections fall back to a single feed built from `content/posts/`.
 
+### Per-collection and combined feeds
+
+Add a `feeds` block to opt into a feed per collection plus a combined "everything" feed:
+
+```json
+{
+  "feeds": {
+    "combined": true,
+    "collections": ["posts", "projects", "updates"]
+  }
+}
+```
+
+- Each id in `collections` gets its own feed under that collection's route — e.g. `posts` → `/posts/rss.xml`, a `projects` collection routed at `/work` → `/work/rss.xml` (plus `atom.xml`, `feed.json`, and `/<lang>/...`).
+- A **child collection** (e.g. `updates`, the "what I'm building" timeline) feeds at its own route with each item linked under its parent project (`/building/<project>/<slug>/`).
+- Items date by their `date` field; a collection that dates by `year` (like work case studies) falls back to January 1 of that year, so a feed without per-item dates still sorts and renders.
+- When `combined` is true (the default once a `feeds` block is present), the site root `/rss.xml` (+ atom/json, + `/<lang>/`) becomes the merged feed across all listed collections, newest-first. The per-collection feeds carry that collection's items only.
+- `limit` (default 20) caps items per feed.
+- Each collection feed is advertised site-wide with its own `<link rel="alternate">` autodiscovery tag, titled `"<site title> · <collection>"`.
+
+Without a `feeds` block, behavior is unchanged: a single feed at the root from the primary blog collection.
+
 ## CLI reference
 
 | Command | What it does |
