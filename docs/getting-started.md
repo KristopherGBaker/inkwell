@@ -7,12 +7,14 @@
 5. Run checks before deploy.
 
 ```bash
-swift run inkwell init
-swift run inkwell post new "My First Post"
-swift run inkwell serve --watch
-swift run inkwell build
-swift run inkwell check
+inkwell init
+inkwell post new "My First Post"
+inkwell serve --watch
+inkwell build
+inkwell check
 ```
+
+(See the [README](../README.md) for install options; from a source checkout, prefix commands with `swift run`.)
 
 - `serve --watch` rebuilds when you edit posts, theme files, `blog.config.json`, or files in `public/`, and refreshes the preview automatically.
 - The generated site includes an `/archive/` page linked from the home page; it shows published posts newest first and omits drafts.
@@ -20,6 +22,8 @@ swift run inkwell check
 - `inkwell check` covers front matter/schema validation, broken internal links, malformed config, missing local asset files (`coverImage`, `shots`, `featuredImage`), and taxonomy slug collisions.
 
 ## Beyond Posts (v0.3+)
+
+The sections below are a quick tour. For the full picture, see [Concepts](concepts.md) (project layout, collections, themes), [Building a portfolio](portfolio.md), [Multi-language](i18n.md), and [Feeds](feeds.md).
 
 ### Multiple collections
 

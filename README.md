@@ -1,338 +1,54 @@
 # Inkwell
 
-Static site generator written in Swift. Started as a personal blog tool; v0.3 generalizes it into a publishing tool that can also drive portfolios — multiple content collections, standalone pages, static data files, configurable home page, and themes.
-
-## Features
-
-- **Content collections.** Configure any number of content types in `blog.config.json` (posts, projects, notes, …); each gets its own list, detail, and taxonomy routes.
-- **Standalone pages.** Drop markdown into `content/pages/` for one-off pages like `/about/` or `/now/`.
-- **Static data files.** YAML/JSON in `data/` is exposed to every template — drives data-driven pages like a résumé.
-- **Configurable home.** Pull featured + recent items from any collection into the landing page via a `home` config block.
-- **Themes.** Two themes bundled (`default` for blogs, `quiet` for portfolios + blogs). Stencil templates, project-side files override bundled ones per file.
-- **Multi-language (v0.5).** Opt-in i18n with default-at-root URLs (`/posts/foo/`) and prefixed translations (`/ja/posts/foo/`). File-suffix authoring — `foo.md` is the default, `foo.ja.md` is the translation. Browser-language detection on first visit, language switcher in the top bar, `<link rel="alternate" hreflang>` for SEO, and graceful fallback so partial translation never hides content.
-- **Authoring CLI.** `init`, `post new`, `content new`, `build`, `serve --watch`, `check`, `theme`, `deploy`.
-- **Markdown.** GFM (tables, task lists, strikethrough, alerts, fenced code) plus Mermaid blocks; bundled client-side code highlighting, with optional build-time Shiki highlighting when configured.
-- **SEO + feeds.** Canonical URLs, Open Graph, Twitter cards, hreflang sitemap.xml, robots.txt, and search index. Per-language **RSS 2.0, Atom 1.0, and JSON Feed** with full-content `content:encoded`, absolutized URLs, localized channel copy, and `<head>` autodiscovery links.
-- **Static deploy.** GitHub Pages workflow generator built in; output is a plain directory you can deploy anywhere.
+A static site generator written in Swift. Write markdown, run one command, get a fast plain-HTML site you can host anywhere. It started as a blog tool and grew into a general publishing tool — it now drives blogs, portfolios, and multilingual sites.
 
 ## Install
-
-Homebrew (recommended):
 
 ```bash
 brew install KristopherGBaker/tap/inkwell
 ```
 
-Mint:
-
-```bash
-brew install mint
-mint install KristopherGBaker/inkwell
-```
-
-Or run without installing: `mint run KristopherGBaker/inkwell inkwell <subcommand>`.
-
-## Quick start — blog
-
-```bash
-inkwell init
-inkwell post new "Hello World"
-inkwell serve --watch        # rebuilds + live-reloads on save
-inkwell build                # writes to docs/
-inkwell check                # validates content + links + assets
-```
-
-`serve --watch` rebuilds when you edit posts, theme files, `blog.config.json`, or anything in `public/` and `static/`. The home page links to `/archive/`; both paginate published posts newest first.
-
-## Quick start — portfolio
-
-```bash
-inkwell init
-# edit blog.config.json: set theme, add author/nav/home/collections
-inkwell content new projects "Wolt Membership"
-# add data/experience.yml, data/competencies.yml, data/education.yml
-inkwell build
-inkwell check
-```
-
-Example `blog.config.json` for a portfolio:
-
-```json
-{
-  "title": "Kristopher Baker",
-  "baseURL": "https://krisbaker.com/",
-  "theme": "quiet",
-  "outputDir": "docs",
-  "tagline": "Tokyo · Available for new conversations",
-  "author": {
-    "name": "Kristopher Baker",
-    "role": "Senior Software Engineer",
-    "location": "Tokyo, Japan",
-    "social": [{ "label": "GitHub", "url": "https://github.com/KristopherGBaker" }]
-  },
-  "nav": [
-    { "label": "Work", "route": "/work/" },
-    { "label": "Writing", "route": "/posts/" },
-    { "label": "Résumé", "route": "/resume/" }
-  ],
-  "home": {
-    "template": "landing",
-    "featuredCollection": "projects",
-    "featuredCount": 4,
-    "buildingCollection": "updates",
-    "buildingCount": 3,
-    "recentCollection": "posts",
-    "recentCount": 2
-  },
-  "collections": [
-    { "id": "posts", "dir": "content/posts", "route": "/posts" },
-    {
-      "id": "projects",
-      "dir": "content/projects",
-      "route": "/work",
-      "sortBy": "year",
-      "taxonomies": ["tags"],
-      "detailTemplate": "layouts/case-study"
-    },
-    {
-      "id": "building",
-      "dir": "content/building",
-      "route": "/building",
-      "sortBy": "order",
-      "taxonomies": ["tags"],
-      "listTemplate": "layouts/building-list",
-      "detailTemplate": "layouts/building"
-    },
-    {
-      "id": "updates",
-      "dir": "content/updates",
-      "route": "/building",
-      "parent": "building",
-      "parentField": "project",
-      "detailTemplate": "layouts/update"
-    }
-  ]
-}
-```
-
-For the résumé page, drop a one-liner shell into `content/pages/resume.md`:
-
-```markdown
----
-title: Résumé
-layout: resume
----
-```
-
-The `resume` layout reads from `data/experience.yml`, `data/competencies.yml`, and `data/education.yml`. The `portfolio-data` agent skill walks Claude Code (or Codex) through importing your existing résumé into those files.
-
-## Concepts
-
-- **Collections** are content types. Each declared collection has a `dir` (where markdown lives), a `route` (URL prefix), a `sortBy` (default `date`; use `year` for projects, etc.), and optional `taxonomies` (tag/category-style facets, scoped to the collection — `/work/tags/iOS/`, not top-level).
-- **Child collections** model a one-to-many relationship (a project and its updates). Give a collection `"parent": "<parentId>"` and `"parentField": "<frontMatterKey>"` (default `parent`). Each child item names its parent's slug in that field and is routed *under* the parent at `<parentRoute>/<parentSlug>/<childSlug>/` — it gets no list or taxonomy pages of its own. Parent list cards and detail pages receive the child items as `updates` (newest first) plus `updateCount`, `status`, `lastUpdated`, and `relativeUpdated`; each child page gets `project` (its parent) and `siblingNewer`/`siblingOlder`. A child item whose parent slug matches nothing is reported by `inkwell check` (it would otherwise drop silently). `inkwell content new <childId> "Title"` scaffolds a dated file pre-seeded with the parent-link field.
-- **Home page** has three optional collection-backed sections: `featuredCollection` (cards), `buildingCollection` (a "what I'm building" feed — point it at a child/updates collection so each card links to its nested update and names its project), and `recentCollection` (list). Each takes a `*Count` and an optional `*Label`/`*Cta`, all translatable via the `translations.<lang>.home` overlay.
-- **Pages** are markdown files in `content/pages/` whose route comes from their path (`about.md → /about/`, `now/index.md → /now/`). Front-matter `layout: <name>` selects the theme template.
-- **Data files** are YAML/JSON in `data/`, loaded as `data.<basename>` in every template's context. Use them for résumé content, link rolls, structured profile data — anything where keeping the content out of markdown is cleaner.
-- **Themes** ship with the binary; project-side `themes/<name>/templates/` and `themes/<name>/assets/` override on a per-file basis. The `default` theme keeps the v0.2 blog look (Tailwind, amber/stone). The `quiet` theme is portfolio-friendly (Fraunces / Manrope / JetBrains Mono, generous whitespace, print-friendly résumé).
-- **Backward compatibility.** A v0.2 `blog.config.json` with no `collections`/`home`/`author`/`nav` keeps today's URL structure verbatim — `/posts/<slug>/`, `/archive/`, top-level `/tags/<slug>/`, paginated `/`. Sites without an `i18n` block stay monolingual.
-
-## Code highlighting
-
-Inkwell always emits fenced code blocks with `language-*` classes, and the bundled themes include a small client-side highlighter for common languages. That path works from any released Inkwell install with no project setup.
-
-For higher fidelity, Inkwell can highlight code at build time with [Shiki](https://shiki.style/). Build-time Shiki is optional and silent-fallback: if Node, the script, or `shiki` is unavailable, the generated site still builds and the theme's client-side highlighter colors the code in the browser.
-
-To enable build-time Shiki in a site project:
-
-1. Install Node.js 20 or newer.
-2. Add Shiki to the site project:
-
-   ```bash
-   npm install --save-dev shiki
-   ```
-
-3. Add `scripts/highlight-code.mjs` to the site project:
-
-   ```js
-   import { codeToHtml } from 'shiki'
-
-   const language = process.argv[2] || 'text'
-   const encoded = process.argv[3] || ''
-
-   if (!encoded) {
-     process.stdout.write('')
-     process.exit(0)
-   }
-
-   const code = Buffer.from(encoded, 'base64').toString('utf8')
-
-   try {
-     const html = await codeToHtml(code, {
-       lang: language,
-       theme: 'github-dark-default'
-     })
-     process.stdout.write(html)
-   } catch {
-     process.stdout.write('')
-     process.exit(0)
-   }
-   ```
-
-4. Run `inkwell build` from the site project root.
-
-When running Inkwell from a local source checkout, `npm ci` in the Inkwell repo also enables the bundled `scripts/highlight-code.mjs` path for local development and tests.
-
-## Multi-language
-
-Set up languages in `blog.config.json`:
-
-```json
-{
-  "i18n": { "defaultLanguage": "en", "languages": ["en", "ja"] },
-  "heroHeadline": "I build *millions* of...",
-  "footerCta": { "headline": "Quietly open to good work." },
-  "translations": {
-    "ja": {
-      "heroHeadline": "*数百万人*のための...",
-      "footerCta": { "headline": "良い仕事に静かに開いています。" },
-      "themeCopy": { "workCardCta": "ケーススタディを読む" },
-      "home": { "featuredLabel": "選ばれた仕事" },
-      "nav": [{ "label": "仕事", "route": "/work/" }],
-      "collections": [{ "id": "posts", "headline": "ある現場のメモ。" }]
-    }
-  }
-}
-```
-
-Authoring conventions:
-
-- Translate a post by adding `foo.ja.md` next to `foo.md`. Same `slug` in front matter pairs them.
-- Translate a page by adding `about.ja.md` next to `about.md`.
-- Translate a data file by adding `resume.ja.yml` next to `resume.yml`.
-- Co-located static assets (`static/posts/<slug>/cover.mp4`) are referenced once by their canonical absolute URL — the renderer rewrites relative paths automatically, so the same asset works from `/posts/foo/` and `/ja/posts/foo/`.
-
-Renderer behavior:
-
-- Default language renders at canonical root URLs; non-default languages at `/<lang>/...`.
-- `/<defaultLang>/<route>/` (e.g., `/en/posts/foo/`) emits a meta-refresh redirect to the canonical root path so explicit-prefix URLs work as aliases.
-- Listing pages, the home featured/recent strips, and detail pages always include every item — translated where available, falling back to the default language otherwise.
-- The quiet theme renders a language switcher in the top bar (only on pages that have alternate translations) and an inline browser-language redirect script that runs once per visitor (respects `localStorage.lang` so manual switches stick).
-- `<html lang="...">` and `<link rel="alternate" hreflang="...">` are emitted automatically.
-
-## Feeds
-
-Every build emits three feed formats for the blog, no configuration required:
-
-- **RSS 2.0** — `/rss.xml`
-- **Atom 1.0** — `/atom.xml`
-- **JSON Feed 1.1** — `/feed.json`
-
-Each carries the 20 most recent non-draft entries with the full rendered post body (`content:encoded` in RSS, `content type="html"` in Atom, `content_html` in JSON Feed). Root-relative URLs inside the body are absolutized so readers can resolve images and links. Dates are emitted in each format's required shape (RFC-822 for RSS, RFC-3339 for Atom/JSON Feed). All three themes advertise the feeds with `<link rel="alternate">` autodiscovery tags in `<head>`.
-
-With i18n enabled, each language gets its own set (`/rss.xml` + `/<lang>/rss.xml`, and likewise for Atom and JSON Feed). A language feed contains only that language's entries — no fallback — so subscribers get a consistent language. The channel title and description come from `title` / `description` in `blog.config.json`, localized through the `translations.<lang>` overlay:
-
-```json
-{
-  "title": "Kris",
-  "description": "Notes from Tokyo.",
-  "translations": { "ja": { "description": "東京からのノート。" } }
-}
-```
-
-The feed source is the `posts` collection if present, otherwise the first declared collection. Sites with no collections fall back to a single feed built from `content/posts/`.
-
-### Per-collection and combined feeds
-
-Add a `feeds` block to opt into a feed per collection plus a combined "everything" feed:
-
-```json
-{
-  "feeds": {
-    "combined": true,
-    "collections": ["posts", "projects", "updates"]
-  }
-}
-```
-
-- Each id in `collections` gets its own feed under that collection's route — e.g. `posts` → `/posts/rss.xml`, a `projects` collection routed at `/work` → `/work/rss.xml` (plus `atom.xml`, `feed.json`, and `/<lang>/...`).
-- A **child collection** (e.g. `updates`, the "what I'm building" timeline) feeds at its own route with each item linked under its parent project (`/building/<project>/<slug>/`).
-- Items date by their `date` field; a collection that dates by `year` (like work case studies) falls back to January 1 of that year, so a feed without per-item dates still sorts and renders.
-- When `combined` is true (the default once a `feeds` block is present), the site root `/rss.xml` (+ atom/json, + `/<lang>/`) becomes the merged feed across all listed collections, newest-first. The per-collection feeds carry that collection's items only.
-- `limit` (default 20) caps items per feed.
-- Each collection feed is advertised site-wide with its own `<link rel="alternate">` autodiscovery tag, titled `"<site title> · <collection>"`.
-
-Without a `feeds` block, behavior is unchanged: a single feed at the root from the primary blog collection.
-
-## CLI reference
-
-| Command | What it does |
-|---------|--------------|
-| `inkwell init` | Scaffold a new project in the current directory |
-| `inkwell post new "<title>"` | Create a new draft post in `content/posts/` |
-| `inkwell post list` | List posts and their state |
-| `inkwell post publish <slug>` | Flip a post from `draft: true` to `false` |
-| `inkwell content new <collection> "<title>"` | Scaffold a new item in any declared collection |
-| `inkwell build` | Build the site to `outputDir` (default `docs/`) |
-| `inkwell serve [--watch]` | Local dev server with optional rebuild + live reload |
-| `inkwell check` | Validate front matter, asset paths, links, taxonomy collisions |
-| `inkwell theme use <name>` | Switch the active theme in `blog.config.json` |
-| `inkwell deploy setup github-pages` | Generate the Pages workflow |
-
-## Project layout
-
-```
-my-site/
-├── blog.config.json
-├── content/
-│   ├── posts/                # blog posts (the legacy collection)
-│   ├── projects/             # any other declared collection
-│   └── pages/
-│       └── about.md          # → /about/
-├── data/
-│   ├── experience.yml        # → data.experience in templates
-│   └── education.yml
-├── public/                   # copied verbatim into the output root
-├── static/                   # alternate copy-verbatim location; static/assets/ is canonical for /assets/...
-├── themes/
-│   └── quiet/                # only present if you're overriding bundled templates/assets
-└── docs/                     # build output (gitignore'd or committed for Pages)
-```
-
-Asset references in front matter (`coverImage`, `shots`, `featuredImage`, `ogImage`, `thumbnail`) should be `/assets/...` (resolved from `static/assets/` or `public/assets/`) or fully-qualified `https://...` URLs. Relative paths like `assets/foo.png` are rejected by `inkwell check`.
-
-## Optional GitHub Pages setup
-
-```bash
-inkwell init
-inkwell deploy setup github-pages
-```
-
-Review `baseURL` in `blog.config.json` for your Pages URL before publishing. The setup is optional and does not rewrite existing config.
-
-## Run from source
+Or run from source:
 
 ```bash
 git clone https://github.com/KristopherGBaker/inkwell.git
 cd inkwell
-swift run inkwell init /path/to/site
-swift run inkwell build
+swift run inkwell --help
 ```
 
-## Developer tooling
+## Quick start
 
 ```bash
-make brew-strap        # install local tooling via Brewfile
-make bootstrap-mint    # install Mint-managed tools (SwiftLint, etc.)
-npm ci                 # install shiki for syntax highlighting in tests
-make verify            # lint + tests
+inkwell init                     # scaffold a new site in the current directory
+inkwell post new "Hello World"   # create a draft post
+inkwell serve --watch            # preview locally, rebuilds + live-reloads on save
+inkwell build                    # write the site to docs/
+inkwell check                    # validate content, links, and assets before deploying
 ```
 
-`make verify` defaults to a Mint-managed SwiftLint pin. Override with `SWIFTLINT=swiftlint make verify` if you have it on PATH.
+That's a working blog. To publish it, the output is a plain static directory — push it to any host, or run `inkwell deploy setup github-pages` to generate a GitHub Pages workflow.
+
+## What it does
+
+- **Blogs and portfolios.** Posts out of the box; add content collections (projects, case studies, updates, …) for portfolio sites, each with its own routes and taxonomies.
+- **Pages and data files.** Standalone pages from `content/pages/`, and YAML/JSON in `data/` available to every template — drives data-driven pages like a résumé.
+- **Two bundled themes.** `default` for blogs, `quiet` for portfolios. Override any single template file in your project without copying the whole theme.
+- **Multi-language.** Opt-in i18n: `foo.md` plus `foo.ja.md` pairs translations automatically, with sensible URLs, hreflang tags, a language switcher, and graceful fallback.
+- **Markdown that just works.** GitHub-flavored markdown, Mermaid diagrams, and code highlighting (client-side by default, build-time Shiki optionally).
+- **SEO and feeds.** Canonical URLs, Open Graph, sitemap, robots.txt, and RSS/Atom/JSON feeds with zero configuration.
 
 ## Documentation
 
-- `docs/getting-started.md` — extended walkthrough, including v0.3 features
-- `docs/roadmap.md` — what's shipped vs. deferred
-- `docs/rfcs/` — design decisions; v0.3's source of truth is `docs/rfcs/2026-04-30-content-collections-and-templating.md`
-- `docs/plans/` — TDD-driven implementation plans
-- `CLAUDE.md` — agent guide for working in this repo
+- [Getting started](docs/getting-started.md) — a longer walkthrough: collections, pages, data files, analytics
+- [CLI reference](docs/cli.md) — every command, plus GitHub Pages deployment
+- [Concepts](docs/concepts.md) — project layout, collections, pages, data files, themes
+- [Building a portfolio](docs/portfolio.md) — the `quiet` theme, case studies, and a data-driven résumé
+- [Multi-language](docs/i18n.md) — translations, URLs, and fallback behavior
+- [Feeds](docs/feeds.md) — RSS/Atom/JSON, per-collection and combined feeds
+- [Code highlighting](docs/code-highlighting.md) — enabling build-time Shiki
+- [Roadmap](docs/roadmap.md) — what's shipped vs. deferred
+- [Contributing](docs/contributing.md) — building, testing, and releasing Inkwell itself
+
+## License
+
+[MIT](LICENSE)
