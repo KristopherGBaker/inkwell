@@ -94,11 +94,25 @@ Stencil syntax notes:
 - **Add a new translatable theme string:** add the field to `ThemeCopyConfig`, expose it in `themeCopyContext` (with overlay-aware default), and reference it from the relevant template as `{{ site.themeCopy.<field> }}`. Sites override per language under `translations.<lang>.themeCopy.<field>`.
 - **Add a new language to a project:** add the BCP-47 tag to `i18n.languages` and start dropping `<base>.<lang>.md` files alongside the default-language ones. Translate `data/<file>.yml` similarly. Author overrides for site/home/footer/theme strings under `translations.<lang>` in `blog.config.json`.
 
-## Reference docs
+## Documentation structure
+
+`README.md` is a short landing page: install, quick start, feature overview, links. Detailed user-facing docs live in `docs/`; when shipping a user-facing feature, document it in the matching `docs/*.md` (and add a README link if it's a new area) rather than expanding the README.
+
+User-facing docs:
+
+- `docs/getting-started.md` — walkthrough: collections, pages, data files, analytics
+- `docs/cli.md` — CLI reference + GitHub Pages deploy
+- `docs/concepts.md` — project layout, collections, child collections, pages, data files, themes, back-compat
+- `docs/portfolio.md` — portfolio setup with the quiet theme, example config, résumé page
+- `docs/i18n.md` — multi-language authoring + renderer behavior
+- `docs/feeds.md` — RSS/Atom/JSON, per-collection and combined feeds
+- `docs/code-highlighting.md` — build-time Shiki setup
+- `docs/roadmap.md` — what's shipped vs. deferred
+- `docs/contributing.md` — dev setup, build/test, release process
+
+Design history:
 
 - `docs/rfcs/2026-04-01-multi-language-support.md` — i18n design source of truth (accepted 2026-05-01)
 - `docs/plans/2026-05-01-i18n-implementation-plan.md` — TDD-driven i18n implementation plan
 - `docs/rfcs/2026-04-30-content-collections-and-templating.md` — v0.3 collections/templating design
 - `docs/plans/2026-04-30-v0-3-implementation-plan.md` — v0.3 TDD plan
-- `docs/roadmap.md` — what's shipped vs. deferred
-- `docs/getting-started.md` — user-facing quick start
