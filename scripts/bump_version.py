@@ -23,11 +23,11 @@ def update_file(path: Path, version: str) -> bool:
     original = path.read_text()
     updated = original
 
-    if path.name == "Version.swift":
+    if path == path.parents[1] / "BlogCore" / "Version.swift":
         updated = replace_one(
             updated,
-            r'static let version = "\d+\.\d+\.\d+"',
-            f'static let version = "{version}"',
+            r'public static let current = "\d+\.\d+\.\d+"',
+            f'public static let current = "{version}"',
             path,
         )
     elif path.name == "theme.json":
@@ -55,10 +55,11 @@ def format_version(parts: tuple[int, int, int]) -> str:
 
 
 def read_current_version(repo_root: Path) -> str:
-    text = (repo_root / "Sources/BlogCLI/Version.swift").read_text()
-    match = re.search(r'static let version = "(\d+\.\d+\.\d+)"', text)
+    version_path = repo_root / "Sources/BlogCore/Version.swift"
+    text = version_path.read_text()
+    match = re.search(r'public static let current = "(\d+\.\d+\.\d+)"', text)
     if not match:
-        raise SystemExit("Could not find current version in Sources/BlogCLI/Version.swift")
+        raise SystemExit(f"Could not find current version in {version_path.relative_to(repo_root)}")
     return match.group(1)
 
 
@@ -90,10 +91,7 @@ def main() -> int:
 
     repo_root = Path(__file__).resolve().parent.parent
     managed_files = [
-        repo_root / "Sources/BlogCLI/Version.swift",
-        repo_root / "themes/default/theme.json",
-        repo_root / "Sources/BlogThemes/Resources/themes/default/theme.json",
-        repo_root / "Sources/BlogThemes/Resources/themes/quiet/theme.json",
+        repo_root / "Sources/BlogCore/Version.swift",
     ]
 
     current_version = read_current_version(repo_root)
