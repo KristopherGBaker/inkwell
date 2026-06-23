@@ -3,5 +3,5 @@
 /// Lives in `BlogCore` (not `BlogCLI`) so build artifacts such as feed
 /// `<generator>` tags can reference it without the core depending on the CLI.
 public enum InkwellVersion {
-    public static let current = "0.15.0"
+    public static let current = "0.15.1"
 }
