@@ -942,7 +942,8 @@ private extension PageContextBuilder {
                 canonicalRoute: route
             )
         ]
-        let homeContext = homeBlockContext(home: home, featured: featured, recent: recent, building: building)
+        // swiftlint:disable:next line_length
+        let homeContext = homeBlockContext(home: home, featured: featured, recent: recent, building: building, urlBuilder: urlBuilder)
         let context: [String: Any] = [
             "site": site,
             "page": pageContext,
@@ -982,7 +983,8 @@ private extension PageContextBuilder {
         home: HomeConfig,
         featured: [[String: Any]],
         recent: [[String: Any]],
-        building: [[String: Any]]
+        building: [[String: Any]],
+        urlBuilder: SiteURLBuilder
     ) -> [String: Any] {
         var homeContext: [String: Any] = [
             "featured": featured,
@@ -990,26 +992,26 @@ private extension PageContextBuilder {
             "building": building
         ]
         if let cta = home.heroPrimaryCta {
-            homeContext["heroPrimaryCta"] = ctaContext(cta)
+            homeContext["heroPrimaryCta"] = ctaContext(cta, urlBuilder: urlBuilder)
         }
         if let cta = home.heroSecondaryCta {
-            homeContext["heroSecondaryCta"] = ctaContext(cta)
+            homeContext["heroSecondaryCta"] = ctaContext(cta, urlBuilder: urlBuilder)
         }
         homeContext["featuredLabel"] = escapeHTML(home.featuredLabel ?? "Selected work")
         homeContext["recentLabel"] = escapeHTML(home.recentLabel ?? "Recent writing")
         homeContext["buildingLabel"] = escapeHTML(home.buildingLabel ?? "What I'm building")
         homeContext["aboutEyebrow"] = escapeHTML(home.aboutEyebrow ?? "About")
         if let cta = home.featuredCta {
-            homeContext["featuredCta"] = ctaContext(cta)
+            homeContext["featuredCta"] = ctaContext(cta, urlBuilder: urlBuilder)
         }
         if let cta = home.recentCta {
-            homeContext["recentCta"] = ctaContext(cta)
+            homeContext["recentCta"] = ctaContext(cta, urlBuilder: urlBuilder)
         }
         if let cta = home.buildingCta {
-            homeContext["buildingCta"] = ctaContext(cta)
+            homeContext["buildingCta"] = ctaContext(cta, urlBuilder: urlBuilder)
         }
         if let links = home.aboutLinks, links.isEmpty == false {
-            homeContext["aboutLinks"] = links.map { ctaContext($0) }
+            homeContext["aboutLinks"] = links.map { ctaContext($0, urlBuilder: urlBuilder) }
         }
         return homeContext
     }
@@ -1110,8 +1112,16 @@ private extension PageContextBuilder {
     }
 
     /// Renders a `HomeCta` as an escaped {label, href} dict for templates.
-    func ctaContext(_ cta: HomeCta) -> [String: String] {
-        ["label": escapeHTML(cta.label), "href": escapeHTML(cta.href)]
+    /// Canonical root-relative routes inherit the active base path and language;
+    /// external, protocol-relative, and fragment links remain unchanged.
+    func ctaContext(_ cta: HomeCta, urlBuilder: SiteURLBuilder) -> [String: String] {
+        let href: String
+        if cta.href.hasPrefix("/") && cta.href.hasPrefix("//") == false {
+            href = urlBuilder.link(for: cta.href)
+        } else {
+            href = cta.href
+        }
+        return ["label": escapeHTML(cta.label), "href": escapeHTML(href)]
     }
 
     /// First letter of the author's name (or site title), uppercased. Used by
