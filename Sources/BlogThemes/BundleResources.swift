@@ -14,17 +14,33 @@ import Foundation
 ///    with the bundle copied alongside) hit the same issue.
 ///
 /// This resolver tries the executable's resolved location first, then falls
-/// back to the symlink path, then the SwiftPM-baked build path. Returns nil
-/// if no candidate exists; callers fall back to project-side overrides.
+/// back to the symlink path, then the SwiftPM-baked build path. It supports
+/// both flat SwiftPM bundles and macOS-style bundles whose resources live in
+/// `Contents/Resources`. Returns nil if no candidate contains the themes;
+/// callers fall back to project-side overrides.
 enum BundleResources {
     static let bundleName = "swift-blog_BlogThemes.bundle"
 
-    static let bundleURL: URL? = findBundleURL()
+    static let resourceRootURL: URL? = findResourceRootURL()
 
-    private static func findBundleURL() -> URL? {
+    private static func findResourceRootURL() -> URL? {
         for candidate in candidateBundleURLs() {
+            if let resourceRoot = resourceRootURL(for: candidate) {
+                return resourceRoot
+            }
+        }
+        return nil
+    }
+
+    static func resourceRootURL(for bundleURL: URL) -> URL? {
+        let candidates = [
+            bundleURL,
+            bundleURL.appendingPathComponent("Contents/Resources")
+        ]
+        for candidate in candidates {
+            let themes = candidate.appendingPathComponent("themes")
             var isDirectory: ObjCBool = false
-            if FileManager.default.fileExists(atPath: candidate.path, isDirectory: &isDirectory),
+            if FileManager.default.fileExists(atPath: themes.path, isDirectory: &isDirectory),
                isDirectory.boolValue {
                 return candidate
             }

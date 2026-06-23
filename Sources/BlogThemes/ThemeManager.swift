@@ -192,7 +192,7 @@ public struct ThemeManager {
         // populated this directory with project-owned assets (e.g.
         // `/assets/work/<slug>/cover.png`) that shouldn't be cleared by the
         // theme copy step.
-        if let bundleURL = BundleResources.bundleURL?
+        if let bundleURL = BundleResources.resourceRootURL?
             .appendingPathComponent("themes")
             .appendingPathComponent(theme)
             .appendingPathComponent("assets") {

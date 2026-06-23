@@ -80,8 +80,8 @@ public struct TemplateRenderer {
     }
 
     public static func bundledThemeRoot(theme: String) -> URL? {
-        guard let bundleURL = BundleResources.bundleURL else { return nil }
-        return bundleURL
+        guard let resourceRoot = BundleResources.resourceRootURL else { return nil }
+        return resourceRoot
             .appendingPathComponent("themes")
             .appendingPathComponent(theme)
     }
