@@ -1,5 +1,9 @@
 import BlogRenderer
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 import Foundation
 
 /// Variant generation request: which widths and formats the renderer wants.

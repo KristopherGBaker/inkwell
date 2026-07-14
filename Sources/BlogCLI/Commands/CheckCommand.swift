@@ -34,10 +34,10 @@ struct CheckCommand: ParsableCommand {
             print("Check passed")
         } else {
             for link in result.brokenLinks {
-                fputs("broken link: \(link)\n", stderr)
+                FileHandle.standardError.write(Data("broken link: \(link)\n".utf8))
             }
             for error in result.errors {
-                fputs("error: \(error)\n", stderr)
+                FileHandle.standardError.write(Data("error: \(error)\n".utf8))
             }
             throw ExitCode.failure
         }

@@ -1,9 +1,13 @@
-import CoreGraphics
+// CoreGraphics/ImageIO are Apple-only; this test's JPEG fixture generation
+// has no Linux equivalent, so the whole file is a no-op there.
 import Foundation
-import ImageIO
-import UniformTypeIdentifiers
 import XCTest
 @testable import BlogCore
+
+#if canImport(CoreGraphics)
+import CoreGraphics
+import ImageIO
+import UniformTypeIdentifiers
 
 final class ImageVariantGeneratorTests: XCTestCase {
     private var projectRoot: URL!
@@ -173,3 +177,4 @@ final class ImageVariantGeneratorTests: XCTestCase {
         try (buffer as Data).write(to: url, options: .atomic)
     }
 }
+#endif

@@ -8,10 +8,21 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: swift-actions/setup-swift@v2
       - name: Install Node dependencies
         run: npm ci
       - name: Install SwiftLint
         run: brew install swiftlint
       - name: Verify project
         run: make verify SWIFTLINT=swiftlint
+
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Build
+        run: swift build -j 3
+      - name: Test
+        run: swift test -j 3
