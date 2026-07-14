@@ -19,7 +19,13 @@ import Foundation
 /// `Contents/Resources`. Returns nil if no candidate contains the themes;
 /// callers fall back to project-side overrides.
 enum BundleResources {
+    // SwiftPM names the generated resource directory `<package>_<target>.bundle` on
+    // Apple platforms but `<package>_<target>.resources` (flat, no Contents/Resources) on Linux.
+    #if os(Linux) || os(Android)
+    static let bundleName = "swift-blog_BlogThemes.resources"
+    #else
     static let bundleName = "swift-blog_BlogThemes.bundle"
+    #endif
 
     static let resourceRootURL: URL? = findResourceRootURL()
 

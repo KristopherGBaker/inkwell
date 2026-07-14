@@ -42,7 +42,7 @@ struct ServeCommand: ParsableCommand {
                     server.triggerReload()
                     print("Rebuilt preview")
                 } catch {
-                    fputs("Preview rebuild failed: \(error)\n", stderr)
+                    FileHandle.standardError.write(Data("Preview rebuild failed: \(error)\n".utf8))
                 }
             }
             watcherRef = watcher

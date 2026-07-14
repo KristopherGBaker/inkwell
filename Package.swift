@@ -19,7 +19,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/vapor.git", from: "4.110.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.3"),
         .package(url: "https://github.com/swiftlang/swift-cmark.git", branch: "main"),
-        .package(url: "https://github.com/stencilproject/Stencil.git", from: "0.15.1")
+        .package(url: "https://github.com/stencilproject/Stencil.git", from: "0.15.1"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")
     ],
     targets: [
         .executableTarget(
@@ -32,7 +33,10 @@ let package = Package(
         ),
         .target(
             name: "BlogCore",
-            dependencies: ["BlogRenderer", "BlogThemes", "BlogPlugins", "Yams"]
+            dependencies: [
+                "BlogRenderer", "BlogThemes", "BlogPlugins", "Yams",
+                .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.linux]))
+            ]
         ),
         .target(
             name: "BlogRenderer",
