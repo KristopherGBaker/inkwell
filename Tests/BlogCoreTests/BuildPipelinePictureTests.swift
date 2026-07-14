@@ -1,9 +1,13 @@
-import CoreGraphics
 import Foundation
-import ImageIO
-import UniformTypeIdentifiers
 import XCTest
 @testable import BlogCore
+
+// CoreGraphics/ImageIO are Apple-only; this test's JPEG fixture generation
+// has no Linux equivalent, so the whole file is a no-op there.
+#if canImport(CoreGraphics)
+import CoreGraphics
+import ImageIO
+import UniformTypeIdentifiers
 
 final class BuildPipelinePictureTests: XCTestCase {
     func testBuildEmitsPictureMarkupAndCopiesVariantsToOutput() throws {
@@ -105,3 +109,4 @@ final class BuildPipelinePictureTests: XCTestCase {
         try (buffer as Data).write(to: url, options: .atomic)
     }
 }
+#endif

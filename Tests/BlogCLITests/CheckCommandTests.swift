@@ -186,11 +186,11 @@ final class CheckCommandTests: XCTestCase {
         let pipe = Pipe()
         let stdoutDescriptor = dup(STDOUT_FILENO)
         XCTAssertNotEqual(stdoutDescriptor, -1)
-        fflush(stdout)
+        fflush(nil)
         dup2(pipe.fileHandleForWriting.fileDescriptor, STDOUT_FILENO)
 
         operation()
-        fflush(stdout)
+        fflush(nil)
 
         dup2(stdoutDescriptor, STDOUT_FILENO)
         close(stdoutDescriptor)
